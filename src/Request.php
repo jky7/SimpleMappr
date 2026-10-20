@@ -54,6 +54,53 @@ class Request
      *
      * @return object
      */
+    public static function defaultAttributes(): object
+    {
+        $attr = new \stdClass();
+        $attr->coords           = [];
+        $attr->regions          = [];
+        $attr->wkt              = [];
+        $attr->output           = 'png';
+        $attr->width            = 900;
+        $attr->height           = $attr->width/2;
+        $attr->projection       = 'epsg:4326';
+        $attr->projection_map   = 'epsg:4326';
+        $attr->origin           = false;
+        $attr->origin_map       = null;
+        $attr->bbox_map         = '-180,-90,180,90';
+        $attr->bbox_rubberband  = [];
+        $attr->pan              = false;
+        $attr->layers           = [];
+        $attr->graticules       = false;
+        $attr->watermark        = false;
+        $attr->gridspace        = false;
+        $attr->gridlabel        = true;
+        $attr->download         = false;
+        $attr->crop             = false;
+        $attr->options          = [];
+        $attr->border_thickness = 1.25;
+        $attr->rotation         = 0;
+        $attr->zoom_in          = false;
+        $attr->zoom_out         = false;
+        $attr->download_factor  = 1;
+        $attr->file_name        = time();
+
+        return $attr;
+    }
+
+    public static function fromDocument(array $values): object
+    {
+        $defaults = (array)self::defaultAttributes();
+        foreach ($defaults as $key => $default) {
+            if (array_key_exists($key, $values) && ($values[$key] === '' || $values[$key] === null)) { unset($values[$key]); }
+        }
+        $request = (object)array_merge($defaults, $values);
+        if (!isset($values['height']) && is_numeric($request->width)) { $request->height = (float)$request->width / 2; }
+        if ($request->origin_map === null) { $request->origin_map = $request->origin; }
+        $request->graticules = is_array($request->layers) && array_key_exists('grid', $request->layers);
+        return $request;
+    }
+
     public static function getRequest()
     {
         $attr = new \stdClass();

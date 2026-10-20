@@ -22,16 +22,16 @@
     {% if session['displayname'] %}
         {{ session['displayname'] }}
     {% else %}
-        {{ session['email'] }}
+        {{ session['username'] }}
     {% endif %}
 </div>
 {% endif %}
 
 <div id="site-session">
 {% if session %}
-    <a class="sprites-before logout" href="/logout/">{{ "Sign Out"|trans }}</a>
+    <form action="/logout" method="post"><input type="hidden" name="_csrf" value="{{ csrf_token }}"><button class="sprites-before logout" type="submit">{{ "Sign Out"|trans }}</button></form>
 {% else %}
-    <a class="sprites-before login" href="#">{{ "Sign In"|trans }}</a>
+    {% if login_enabled %}<a class="sprites-before login" href="/login{{ qlocale }}">{{ "Sign In"|trans }}</a>{% endif %}
 {% endif %}
 </div>
 

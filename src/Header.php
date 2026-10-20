@@ -66,6 +66,7 @@ class Header
         header("Expires: 0");
         header("Cache-Control: must-revalidate, post-check=0, pre-check=0");
         header("Cache-Control: private", false);
+        if (Session::currentUser()) { header('Cache-Control: no-store, private'); }
         if ($filename) {
             header("Content-Disposition: attachment; filename=\"{$filename}\";");
         }

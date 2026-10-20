@@ -48,12 +48,14 @@
                 {% endif %}
             </td>
             <td class="actions">
-                {% if row.sid %}
+                <a href="/usermap/{{ row.mid }}/settings.json">Settings JSON</a>
+                {% if row.token %}
+                    <a href="/shared/{{ row.token }}" target="_blank" rel="noopener noreferrer">Open share</a>
                     <a class="sprites-before map-unshare" data-id="{{ row.sid }}" href="#">{{ "Unshare"|trans }}</a>
                 {% else %}
                     <a class="sprites-before map-share" data-id="{{ row.mid }}" href="#">{{ "Share"|trans }}</a>
                 {% endif %}
-                {% if session['uid'] == row.uid or roles[session['role']] == 'administrator' %}
+                {% if session['uid'] == row.uid %}
                     <a class="sprites-before map-delete" data-id="{{ row.mid }}" href="#">{{ "Delete"|trans }}</a>
                 {% endif %}
             </td>

@@ -38,189 +38,57 @@
 namespace SimpleMappr\Controller;
 
 use SimpleMappr\Database;
+use SimpleMappr\Session;
+use SimpleMappr\SavedMapDocument;
+use SimpleMappr\HttpException;
 
-/**
- * Share model for SimpleMappr
- *
- * @category  Class
- * @package   SimpleMappr
- * @author    David P. Shorthouse <davidpshorthouse@gmail.com>
- * @copyright 2010-2018 David P. Shorthouse
- * @license   MIT, https://github.com/dshorthouse/SimpleMappr/blob/master/LICENSE
- * @link      http://github.com/dshorthouse/SimpleMappr
- */
-class Share implements RestMethods
+final class Share implements RestMethods
 {
-    /**
-     * Database column upon which to sort
-     *
-     * @var string $sort
-     */
-    public $sort;
-
-    /**
-     * Direction to sort: asc or desc
-     *
-     * @var string $dir
-     */
-    public $dir;
-
-    /**
-     * Database query results
-     *
-     * @var object $results
-     */
-    public $results;
-
-    /**
-     * Role for user defined in $roles
-     *
-     * @var int $_role
-     */
-    private $_user;
-
-    /**
-     * Database connection object
-     *
-     * @var object $_db
-     */
-    private $_db;
-
-    /**
-     * Constructor
-     */
+    public $sort = 'created', $dir = 'desc', $results = [];
+    private Database $db;
+    private int $uid;
     public function __construct()
     {
-        $this->_user = (new User)->showByHash($_SESSION['simplemappr']['hash']);
-        $this->_db = Database::getInstance();
+        $user = Session::currentUser();
+        if (!$user) { throw new HttpException(403, 'Sign in to manage sharing.'); }
+        $this->uid = (int)$user->uid;
+        $this->db = Database::getInstance();
     }
-
-    /**
-     * Implemented index method
-     *
-     * @param array $params Parameters object from router
-     *
-     * @return object $this The class instance
-     */
     public function index($params)
     {
-        $this->dir = "desc";
-        $this->sort = "";
-
-        if (array_key_exists('dir', $params) 
-            && in_array(strtolower($params['dir']), ["asc", "desc"])
-        ) {
-            $this->dir = $params['dir'];
-        }
-        if (array_key_exists('sort', $params)) {
-            $this->sort =  $params['sort'];
-        }
-
-        $order = "m.created {$this->dir}";
-        if (!empty($this->sort)) {
-            if ($this->sort == "created") {
-                $order = "s.".$this->sort . " {$this->dir}";
-            }
-            if ($this->sort == "username") {
-                $order = "u.".$this->sort . " {$this->dir}";
-            }
-            if ($this->sort == "title") {
-                $order = "m.".$this->sort . " {$this->dir}";
-            }
-        }
-
-        $sql = "
-            SELECT
-                s.mid, m.title, u.username, s.created
-            FROM
-                maps m
-            INNER JOIN
-                users u ON (m.uid = u.uid)
-            INNER JOIN
-                shares s ON (s.mid = m.mid)
-            ORDER BY ".$order;
-
-        $this->_db->prepare($sql);
-        $this->results = $this->_db->fetchAllObject();
+        $this->sort = in_array($params['sort'] ?? '', ['title','created'], true) ? $params['sort'] : 'created';
+        $this->dir = strtolower($params['dir'] ?? '') === 'asc' ? 'asc' : 'desc';
+        $order = $this->sort === 'title' ? 'm.title' : 's.created';
+        $this->db->prepare('SELECT s.sid,s.mid,s.token,m.title,s.created FROM shares s JOIN maps m ON m.mid=s.mid WHERE m.uid=:uid AND s.token IS NOT NULL ORDER BY '.$order.' '.$this->dir);
+        $this->db->bindParam(':uid', $this->uid); $this->results = $this->db->fetchAllObject();
         return $this;
     }
-
-    /**
-     * Implemented show method
-     *
-     * @param int $id The Share identifier
-     *
-     * @return void
-     */
-    public function show($id)
+    public static function loadToken(string $token): ?array
     {
+        if (!preg_match('/^[0-9a-f]{64}$/D', $token)) { return null; }
+        $db = Database::getInstance();
+        $db->prepare('SELECT m.title,m.map FROM shares s JOIN maps m ON m.mid=s.mid WHERE s.token=:token');
+        $db->bindParam(':token', $token); $row = $db->fetchFirstArray();
+        return $row ? ['title'=>$row['title'],'map'=>SavedMapDocument::decode($row['map'])] : null;
     }
-
-    /**
-     * Implemented create method
-     *
-     * @param array $content The parameters from the router.
-     *
-     * @return array status
-     */
+    public function show($id) { throw new HttpException(404, 'Share not found.'); }
     public function create($content)
     {
-        $mid = (array_key_exists('mid', $content)) ? $content["mid"] : null;
-
-        if (empty($mid)) {
-            return ["status" => "error"];
-        } else {
-            $data = [
-                'mid' => $mid,
-                'created' => time(),
-            ];
-            $this->_db->queryInsert('shares', $data);
-            return ["status" => "ok"];
-        }
+        $mid = filter_var($content['mid'] ?? null, FILTER_VALIDATE_INT);
+        if (!$mid || !Map::loadOwned($mid, $this->uid)) { throw new HttpException(404, 'Map not found.'); }
+        $token = bin2hex(random_bytes(32));
+        $this->db->prepare('INSERT INTO shares(mid,token,created) VALUES(:mid,:token,:created) ON DUPLICATE KEY UPDATE token=COALESCE(token,VALUES(token))');
+        $this->db->bindParam(':mid', $mid); $this->db->bindParam(':token', $token); $this->db->bindParam(':created', time()); $this->db->execute();
+        $this->db->prepare('SELECT sid,token FROM shares WHERE mid=:mid'); $this->db->bindParam(':mid', $mid);
+        $row = $this->db->fetchFirstObject();
+        return ['status'=>'ok','sid'=>(int)$row->sid,'url'=>MAPPR_URL.'/shared/'.$row->token];
     }
-
-    /**
-     * Implemented update method
-     *
-     * @param array  $content An array of content
-     * @param string $where   The where string
-     *
-     * @return void
-     */
-    public function update($content, $where)
-    {
-    }
-
-    /**
-     * Implemented destroy method
-     *
-     * @param int $id The User identifier
-     *
-     * @return array status
-     */
+    public function update($content, $where) { throw new HttpException(405, 'Revoke the share to change access.'); }
     public function destroy($id)
     {
-        if (User::isAdministrator($this->_user)) {
-            $sql = "DELETE 
-                    FROM
-                        shares
-                    WHERE 
-                        sid = :sid";
-            $this->_db->prepare($sql);
-            $this->_db->bindParam(":sid", $id, 'integer');
-        } else {
-            $sql = "DELETE s.*
-                    FROM
-                        shares s
-                    INNER JOIN
-                        maps m ON (m.mid = s.mid)
-                    WHERE 
-                        s.sid = :sid AND m.uid = :uid";
-            $this->_db->prepare($sql);
-            $this->_db->bindParam(":sid", $id, 'integer');
-            $this->_db->bindParam(":uid", $this->_user->results->uid, 'integer');
-        }
-        $this->_db->execute();
-        return ["status" => "ok"];
+        $this->db->prepare('DELETE s FROM shares s JOIN maps m ON m.mid=s.mid WHERE s.sid=:sid AND m.uid=:uid');
+        $this->db->bindParam(':sid', (int)$id); $this->db->bindParam(':uid', $this->uid); $this->db->execute();
+        if (!$this->db->rowCount()) { throw new HttpException(404, 'Share not found.'); }
+        return ['status'=>'ok'];
     }
 }

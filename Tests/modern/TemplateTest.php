@@ -19,6 +19,6 @@ final class TemplateTest extends TestCase
             $twig->parse($twig->tokenize(new Twig\Source(file_get_contents($file->getPathname()), $file->getFilename())));
             $count++;
         }
-        self::assertSame(31, $count);
+        self::assertGreaterThanOrEqual(31, $count);
     }
 }

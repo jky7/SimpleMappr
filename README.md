@@ -1,10 +1,12 @@
 # Run SimpleMappr with Docker
 
-This branch packages PHP 8.4 and MapServer 8.4 with the SWIG MapScript binding in Docker. The guest editor renders points, regions, WKT drawings, labels and graticules through the modern binding. PNG, SVG and TIFF downloads work. Saved maps and authentication require the next persistence phase.
+This branch packages PHP 8.4 and MapServer 8.4 with the SWIG MapScript binding in Docker. The guest editor renders points, regions, WKT drawings, labels and graticules through the modern binding. PNG, SVG and TIFF downloads work. Private saved maps use a deployment-owned local login and MariaDB. Sharing uses explicit revocable links.
 
 ## Start Docker
 
 ```sh
+docker build -t simplemappr-runtime:local .
+scripts/configure-local-owner
 docker compose up --build -d --wait
 docker compose exec app scripts/check-runtime
 docker compose exec app Tests/smoke/check-http
@@ -14,7 +16,7 @@ curl --fail http://127.0.0.1:8080/_runtime
 
 Open `http://127.0.0.1:8080/` for the editor. Open `http://127.0.0.1:8080/_checks/native-baseline.png` for the independent native fixture. The check also creates SVG, TIFF, Lambert PNG, and `report.json` files under `/_checks/`.
 
-Copy `.env.example` to `.env` to change `SIMPLEMAPPR_PORT` if port 8080 is occupied. Docker Compose binds to localhost.
+The setup command asks for an owner username and password, then creates a mode-0600 ignored `.env` with a password hash and random database credentials. It never saves the plaintext password. Add `SIMPLEMAPPR_PORT=8081` to that file if port 8080 is occupied. Docker Compose binds to localhost; MariaDB has no published port.
 
 ## Verify the bundled data
 
@@ -43,7 +45,7 @@ Update the base digest and snapshot deliberately when applying runtime security 
 
 The Apache document root contains only the application front controller. Public assets have a separate alias. Generated maps, uploads and asset caches use separate writable volumes. PHP execution under public assets is denied. `/_runtime` runs a small native render through Apache without loading legacy application configuration. The endpoint exposes versions, binding readiness, and the profile name. It does not expose PHP configuration. `/_checks/` serves only named native output files and the report. Source, configuration, fixtures, vendor files, and Git metadata are outside the document root.
 
-`docker compose down` retains the data and output volumes. Do not add `--volumes` if you need to keep generated output.
+`docker compose down` retains database, session, data and output volumes. `docker compose down --volumes` deletes that stored state.
 
 ## Configuration and current limits
 
@@ -53,7 +55,38 @@ Requests keep the original map document fields. Viewports additionally carry `or
 
 The modern PHPUnit suite covers coordinate parsing, all templates, real HTTP previews and downloads, all eleven projections, custom origin refreshes, request limits and basic API points. It also runs the original coordinate conversion cases with explicit floating point tolerances. The archived database, binary comparison, router and Selenium suites remain in `Tests/`. Their old global database/bootstrap assumptions require migration with persistence and later browser work. The modern suite does not claim those suites pass.
 
-Authentication, database persistence, old service/import endpoints and Office exports have not received full workflow verification. Optional raster and specialist datasets are not installed. Dependency deprecations are logged rather than inserted into JSON or binary output.
+Old service/import endpoints and Office exports still require the next workflow verification phase. Optional raster and specialist datasets are not installed. Dependency deprecations are logged rather than inserted into JSON or binary output.
+
+## Private maps and shared links
+
+Sign in from the editor header. Save from Preview, then reopen the map from My Maps. The database keeps Unicode titles, multiline data, styles and source projection state. A second browser session cannot read a private map by its numeric identifier. An administrator role does not bypass map ownership.
+
+Use **Share** in My Maps to create a public link. **Open share** displays a read-only map without save controls. **Unshare** revokes the token immediately. Numeric map URLs remain private. Settings JSON downloads are distinct from GeoJSON exports; import a settings file from My Maps to restore the complete map configuration. Existing unversioned settings files remain readable.
+
+Authenticated preview, legend and scale images live outside the public directory and expire after one hour; fetching them requires their owner session. Guest previews use random filenames and reject reads after one hour. Expired files are cleaned during subsequent image creation. Sessions use HttpOnly, SameSite=Lax cookies and a two-hour idle timeout. Login attempts are limited per source address. Configure TLS before exposing the instance beyond localhost.
+
+`SIMPLEMAPPR_OWNER_USERNAME` and `SIMPLEMAPPR_OWNER_PASSWORD_HASH` select the one deployment login. Missing owner configuration leaves guest rendering available. Changing either value and recreating the stack invalidates previous authenticated sessions. `scripts/provision-owner` updates the stable `local:owner` identity; it does not reassign imported users' maps. After changing credentials, run:
+
+```sh
+docker compose up -d --wait
+```
+
+## Database baseline and legacy adoption
+
+The current schema version is `20261020000000`. First startup creates it and generates 4,582 region lookup rows from the pinned Natural Earth province dataset. `scripts/migrate-database` is repeatable. Historical Phinx migrations are retained under `db/legacy-migrations/` for reference and must not be replayed against an existing database.
+
+Import an old database into a separate MariaDB database first. The checked-in `Tests/fixtures/legacy-sample.sql` is the archived schema fixture, not a backup of the hosted service. Adoption checks known columns, JSON settings, duplicate rows and orphan ownership before making changes. It writes a new SQL backup and checks that original map JSON bytes remain unchanged. Existing numeric shares receive no public token. Resolve reported duplicate or orphan rows deliberately before retrying.
+
+For a database already imported into the configured Compose database, create a local `backups` directory and run the explicit adoption command before normal startup:
+
+```sh
+mkdir -p backups
+docker compose up -d db
+docker compose run --rm --no-deps --user "$(id -u):$(id -g)" -v "$PWD/backups:/backups" database-init scripts/adopt-legacy-database /backups/before-adoption.sql
+docker compose up -d --wait
+```
+
+The command refuses an existing backup filename. Keep this backup and the deployment `.env` outside version control. A source-code restore cannot recover private map records that are unavailable from the archived hosted service.
 
 ## Archived upstream documentation
 

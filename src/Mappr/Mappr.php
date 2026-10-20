@@ -238,8 +238,7 @@ abstract class Mappr
         if (!extension_loaded('MapScript')) {
             throw new \RuntimeException('The map rendering extension is unavailable.');
         }
-        $this->request = (object)array_merge((array)$this->_defaultAttributes(), (array)$this->getRequest());
-        if ($this->request->origin_map === null) { $this->request->origin_map = $this->request->origin; }
+        $this->request = \SimpleMappr\Request::fromDocument((array)$this->getRequest());
         \SimpleMappr\Request::validateMapDocument($this->request);
         $this->map_obj = msLoadMapFromString("MAP MAXSIZE 5000 END", ROOT, null);
         $this->image_size = [$this->request->width, $this->request->height];
@@ -759,7 +758,7 @@ abstract class Mappr
             if (!$this->request->download) {
                 $this->map_obj->legend->status = MS_DEFAULT;
                 $this->legend = $this->map_obj->drawLegend();
-                $this->legend_url = $this->legend->saveWebImage();
+                $this->legend_url = \SimpleMappr\TemporaryImage::write($this->legend, $this->map_obj)['url'];
             }
         }
     }
@@ -803,7 +802,7 @@ abstract class Mappr
         if (!$this->request->download) {
             $this->map_obj->scalebar->status = MS_DEFAULT;
             $this->scale = $this->map_obj->drawScalebar();
-            $this->scalebar_url = $this->scale->saveWebImage();
+            $this->scalebar_url = \SimpleMappr\TemporaryImage::write($this->scale, $this->map_obj)['url'];
         }
     }
 
@@ -825,45 +824,6 @@ abstract class Mappr
     public function getBadDrawings()
     {
         return implode('<br />', $this->bad_drawings);
-    }
-
-    /**
-     * Default attributes for the request object
-     *
-     * @return obj
-     */
-    private function _defaultAttributes()
-    {
-        $attr = new \stdClass();
-        $attr->coords           = [];
-        $attr->regions          = [];
-        $attr->wkt              = [];
-        $attr->output           = 'png';
-        $attr->width            = 900;
-        $attr->height           = $attr->width/2;
-        $attr->projection       = 'epsg:4326';
-        $attr->projection_map   = 'epsg:4326';
-        $attr->origin           = false;
-        $attr->origin_map       = null;
-        $attr->bbox_map         = '-180,-90,180,90';
-        $attr->bbox_rubberband  = [];
-        $attr->pan              = false;
-        $attr->layers           = [];
-        $attr->graticules       = false;
-        $attr->watermark        = false;
-        $attr->gridspace        = false;
-        $attr->gridlabel        = true;
-        $attr->download         = false;
-        $attr->crop             = false;
-        $attr->options          = []; //scalebar, legend, border, linethickness
-        $attr->border_thickness = 1.25;
-        $attr->rotation         = 0;
-        $attr->zoom_in          = false;
-        $attr->zoom_out         = false;
-        $attr->download_factor  = 1;
-        $attr->file_name        = time();
-
-        return $attr;
     }
 
     /**

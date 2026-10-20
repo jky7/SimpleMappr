@@ -39,7 +39,7 @@ namespace SimpleMappr\Mappr\Application;
 
 use geoPHP\geoPHP;
 use geoPHP\Adapter\GeoJSON;
-use SimpleMappr\Database;
+use SimpleMappr\SavedMapDocument;
 use SimpleMappr\Utility;
 use SimpleMappr\Constants\AcceptedOutputs;
 use SimpleMappr\Controller\Kml;
@@ -57,12 +57,7 @@ use SimpleMappr\Mappr\Mappr;
  */
 class Map extends Mappr
 {
-    /**
-     * Database identifer for a map
-     *
-     * @var int $_id
-     */
-    private $_id;
+    private array $_record;
 
     /**
      * File extension for the output
@@ -74,12 +69,12 @@ class Map extends Mappr
     /**
      * Constructor
      *
-     * @param int    $id        Identifier for the map
+     * @param array  $record    Authorized saved-map document
      * @param string $extension File extension
      */
-    public function __construct($id, $extension)
+    public function __construct(array $record, $extension)
     {
-        $this->_id = (int)$id;
+        $this->_record = $record;
         $this->_extension = ($extension) ? $extension : "png";
         parent::__construct();
     }
@@ -91,30 +86,11 @@ class Map extends Mappr
      */
     public function getRequest()
     {
-        if (!$this->_id) {
-            $this->_setNotFound();
-            exit();
-        }
-        $db = Database::getInstance();
-        $sql = "SELECT title, map FROM maps WHERE mid=:mid";
-        $db->prepare($sql);
-        $db->bindParam(":mid", $this->_id, 'integer');
-        $record = $db->fetchFirstObject($sql);
-        if (!$record) {
-            $this->_setNotFound();
-            exit();
-        }
-
-        $this->title = $record->title;
+        $this->title = $this->_record['title'];
         $this->coords = [];
         $this->regions = [];
         $this->wkt = [];
-
-        $result = json_decode($record->map, true);
-
-        foreach ($result as $key => $data) {
-            $this->{$key} = $data;
-        }
+        foreach (SavedMapDocument::renderingFields($this->_record['map']) as $key => $value) { $this->{$key} = $value; }
 
         if (isset($this->border_thickness) && !$this->border_thickness) {
             $this->border_thickness = 1.25;
@@ -152,7 +128,7 @@ class Map extends Mappr
             $this->options['legend'] = false;
         }
 
-        $this->callback         = Utility::loadParam('callback', null);
+        $this->callback         = null;
         $this->output           = $this->_extension; //overwrite the output
 
         return $this;

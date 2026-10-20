@@ -1,0 +1,49 @@
+#!/usr/bin/env python3
+import http.cookiejar,json,os,re,urllib.request,urllib.parse,urllib.error
+BASE=os.environ.get('SIMPLEMAPPR_TEST_URL','http://127.0.0.1:8080').rstrip('/')
+credential_file=os.environ.get('SIMPLEMAPPR_TEST_CREDENTIALS')
+if not credential_file: raise SystemExit('Set SIMPLEMAPPR_TEST_CREDENTIALS to a private JSON fixture containing username and password for an isolated test deployment.')
+credentials=json.load(open(credential_file))
+class Client:
+ def __init__(self): self.cookies=http.cookiejar.CookieJar();self.opener=urllib.request.build_opener(urllib.request.HTTPCookieProcessor(self.cookies));self.csrf=None
+ def request(self,path,data=None,method=None,csrf=False):
+  headers={}
+  if csrf: headers['X-CSRF-Token']=self.csrf
+  if isinstance(data,dict): data=urllib.parse.urlencode(data).encode()
+  request=urllib.request.Request(path if path.startswith('http') else BASE+path,data=data,method=method,headers=headers)
+  try: response=self.opener.open(request)
+  except urllib.error.HTTPError as error: response=error
+  return response.status,response.read(),response.headers
+ def login(self):
+  status,body,headers=self.request('/login');assert status==200
+  self.csrf=re.search(rb'name="_csrf" value="([a-f0-9]+)"',body).group(1).decode()
+  status,body,headers=self.request('/session',{'username':credentials['username'],'password':credentials['password'],'_csrf':self.csrf});assert status==200,(status,body[:200])
+  self.csrf=re.search(rb'name="_csrf" value="([a-f0-9]+)"',body).group(1).decode()
+owner=Client();guest=Client();owner.login()
+form={'save[title]':'Montréal 😀 HTTP fixture','coords[0][title]':'Café','coords[0][data]':'43.6532,-79.3832\n45.5019,-73.5674','coords[0][color]':'210 30 35','coords[0][shape]':'circle','coords[0][size]':'14','layers[countries]':'on','layers[lakesOutline]':'on','layers[lakes]':'on','projection':'epsg:4326','projection_map':'epsg:4326','origin_map':'0','origin':'0','bbox_map':'-180,-90,180,90','width':'900','height':'450','output':'png'}
+status,body,_=owner.request('/usermap',form);assert status==403,(status,body)
+status,body,_=owner.request('/usermap',form,csrf=True);assert status==200,(status,body);mid=json.loads(body)['mid']
+status,body,_=owner.request(f'/usermap/{mid}.json');assert status==200,(status,body);document=json.loads(body)['map'];assert document['save']['title']==form['save[title]'];assert document['layers']['lakesOutline']=='on';assert document['origin_map']=='0';assert document['coords'][0]['data']==form['coords[0][data]']
+for path in [f'/usermap/{mid}.json',f'/map/{mid}.png',f'/map/{mid}.json',f'/usermap/{mid}/settings.json']:
+ assert guest.request(path)[0] in [403,404],path
+status,body,_=owner.request(f'/map/{mid}.png');assert status==200 and body.startswith(b'\x89PNG'),(status,body[:200])
+status,body,_=owner.request('/application.json',form);assert status==200,(status,body);preview=json.loads(body)['mapOutputImage'];assert preview.startswith('/_preview/'),preview
+assert owner.request(preview)[0]==200
+assert guest.request(preview)[0]==404
+status,body,_=owner.request('/share',{'mid':str(mid)},csrf=True);assert status==200,(status,body);share=json.loads(body)
+assert guest.request(share['url'])[0]==200
+assert guest.request(share['url']+'.png')[1].startswith(b'\x89PNG')
+status,body,_=owner.request('/share/'+str(share['sid']),method='DELETE',csrf=True);assert status==200,(status,body)
+assert guest.request(share['url'])[0]==404
+assert guest.request(share['url']+'.png')[0]==404
+status,body,_=owner.request(f'/usermap/{mid}/settings.json');assert status==200;assert json.loads(body)==document
+status,body,_=owner.request('/usermap/import',{'settings':body.decode()},csrf=True);assert status==200,(status,body);assert json.loads(body)['mid']==mid
+status,body,_=owner.request('/usermap/import',{'settings':'{"type":"FeatureCollection","features":[]}'},csrf=True);assert status in [400,422]
+for invalid in [{'projection':'invalid'},{'width':'999999'}]:
+ bad=dict(document);bad.update(invalid);bad['save']={'title':form['save[title]']}
+ status,body,_=owner.request('/usermap/import',{'settings':json.dumps(bad)},csrf=True);assert status in [400,422],(status,body)
+ status,body,_=owner.request(f'/usermap/{mid}.json');assert json.loads(body)['map']==document, 'Invalid import changed saved bytes'
+status,body,_=guest.request('/application.json',form);assert status==200,(status,body);assert re.match(r'^/public/tmp/preview-[a-f0-9]{32}\.png$',json.loads(body)['mapOutputImage'])
+print('PASS: owner login; CSRF; Unicode/title/multiline/layers/origin save-load; guest isolation; owner-only previews; private PNG; settings import/export; token sharing and revocation; random guest cache.')
+if os.environ.get('SIMPLEMAPPR_TEST_RECEIPT'):
+ json.dump({'mid':mid,'preview':preview,'status':'PASS'},open(os.environ['SIMPLEMAPPR_TEST_RECEIPT'],'w'))

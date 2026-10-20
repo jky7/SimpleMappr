@@ -12,3 +12,5 @@ public/uploads/**
 !public/uploads/README
 log/**
 *.log
+
+backups

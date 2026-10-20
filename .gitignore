@@ -48,3 +48,5 @@ vendor/*
 
 # Local Docker overrides
 .env
+
+/backups/

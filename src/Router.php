@@ -71,6 +71,7 @@ class Router
      */
     public function __construct()
     {
+        Session::setSession();
         mb_internal_encoding("UTF-8");
         mb_http_output("UTF-8");
 
@@ -111,18 +112,18 @@ class Router
             'check_role_user',
             function () {
                 if (!User::checkPermission('user')) {
-                    echo $this->_renderError(403);
-                    return false;
-                };
+                    throw new HttpException(403, 'Sign in to access this resource.');
+                }
+                if (!in_array($_SERVER['REQUEST_METHOD'], ['GET', 'HEAD', 'OPTIONS'], true)) { Session::requireCsrf(); }
             }
         );
         $router->filter(
             'check_role_administrator',
             function () {
                 if (!User::checkPermission('administrator')) {
-                    echo $this->_renderError(403);
-                    return false;
-                };
+                    throw new HttpException(403, 'Sign in to access this resource.');
+                }
+                if (!in_array($_SERVER['REQUEST_METHOD'], ['GET', 'HEAD', 'OPTIONS'], true)) { Session::requireCsrf(); }
             }
         );
 
@@ -160,7 +161,7 @@ class Router
         $router->get('/apilog', function () {
             Header::setHeader('html');
             return $this->_tailLog();
-        }, ['before' => 'checkPermission']);
+        }, ['before' => 'check_role_administrator']);
 
         $router->post('/application', function () {
             //headers are set in Mappr\Application class
@@ -201,7 +202,7 @@ class Router
                 $klass = $this->_klass("Controller\Citation");
                 $put = array();
                 parse_str(file_get_contents('php://input'), $put);
-                return json_encode($klass->update($put['citation'], "id=".$id));
+                return json_encode($klass->update($put['citation'], ['id'=>(int)$id]));
             })
             ->delete('/citation/{id:i}', function ($id) {
                 Header::setHeader("json");
@@ -227,7 +228,7 @@ class Router
             return $this->_twig()->render("feedback.html", $config);
         });
 
-        $router->get('/flush_cache', function () {
+        $router->post('/flush_cache', function () {
             Assets::flushCache();
         }, ['before' => 'check_role_administrator']);
 
@@ -246,20 +247,35 @@ class Router
             return $this->_klass("Controller\Kml")->create($_POST);
         });
 
-        $router->get('/logout', function () {
-            $this->_klass("Session", false);
+        $router->get('/login', function () {
+            Header::setHeader('html');
+            return $this->_twig()->render('login.html', ['login_enabled'=>Session::configured()]);
         });
+        $router->post('/logout', function () { Session::destroy(); });
 
-        $router->get('/map/{id:i}', function ($id) {
-            Header::setHeader('png');
-            $klass = $this->_klass("Mappr\Application\Map", $id, 'png');
-            return $klass->execute()->createOutput();
+        $router->get('/map/{id:i}', function ($id) { return $this->_privateMap($id, 'png'); });
+        $router->get('/map/{id:i}.{ext:(?:kml|svg|json|png|jpg)}', function ($id, $ext) { return $this->_privateMap($id, $ext); });
+        $router->get('/public/tmp/preview-{token:[0-9a-f]{32}}.{ext:(?:png|jpg|svg|tif)}', function ($token, $ext) {
+            $path = TemporaryImage::readGuest($token, $ext);
+            Header::setHeader($ext); $this->_privateHeaders();
+            return file_get_contents($path);
         });
-
-        $router->get('/map/{id:i}.{ext:[kml|svg|json|png|jpg]+}', function ($id, $ext) {
-            Header::setHeader($ext);
-            $klass = $this->_klass("Mappr\Application\Map", $id, $ext);
-            return $klass->execute()->createOutput();
+        $router->get('/_preview/{token:[0-9a-f]{32}}.{ext:(?:png|jpg|svg|tif)}', function ($token, $ext) {
+            $path = TemporaryImage::read($token, $ext);
+            Header::setHeader($ext); $this->_privateHeaders();
+            return file_get_contents($path);
+        });
+        $router->get('/shared/{token:[0-9a-f]{64}}', function ($token) {
+            $record = Controller\Share::loadToken($token);
+            if (!$record) { throw new HttpException(404, 'Share not found.'); }
+            Header::setHeader('html'); $this->_privateHeaders();
+            return $this->_twig()->render('shared.html', ['map_title'=>$record['title'], 'share_path'=>MAPPR_URL.'/shared/'.$token]);
+        });
+        $router->get('/shared/{token:[0-9a-f]{64}}.{ext:(?:kml|svg|json|png|jpg)}', function ($token, $ext) {
+            $record = Controller\Share::loadToken($token);
+            if (!$record) { throw new HttpException(404, 'Share not found.'); }
+            Header::setHeader($ext); $this->_privateHeaders();
+            return (new \SimpleMappr\Mappr\Application\Map($record, $ext))->execute()->createOutput();
         });
 
         $router->get('/openapi.json', function () {
@@ -295,7 +311,9 @@ class Router
         });
 
         $router->post('/session', function () {
-            $this->_klass("Session", true);
+            if (Session::login($_POST)) { Session::redirect('/'.Session::makeLocaleParam($_SESSION['locale'] ?? 'en_US')); }
+            http_response_code(401);
+            return $this->_twig()->render('login.html', ['login_enabled'=>Session::configured(), 'login_error'=>'The username or password was not accepted.']);
         });
 
         $router->group(['before' => 'check_role_user'], function ($router) {
@@ -355,6 +373,17 @@ class Router
                 ];
                 return $this->_twig()->render("fragments/fragment.usermap.html", $config);
             })
+            ->post('/usermap/import', function () {
+                $raw = $_POST['settings'] ?? file_get_contents('php://input');
+                if (!is_string($raw)) { throw new HttpException(422, 'Invalid map settings.'); }
+                Header::setHeader('json');
+                return json_encode($this->_klass('Controller\\Map')->create(SavedMapDocument::decode($raw)));
+            })
+            ->get('/usermap/{id:i}/settings.json', function ($id) {
+                $record = $this->_klass('Controller\\Map')->show($id);
+                Header::setHeader('json', Utility::cleanFilename($record['title']).'.simplemappr.json'); $this->_privateHeaders();
+                return SavedMapDocument::encode($record['map']);
+            })
             ->get('/usermap/{id:i}.json', function ($id) {
                 Header::setHeader('json');
                 return json_encode($this->_klass("Controller\Map")->show($id));
@@ -388,16 +417,35 @@ class Router
             echo $response;
         } catch (\Phroute\Phroute\Exception\HttpRouteNotFoundException $e) {
             echo $this->_renderError(404);
-        } catch (\InvalidArgumentException $e) {
-            http_response_code(400);
-            Header::setHeader('json');
-            echo json_encode(['error' => $e->getMessage()]);
+
+        } catch (HttpException $e) {
+            http_response_code($e->status); Header::setHeader('json'); $this->_privateHeaders();
+            echo json_encode(['status'=>'failed','error'=>$e->getMessage()]);
+        } catch (\InvalidArgumentException|\JsonException $e) {
+            http_response_code(400); Header::setHeader('json'); $this->_privateHeaders();
+            echo json_encode(['status'=>'failed','error'=>$e->getMessage()]);
         } catch (\Throwable $e) {
             error_log((string)$e);
             http_response_code($e->getCode() === 503 ? 503 : 500);
-            Header::setHeader('json');
+            Header::setHeader('json'); $this->_privateHeaders();
             echo json_encode(['error' => $e->getCode() === 503 ? $e->getMessage() : 'Map rendering failed. Check the map settings and installed data.']);
-        }
+        } finally { Session::closeSession(); }
+    }
+
+    private function _privateHeaders(): void
+    {
+        header('Cache-Control: no-store, private');
+        header('Referrer-Policy: no-referrer');
+        header('X-Robots-Tag: noindex, nofollow');
+    }
+
+    private function _privateMap(int $id, string $extension)
+    {
+        $user = Session::currentUser();
+        $record = $user ? Controller\Map::loadOwned($id, (int)$user->uid) : null;
+        if (!$record) { throw new HttpException(404, 'Map not found.'); }
+        Header::setHeader($extension); $this->_privateHeaders();
+        return (new \SimpleMappr\Mappr\Application\Map($record, $extension))->execute()->createOutput();
     }
 
     /**
@@ -508,7 +556,7 @@ class Router
         $cache = (ENVIRONMENT == "development") ? false : ROOT . "/public/tmp";
         $reload = (ENVIRONMENT == "development" || ENVIRONMENT == "testing") ? true : false;
         $twig = new Environment($loader, ['cache' => $cache, 'auto_reload' => $reload]);
-        $locale = Utility::loadParam('locale', 'en_US');
+        $locale = Session::selectLocale()['locale'];
         if (!isset(Session::$accepted_locales[$locale])) { $locale = 'en_US'; }
         $translator = new Translator($locale);
         $translator->addLoader('po', new PoFileLoader());
@@ -525,10 +573,10 @@ class Router
 
         $qlocale = "?locale={$locale}";
 
-        $session = [];
-        if (MAPPR_PERSISTENCE && isset($_SESSION['simplemappr'])) {
-            $session = (array)(new User)->showByHash($_SESSION['simplemappr']['hash'])->results;
-        }
+        $session = (array)(Session::currentUser() ?? []);
+        unset($session['hash'], $session['identifier']);
+        $twig->addGlobal('csrf_token', Session::csrfToken());
+        $twig->addGlobal('login_enabled', Session::configured());
         $twig->addGlobal('session', $session);
         $twig->addGlobal('locale', $locale);
         $twig->addGlobal('qlocale', $qlocale);

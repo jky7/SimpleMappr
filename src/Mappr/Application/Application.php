@@ -75,27 +75,27 @@ class Application extends Mappr
         switch ($this->request->output) {
         case 'tif':
 
-            $this->image_url = $this->image->saveWebImage();
-            $image_filename = basename($this->image_url);
+            $temporary = \SimpleMappr\TemporaryImage::write($this->image, $this->map_obj, $this->request->output);
+            $image_filename = $temporary['path'];
             $clean_filename = Utility::cleanFilename($this->request->file_name, $this->request->output);
-            $filesize = filesize($this->tmp_path.$image_filename);
+            $filesize = filesize($image_filename);
             Header::setHeader('tif', $clean_filename, $filesize);
             if (ob_get_level()) { ob_clean(); }
             flush();
-            readfile($this->tmp_path.$image_filename);
+            readfile($image_filename);
             break;
 
         case 'png':
             if ($this->request->download) {
 
-                $this->image_url = $this->image->saveWebImage();
-                $image_filename = basename($this->image_url);
+                $temporary = \SimpleMappr\TemporaryImage::write($this->image, $this->map_obj, $this->request->output);
+                $image_filename = $temporary['path'];
                 $clean_filename = Utility::cleanFilename($this->request->file_name, $this->request->output);
-                $filesize = filesize($this->tmp_path.$image_filename);
+                $filesize = filesize($image_filename);
                 Header::setHeader('png', $clean_filename, $filesize);
                 if (ob_get_level()) { ob_clean(); }
                 flush();
-                readfile($this->tmp_path.$image_filename);
+                readfile($image_filename);
             } else {
                 Header::setHeader('json');
                 return json_encode($this->_defaultOutput());
@@ -121,7 +121,7 @@ class Application extends Mappr
      */
     private function _defaultOutput()
     {
-        $this->image_url = $this->image->saveWebImage();
+        $this->image_url = \SimpleMappr\TemporaryImage::write($this->image, $this->map_obj)['url'];
 
         $bbox = [
           sprintf('%.10f', $this->map_obj->extent->minx + $this->ox_pad),

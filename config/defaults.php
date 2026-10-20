@@ -18,7 +18,7 @@ $defaults = [
     'CLOUDFLARE_DOMAIN' => '',
     'CLOUDFLARE_EMAIL' => '',
     'COOKIE_TIMEOUT' => time() + 1209600,
-    'MAPPR_PERSISTENCE' => false,
+    'MAPPR_PERSISTENCE' => (bool)getenv('SIMPLEMAPPR_DB_HOST'),
 ];
 foreach ($defaults as $name => $value) {
     defined($name) || define($name, $value);

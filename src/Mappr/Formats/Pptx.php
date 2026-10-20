@@ -107,8 +107,8 @@ class Pptx extends Mappr
         $images = ['image', 'scale', 'legend'];
         foreach ($images as $image) {
             if ($this->{$image}) {
-                $image_filename = basename($this->{$image}->saveWebImage());
-                $files[$image]['file'] = $this->tmp_path . $image_filename;
+                $temporary = \SimpleMappr\TemporaryImage::write($this->{$image}, $this->map_obj);
+                $files[$image]['file'] = $temporary['path'];
                 $files[$image]['size'] = getimagesize($files[$image]['file']);
             }
         }

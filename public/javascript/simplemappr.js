@@ -1292,7 +1292,7 @@ var SimpleMappr = (function($, window, document) {
 
       data = {
         locale : self.getParameterByName("locale"),
-        search : (obj.search) ? encodeURIComponent(obj.search.toLowerCase()) : null,
+        search : (obj.search) ? obj.search.toLowerCase() : null,
         uid    : obj.uid || null
       };
 
@@ -1416,7 +1416,9 @@ var SimpleMappr = (function($, window, document) {
           url      : self.settings.baseUrl + "/share/",
           data     : { "mid" : mid },
           dataType : "json",
-          success  : function() {
+          success  : function(response) {
+            if (response.url && $('#actionsBar a.toolsEmbed').attr('data-id') === mid) { self.activateEmbed(mid, response.url); }
+            if (type === 'destroy' && $('#actionsBar a.toolsEmbed').attr('data-id') === mid) { self.activateEmbed(mid, null); }
             self.loadMapList(data);
             self.loadShareList();
             self.hideSpinner();
@@ -1428,7 +1430,9 @@ var SimpleMappr = (function($, window, document) {
           type     : 'DELETE',
           url      : self.settings.baseUrl + "/share/" + mid,
           dataType : "json",
-          success  : function() {
+          success  : function(response) {
+            if (response.url && $('#actionsBar a.toolsEmbed').attr('data-id') === mid) { self.activateEmbed(mid, response.url); }
+            if (type === 'destroy' && $('#actionsBar a.toolsEmbed').attr('data-id') === mid) { self.activateEmbed(mid, null); }
             self.loadMapList(data);
             self.loadShareList();
             self.hideSpinner();
@@ -1572,7 +1576,7 @@ var SimpleMappr = (function($, window, document) {
             self.loadInputs(data);
             self.showMap(data);
             self.bindStorage();
-            self.activateEmbed(id);
+            self.activateEmbed(id, data.share_url);
           } else {
             self.showErrorMessage($('#mapper-loading-error-message').text());
           }
@@ -1794,18 +1798,21 @@ var SimpleMappr = (function($, window, document) {
       }
     },
 
-    activateEmbed: function(mid) {
+    activateEmbed: function(mid, shareUrl) {
       var self    = this,
           types   = ['img','kml','svg','json'];
 
-      $('#actionsBar').find('a.toolsEmbed').attr("data-id", mid).css({display: 'block'}).on('click', function(e) {
+      var embed = $('#actionsBar').find('a.toolsEmbed').attr("data-id", mid).off('click');
+      if (!shareUrl) { embed.hide(); return; }
+      shareUrl = new URL(shareUrl, window.location.href).href;
+      embed.css({display: 'block'}).on('click', function(e) {
         e.preventDefault();
         $.each(types, function(key, value) {
           self.unusedVariables(key);
           if(value === 'img') {
-            $('#embed-'+value).val("<img src=\"" + self.settings.baseUrl + "/map/" + mid + "\" alt=\"\" />");
+            $('#embed-'+value).val("<img src=\"" + shareUrl + ".png\" alt=\"\" />");
           } else {
-            $('#embed-'+value).val(self.settings.baseUrl + "/map/" + mid + "." + value);
+            $('#embed-'+value).val(shareUrl + "." + value);
           }
         });
 
@@ -1925,7 +1932,7 @@ var SimpleMappr = (function($, window, document) {
                   success     : function(data) {
                     $('#mapTitle').text(map_title.val());
                     $('#file-name').val(map_title.val().replace(pattern, "_"));
-                    self.activateEmbed(data.mid);
+                    self.activateEmbed(data.mid, data.share_url);
                     self.loadMapList();
                     self.hideSpinner();
                     self.trackEvent('map', 'save');
@@ -2694,7 +2701,7 @@ var SimpleMappr = (function($, window, document) {
 
     bindSpecialClicks: function() {
       var self = this;
-      $('#site-session').find('a.login').on('click', function(e) { e.preventDefault(); self.tabSelector(4); });
+
       $('#general-points').find('a.show-examples').on('click', function(e) { e.preventDefault(); self.showExamples(); });
       $('#regions-introduction').find('a.show-codes').on('click', function(e) { e.preventDefault(); self.showCodes(); });
       $('#actionsBar')
@@ -2707,6 +2714,21 @@ var SimpleMappr = (function($, window, document) {
     },
 
     getUserData: function() {
+      var self = this;
+      $('#settings-import').on('change', function() {
+        var file = this.files && this.files[0];
+        if (!file) { return; }
+        if (file.size > 2000000) { $('#settings-import-status').text('Map settings exceed 2 MB.'); this.value = ''; return; }
+        var input = this, reader = new FileReader();
+        reader.onload = function() {
+          $.ajax({type:'POST', url:self.settings.baseUrl + '/usermap/import', data:{settings:reader.result}, dataType:'json'})
+            .done(function() { $('#settings-import-status').text('Map imported. Open it from My Maps.'); self.loadMapList(); })
+            .fail(function(xhr) { $('#settings-import-status').text((xhr.responseJSON && xhr.responseJSON.error) || 'Map import failed.'); })
+            .always(function() { input.value = ''; });
+        };
+        reader.onerror = function() { $('#settings-import-status').text('The selected file could not be read.'); input.value = ''; };
+        reader.readAsText(file);
+      });
       if($('#usermaps').length > 0) {
         this.loadMapList();
         this.loadShareList();

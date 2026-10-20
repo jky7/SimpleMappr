@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+{% block content %}
+<main style="max-width:30rem;margin:3rem auto;font-family:sans-serif;line-height:1.5">
+<h1>SimpleMappr — {{ "Sign In"|trans }}</h1>
+{% if login_enabled %}
+{% if login_error %}<p role="alert">{{ login_error }}</p>{% endif %}
+<form action="/session" method="post">
+<input type="hidden" name="_csrf" value="{{ csrf_token }}">
+<input type="hidden" name="locale" value="{{ locale }}">
+<p><label for="username">Username</label><br><input id="username" name="username" autocomplete="username" required maxlength="50"></p>
+<p><label for="password">Password</label><br><input id="password" name="password" type="password" autocomplete="current-password" required></p>
+<button type="submit">{{ "Sign In"|trans }}</button>
+</form>
+{% else %}<p>Saving is available after the deployment owner is configured.</p>{% endif %}
+<p><a href="/">Return to the map editor</a></p>
+</main>
+{% endblock %}

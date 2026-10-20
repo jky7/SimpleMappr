@@ -1,0 +1,7 @@
+#!/usr/bin/env php
+<?php
+require dirname(__DIR__).'/config/defaults.php';
+require ROOT.'/vendor/autoload.php';
+try {
+    echo (new SimpleMappr\DatabaseSchema(SimpleMappr\Database::getInstance()->connection()))->migrate(),"\n";
+} catch (Throwable $error) { fwrite(STDERR,$error->getMessage()."\n"); exit(1); }

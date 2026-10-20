@@ -25,7 +25,7 @@
     <li><a href="#map-regions">{{ "Regions"|trans }}</a></li>
     <li><a href="#map-mymaps" class="sprites-before map-mymaps">
         {% if session and roles[session['role']] == 'administrator' %}
-            {{ "All Maps"|trans }}
+            {{ "My Maps"|trans }}
         {% else %}
             {{ "My Maps"|trans }}
         {% endif %}
@@ -163,12 +163,13 @@
 
     <div id="map-mymaps">
     {% if session %}
+        <div class="panel"><label for="settings-import">Import saved map settings (.json)</label> <input type="file" id="settings-import" accept=".json,application/json"><p id="settings-import-status" role="status"></p></div>
         <div id="usermaps"></div>
     {% else %}
         <div class="panel">
             <p>{{ "Save and reload your map data or create a generic template."|trans }}</p>
         </div>
-        <div id="janrainEngageEmbed"></div>
+        {% if login_enabled %}<p><a href="/login{{ qlocale }}">{{ "Sign In"|trans }}</a></p>{% else %}<p>Saving is available after the deployment owner is configured.</p>{% endif %}
     {% endif %}
     </div>
 

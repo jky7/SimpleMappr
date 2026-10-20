@@ -1,0 +1,16 @@
+#!/usr/bin/env php
+<?php
+require dirname(__DIR__).'/config/defaults.php';
+require ROOT.'/vendor/autoload.php';
+use SimpleMappr\Controller\User;
+use SimpleMappr\Database;
+try {
+    $username=getenv('SIMPLEMAPPR_OWNER_USERNAME') ?: '';
+    $hash=getenv('SIMPLEMAPPR_OWNER_PASSWORD_HASH') ?: '';
+    if ($username === '' || mb_strlen($username)>50 || password_get_info($hash)['algo'] === null) { throw new RuntimeException('Configure an owner username and valid password hash before provisioning.'); }
+    $user=(new User)->showByIdentifier('local:owner')->results;
+    $values=['identifier'=>'local:owner','username'=>$username,'displayname'=>$username,'email'=>'','hash'=>$hash,'role'=>1,'access'=>time()];
+    if ($user) { Database::getInstance()->queryUpdate('users',$values,['uid'=>(int)$user->uid]); }
+    else { $values['created']=time(); Database::getInstance()->queryInsert('users',$values); }
+    echo "Deployment owner provisioned. Existing imported map ownership was retained.\n";
+} catch (Throwable $error) { fwrite(STDERR,$error->getMessage()."\n"); exit(1); }

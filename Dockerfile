@@ -23,7 +23,7 @@ RUN phpenmod simplemappr \
     && mkdir -p /var/lib/simplemappr/checks public/tmp public/uploads public/stylesheets/cache public/javascript/cache \
     && chown -R www-data:www-data public/tmp public/uploads public/stylesheets/cache public/javascript/cache \
     && chown -R www-data:www-data /var/lib/simplemappr \
-    && chmod +x scripts/bootstrap-assets scripts/check-runtime docker/entrypoint
+    && chmod +x scripts/* docker/entrypoint
 
 EXPOSE 80
 ENTRYPOINT ["/srv/simplemappr/docker/entrypoint"]
