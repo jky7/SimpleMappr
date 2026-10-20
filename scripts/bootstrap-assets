@@ -1,0 +1,83 @@
+#!/usr/bin/env php
+<?php
+declare(strict_types=1);
+
+try {
+    if (!in_array($argv[1] ?? '', ['', '--check'], true) || count($argv) > 2) {
+        throw new RuntimeException('Usage: scripts/bootstrap-assets [--check]');
+    }
+    $check = ($argv[1] ?? '') === '--check';
+    $root = dirname(__DIR__);
+    $manifest = json_decode(file_get_contents($root.'/Tests/fixtures/manifest.json'), true, 512, JSON_THROW_ON_ERROR);
+    if ($manifest['schemaVersion'] !== 1 || $manifest['profile'] !== 'minimal-vector-v1') {
+        throw new RuntimeException('Unsupported asset manifest');
+    }
+    $dataRoot = $root.'/mapserver/maps';
+    $count = 0;
+    foreach ($manifest['assets'] as $asset) {
+        foreach ([$asset['archive'], $asset['destination'], $asset['basename']] as $relative) {
+            if (!preg_match('~^[A-Za-z0-9_./-]+$~', $relative) || str_starts_with($relative, '/') || in_array('..', explode('/', $relative), true)) {
+                throw new RuntimeException('Unsafe asset path: '.$relative);
+            }
+        }
+        $archive = $root.'/'.$asset['archive'];
+        if (!is_file($archive) || hash_file('sha256', $archive) !== $asset['archiveSha256']) {
+            throw new RuntimeException('Missing or corrupt archive: '.$asset['archive']);
+        }
+        $zip = new ZipArchive();
+        if ($zip->open($archive) !== true) {
+            throw new RuntimeException('Cannot open archive: '.$asset['archive']);
+        }
+        $expected = array_column($asset['components'], 'name');
+        $actual = [];
+        for ($i = 0; $i < $zip->numFiles; ++$i) {
+            $actual[] = $zip->getNameIndex($i);
+        }
+        sort($expected);
+        sort($actual);
+        if ($actual !== $expected) {
+            throw new RuntimeException('Archive members differ: '.$asset['archive']);
+        }
+        foreach (['shp', 'shx', 'dbf', 'prj', 'cpg'] as $suffix) {
+            if (!in_array($asset['basename'].'.'.$suffix, $expected, true)) {
+                throw new RuntimeException('Manifest lacks component: '.$asset['basename'].'.'.$suffix);
+            }
+        }
+        $destination = $dataRoot.'/'.$asset['destination'];
+        foreach ($asset['components'] as $component) {
+            $name = $component['name'];
+            if (basename($name) !== $name || !str_starts_with($name, $asset['basename'].'.')) {
+                throw new RuntimeException('Unsafe archive member: '.$name);
+            }
+            $bytes = $zip->getFromName($name);
+            if ($bytes === false || hash('sha256', $bytes) !== $component['sha256']) {
+                throw new RuntimeException('Corrupt archive member: '.$name);
+            }
+            $path = $destination.'/'.$name;
+            if (is_link($path)) {
+                throw new RuntimeException('Asset must not be a symlink: '.$path);
+            }
+            if (is_file($path)) {
+                if (hash_file('sha256', $path) !== $component['sha256']) {
+                    throw new RuntimeException('Corrupt asset: '.$path);
+                }
+            } elseif ($check) {
+                throw new RuntimeException('Missing asset: '.$path);
+            } else {
+                if (!is_dir($destination) && !mkdir($destination, 0755, true)) {
+                    throw new RuntimeException('Cannot create asset directory: '.$destination);
+                }
+                $temporary = tempnam($destination, '.extract-');
+                if ($temporary === false || file_put_contents($temporary, $bytes) !== strlen($bytes) || !chmod($temporary, 0644) || !rename($temporary, $path)) {
+                    throw new RuntimeException('Cannot install asset: '.$path);
+                }
+            }
+            ++$count;
+        }
+        $zip->close();
+    }
+    echo $manifest['profile'].' verified '.$count.' components'.PHP_EOL;
+} catch (Throwable $error) {
+    fwrite(STDERR, $error->getMessage().PHP_EOL);
+    exit(1);
+}

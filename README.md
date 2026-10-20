@@ -1,7 +1,56 @@
+# Run the modern native runtime
+
+This branch packages PHP 8.4 and MapServer 8.4 with the SWIG MapScript binding in Docker. P1 verifies native rendering. The legacy editor, database, and application routes remain unported.
+
+## Start Docker
+
+```sh
+docker compose up --build -d --wait
+docker compose exec app scripts/check-runtime
+docker compose exec app Tests/smoke/check-http
+curl --fail http://127.0.0.1:8080/_runtime
+```
+
+Open `http://127.0.0.1:8080/_checks/native-baseline.png` after the check finishes. The check also creates SVG, TIFF, Lambert PNG, and `report.json` files under `/_checks/`.
+
+Copy `.env.example` to `.env` to change `SIMPLEMAPPR_PORT` if port 8080 is occupied. Docker Compose binds to localhost.
+
+## Verify the bundled data
+
+```sh
+docker compose exec app scripts/bootstrap-assets --check
+docker compose run --rm assets-init
+```
+
+`Tests/fixtures/manifest.json` defines the `minimal-vector-v1` profile. It records archive and member SHA256 hashes for the five bundled Natural Earth datasets. Initialization makes no network requests. It installs physical layers under `mapserver/maps/10m_physical` and cultural layers under `mapserver/maps/10m_cultural/10m_cultural`.
+
+Only `assets-init` writes the `map-data` volume. The app mounts that volume read-only. Native outputs use the separate `runtime-output` volume. Repeated initialization verifies existing files without rewriting them. Missing or corrupt components produce the exact filename and a failing exit code.
+
+The profile contains land, lakes, country map units, province polygons, and province boundaries. Relief, roads, rivers, ecology datasets, and other optional layers are absent. This profile does not claim those layers work.
+
+## Rebuild the runtime
+
+The Dockerfile pins the Debian base image by digest and uses the Debian and Debian Security snapshots dated `20261019T000000Z`. Apache mod_php and PHP CLI load the distribution's matching `php-mapscript-ng` package. `check-runtime` loads that binding directly. Composer is not installed or invoked in P1.
+
+To inspect installed package versions, run:
+
+```sh
+docker compose exec app cat /usr/local/share/simplemappr-packages.tsv
+```
+
+Update the base digest and snapshot deliberately when applying runtime security updates. A rebuild needs Docker Hub and Debian snapshot access. The snapshot pins package selection, but the Docker image is not guaranteed to be byte-for-byte reproducible.
+
+The Apache document root contains only the P1 landing page. `/_runtime` runs a small native render through Apache without loading legacy application configuration. The endpoint exposes versions, binding readiness, and the profile name. It does not expose PHP configuration. `/_checks/` serves only named native output files and the report. Source, configuration, fixtures, vendor files, and Git metadata are outside the document root.
+
+`docker compose down` retains both volumes. Do not add `--volumes` if you need to keep generated output.
+
+## Archived upstream documentation
+
+The sections below describe the archived deployment. Use the Docker commands above for this modernization branch.
+
 :warning: **To be decommisioned and archived September 1, 2026.**
 
-SimpleMappr Installation and Configuration
-==========================================
+### SimpleMappr installation and configuration
 
 SimpleMappr, [http://www.simplemappr.net](http://www.simplemappr.net) is a web-based application that produces publication-quality geographic maps. This source code is released under MIT license.
 

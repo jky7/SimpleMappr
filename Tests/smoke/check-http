@@ -1,0 +1,27 @@
+#!/bin/sh
+set -eu
+base=${1:-http://127.0.0.1}
+curl --fail --silent --show-error "$base/_runtime" | php -r '
+$report = json_decode(stream_get_contents(STDIN), true, 512, JSON_THROW_ON_ERROR);
+if ($report["status"] !== "ok" || $report["sapi"] !== "apache2handler" || $report["nativePng"] !== true || $report["php"] !== PHP_VERSION || $report["mapserver"] !== msGetVersion()) {
+    fwrite(STDERR, "Apache and CLI runtime checks disagree\n");
+    exit(1);
+}
+echo "Apache loads the same PHP and MapScript versions as CLI\n";
+'
+curl --fail --silent --show-error "$base/_checks/native-baseline.png" | php -r '
+$image = getimagesizefromstring(stream_get_contents(STDIN));
+if ($image === false || $image[0] !== 800 || $image[1] !== 400 || $image["mime"] !== "image/png") {
+    fwrite(STDERR, "HTTP PNG is invalid\n");
+    exit(1);
+}
+echo "HTTP serves the verified PNG at 800 x 400\n";
+'
+for path in .git/config config/conf.php config/conf.php.sample src/Mappr/Mappr.php composer.json composer.lock Tests/files/ne_10m_land.zip Tests/smoke/runtime.php vendor/autoload.php _checks/native.map; do
+    status=$(curl --silent --output /dev/null --write-out '%{http_code}' "$base/$path")
+    case "$status" in
+        403|404) ;;
+        *) echo "Private path returned HTTP $status: /$path" >&2; exit 1 ;;
+    esac
+done
+echo 'HTTP refuses source, configuration, archives, and unlisted check files'

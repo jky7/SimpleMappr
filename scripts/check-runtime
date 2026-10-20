@@ -1,0 +1,13 @@
+#!/bin/sh
+set -eu
+cd /srv/simplemappr
+scripts/bootstrap-assets --check
+php Tests/smoke/render.php
+gdalinfo -json /var/lib/simplemappr/checks/native-baseline.tif | php -r '
+$data = json_decode(stream_get_contents(STDIN), true, 512, JSON_THROW_ON_ERROR);
+if ($data["driverShortName"] !== "GTiff" || $data["size"] !== [800, 400] || count($data["bands"]) !== 3) {
+    fwrite(STDERR, "TIFF driver, dimensions, or bands are incorrect\n");
+    exit(1);
+}
+echo "GDAL verified RGB GeoTIFF 800 x 400\n";
+'

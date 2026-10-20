@@ -1,0 +1,201 @@
+{
+  "schemaVersion": 1,
+  "profile": "minimal-vector-v1",
+  "assets": [
+    {
+      "archive": "Tests/files/ne_10m_admin_0_map_units.zip",
+      "archiveSha256": "37c56ed439d40173d3482b9cb7938701cf1d7b48ebd049624f10ecf0a70beb20",
+      "destination": "10m_cultural/10m_cultural",
+      "basename": "ne_10m_admin_0_map_units",
+      "version": "4.0.0",
+      "source": "https://www.naturalearthdata.com/",
+      "license": "Public domain",
+      "components": [
+        {
+          "name": "ne_10m_admin_0_map_units.README.html",
+          "sha256": "edfe8ff2b7293a51f0b164b83c37372aa0ef986577d0b720f5aacf61c566e585"
+        },
+        {
+          "name": "ne_10m_admin_0_map_units.VERSION.txt",
+          "sha256": "e1d49c569ae09b2ede16e2d83820a3809b35eb6c44c13ba9b5330598d6b8f43c"
+        },
+        {
+          "name": "ne_10m_admin_0_map_units.cpg",
+          "sha256": "3ad3031f5503a4404af825262ee8232cc04d4ea6683d42c5dd0a2f2a27ac9824"
+        },
+        {
+          "name": "ne_10m_admin_0_map_units.dbf",
+          "sha256": "d3633bcc96900da067ed0fa93af90dad8fb322bc313838c095e850ef3498b867"
+        },
+        {
+          "name": "ne_10m_admin_0_map_units.prj",
+          "sha256": "a02a27b1d1982c8516d83398e85a3c8b1aef1713c13ef4d84d7bde17430c07c4"
+        },
+        {
+          "name": "ne_10m_admin_0_map_units.shp",
+          "sha256": "408eb9e45962eed6ddaa3619e1b66ade434615c0bfb669802c81fc3f6f063324"
+        },
+        {
+          "name": "ne_10m_admin_0_map_units.shx",
+          "sha256": "4d4cef648b3d15db48c3ede837e0bee18bac9c2edc4c476b38266fd928886a13"
+        }
+      ]
+    },
+    {
+      "archive": "Tests/files/ne_10m_admin_1_states_provinces.zip",
+      "archiveSha256": "e7f4a69c69467db78c30ce3bc187fca2a5514c2d60301ae0af4c1fbb1420c21c",
+      "destination": "10m_cultural/10m_cultural",
+      "basename": "ne_10m_admin_1_states_provinces",
+      "version": "4.0.0",
+      "source": "https://www.naturalearthdata.com/",
+      "license": "Public domain",
+      "components": [
+        {
+          "name": "ne_10m_admin_1_states_provinces.README.html",
+          "sha256": "e35a9babb2794376dd05681bf06075033bd581a9cd6cbfd288ca2d2968eaf8b7"
+        },
+        {
+          "name": "ne_10m_admin_1_states_provinces.VERSION.txt",
+          "sha256": "e1d49c569ae09b2ede16e2d83820a3809b35eb6c44c13ba9b5330598d6b8f43c"
+        },
+        {
+          "name": "ne_10m_admin_1_states_provinces.cpg",
+          "sha256": "3ad3031f5503a4404af825262ee8232cc04d4ea6683d42c5dd0a2f2a27ac9824"
+        },
+        {
+          "name": "ne_10m_admin_1_states_provinces.dbf",
+          "sha256": "b000dbc19e7f8891daa8d80da3fb47815945a9a7390f515f5cf65cc378353cc7"
+        },
+        {
+          "name": "ne_10m_admin_1_states_provinces.prj",
+          "sha256": "a02a27b1d1982c8516d83398e85a3c8b1aef1713c13ef4d84d7bde17430c07c4"
+        },
+        {
+          "name": "ne_10m_admin_1_states_provinces.shp",
+          "sha256": "eaa8d72cf4815af36944ff2e1ab51d2b94f27470809685c5f6e5f611f2c38bf8"
+        },
+        {
+          "name": "ne_10m_admin_1_states_provinces.shx",
+          "sha256": "650a0e5463b14c2ba6fee7506d0586d98a2d39b1913f5f50e620e1f01849a8f3"
+        }
+      ]
+    },
+    {
+      "archive": "Tests/files/ne_10m_admin_1_states_provinces_lines.zip",
+      "archiveSha256": "2bad3e32998f798a6265dca1d310b882fdea4563f19fcf4ab8781cf199c4f846",
+      "destination": "10m_cultural/10m_cultural",
+      "basename": "ne_10m_admin_1_states_provinces_lines",
+      "version": "4.0.0",
+      "source": "https://www.naturalearthdata.com/",
+      "license": "Public domain",
+      "components": [
+        {
+          "name": "ne_10m_admin_1_states_provinces_lines.README.html",
+          "sha256": "e35a9babb2794376dd05681bf06075033bd581a9cd6cbfd288ca2d2968eaf8b7"
+        },
+        {
+          "name": "ne_10m_admin_1_states_provinces_lines.VERSION.txt",
+          "sha256": "e1d49c569ae09b2ede16e2d83820a3809b35eb6c44c13ba9b5330598d6b8f43c"
+        },
+        {
+          "name": "ne_10m_admin_1_states_provinces_lines.cpg",
+          "sha256": "3ad3031f5503a4404af825262ee8232cc04d4ea6683d42c5dd0a2f2a27ac9824"
+        },
+        {
+          "name": "ne_10m_admin_1_states_provinces_lines.dbf",
+          "sha256": "b27a0d1f6de70793cb63cf5d8d1fc6f97457517844837478ed0b0e7a9b612026"
+        },
+        {
+          "name": "ne_10m_admin_1_states_provinces_lines.prj",
+          "sha256": "a02a27b1d1982c8516d83398e85a3c8b1aef1713c13ef4d84d7bde17430c07c4"
+        },
+        {
+          "name": "ne_10m_admin_1_states_provinces_lines.shp",
+          "sha256": "e4174734f235416f20b73a43f5e2857fb92f016dd8bb0cbcae47464a2f23a42d"
+        },
+        {
+          "name": "ne_10m_admin_1_states_provinces_lines.shx",
+          "sha256": "3dc952e0db99a47c1bf639d534856d5c815ab4286deacb47e7e340c4c5a32155"
+        }
+      ]
+    },
+    {
+      "archive": "Tests/files/ne_10m_lakes.zip",
+      "archiveSha256": "696cc35f74aa61a3adde231429830ba08dc750635c00f18172f7c426518156cf",
+      "destination": "10m_physical",
+      "basename": "ne_10m_lakes",
+      "version": "4.0.0",
+      "source": "https://www.naturalearthdata.com/",
+      "license": "Public domain",
+      "components": [
+        {
+          "name": "ne_10m_lakes.README.html",
+          "sha256": "77235fb1c2ecedd300dc04071db27b7a8f718e4bea425ab05639a3d2e7eb9c51"
+        },
+        {
+          "name": "ne_10m_lakes.VERSION.txt",
+          "sha256": "e1d49c569ae09b2ede16e2d83820a3809b35eb6c44c13ba9b5330598d6b8f43c"
+        },
+        {
+          "name": "ne_10m_lakes.cpg",
+          "sha256": "3ad3031f5503a4404af825262ee8232cc04d4ea6683d42c5dd0a2f2a27ac9824"
+        },
+        {
+          "name": "ne_10m_lakes.dbf",
+          "sha256": "855a68c8934d84bff335832f469ebcb35802f96f9f6aeb2aa08c78119e48cd0f"
+        },
+        {
+          "name": "ne_10m_lakes.prj",
+          "sha256": "98aaf3d1c0ecadf1a424a4536de261c3daf4e373697cb86c40c43b989daf52eb"
+        },
+        {
+          "name": "ne_10m_lakes.shp",
+          "sha256": "07731c8f27ff2233baed6868d5ae9c573b64b9cff59300997f12d8f653584c2c"
+        },
+        {
+          "name": "ne_10m_lakes.shx",
+          "sha256": "740ab6844d1a7e966b48d60a8bb0e73d6bb2ba411ef1cb57e9a89e52e4e77f8f"
+        }
+      ]
+    },
+    {
+      "archive": "Tests/files/ne_10m_land.zip",
+      "archiveSha256": "ebe1f785b72a0caf4d68438119b42a9049421239b38c99043bb56bf805387bb6",
+      "destination": "10m_physical",
+      "basename": "ne_10m_land",
+      "version": "4.0.0",
+      "source": "https://www.naturalearthdata.com/",
+      "license": "Public domain",
+      "components": [
+        {
+          "name": "ne_10m_land.README.html",
+          "sha256": "90a94c771a9dd29d997f233e94a62392ba6214514d8b986dd32b2e6c253c6667"
+        },
+        {
+          "name": "ne_10m_land.VERSION.txt",
+          "sha256": "e1d49c569ae09b2ede16e2d83820a3809b35eb6c44c13ba9b5330598d6b8f43c"
+        },
+        {
+          "name": "ne_10m_land.cpg",
+          "sha256": "3ad3031f5503a4404af825262ee8232cc04d4ea6683d42c5dd0a2f2a27ac9824"
+        },
+        {
+          "name": "ne_10m_land.dbf",
+          "sha256": "42af2d22d81f149b05353d8e856da9e8b025f9c1d2cc961fcd8bd05e973bdeb4"
+        },
+        {
+          "name": "ne_10m_land.prj",
+          "sha256": "a02a27b1d1982c8516d83398e85a3c8b1aef1713c13ef4d84d7bde17430c07c4"
+        },
+        {
+          "name": "ne_10m_land.shp",
+          "sha256": "0d6bea25bc9bad6544fe620091afc4308fca8dc6040ec06d9b2e6bef669ef50e"
+        },
+        {
+          "name": "ne_10m_land.shx",
+          "sha256": "ec76ea7c463b82f871a88d87ec787351a40936002716d3eb2ab23d90e12df042"
+        }
+      ]
+    }
+  ]
+}

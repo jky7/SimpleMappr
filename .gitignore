@@ -45,3 +45,6 @@ Thumbs.db
 vendor/*
 
 .php_cs.cache
+
+# Local Docker overrides
+.env

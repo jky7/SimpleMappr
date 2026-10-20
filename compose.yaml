@@ -1,0 +1,30 @@
+name: simplemappr
+services:
+  assets-init:
+    image: simplemappr-runtime:local
+    build: .
+    command: ["scripts/bootstrap-assets"]
+    volumes:
+      - map-data:/srv/simplemappr/mapserver/maps
+    restart: "no"
+  app:
+    image: simplemappr-runtime:local
+    build: .
+    depends_on:
+      assets-init:
+        condition: service_completed_successfully
+    ports:
+      - "127.0.0.1:${SIMPLEMAPPR_PORT:-8080}:80"
+    volumes:
+      - map-data:/srv/simplemappr/mapserver/maps:ro
+      - runtime-output:/var/lib/simplemappr
+    healthcheck:
+      test: ["CMD", "curl", "--fail", "--silent", "http://127.0.0.1/_runtime"]
+      interval: 15s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+    restart: unless-stopped
+volumes:
+  map-data:
+  runtime-output:
