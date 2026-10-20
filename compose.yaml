@@ -18,6 +18,10 @@ services:
     volumes:
       - map-data:/srv/simplemappr/mapserver/maps:ro
       - runtime-output:/var/lib/simplemappr
+      - app-tmp:/srv/simplemappr/public/tmp
+      - app-uploads:/srv/simplemappr/public/uploads
+      - css-cache:/srv/simplemappr/public/stylesheets/cache
+      - js-cache:/srv/simplemappr/public/javascript/cache
     healthcheck:
       test: ["CMD", "curl", "--fail", "--silent", "http://127.0.0.1/_runtime"]
       interval: 15s
@@ -28,3 +32,7 @@ services:
 volumes:
   map-data:
   runtime-output:
+  app-tmp:
+  app-uploads:
+  css-cache:
+  js-cache:

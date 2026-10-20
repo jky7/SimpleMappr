@@ -1,7 +1,7 @@
 <div itemscope itemtype="http://schema.org/WebApplication" id="header" class="clearfix">
 
 <h1 id="site-title" itemprop="name">SimpleMapp<span>r</span></h1>
-<div id="site-tagline" itemprop="description">{% trans "create free point maps for publications and presentations" %}</div>
+<div id="site-tagline" itemprop="description">{{ "create free point maps for publications and presentations"|trans }}</div>
 <meta itemprop="url" content="{{ og_url }}" />
 <meta itemprop="image" content="{{ og_logo }}" />
 <meta itemprop="operatingSystem" content="all" />
@@ -29,9 +29,9 @@
 
 <div id="site-session">
 {% if session %}
-    <a class="sprites-before logout" href="/logout/">{% trans "Sign Out" %}</a>
+    <a class="sprites-before logout" href="/logout/">{{ "Sign Out"|trans }}</a>
 {% else %}
-    <a class="sprites-before login" href="#">{% trans "Sign In" %}</a>
+    <a class="sprites-before login" href="#">{{ "Sign In"|trans }}</a>
 {% endif %}
 </div>
 

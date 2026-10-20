@@ -119,7 +119,7 @@ class Assets
         'hashchange'  => 'public/javascript/jquery.ba-hashchange.min.js',
         'toggle'      => 'public/javascript/jquery.toggleClick.min.js',
         'parse'       => 'public/javascript/papaparse.min.js',
-        'simplemappr' => 'public/javascript/simplemappr.min.js'
+        'simplemappr' => 'public/javascript/simplemappr.js'
     ];
 
     /**
@@ -266,7 +266,7 @@ class Assets
      */
     public function __construct()
     {
-        $this->_active_session = (isset($_SESSION['simplemappr'])) ? true : false;
+        $this->_active_session = MAPPR_PERSISTENCE && isset($_SESSION['simplemappr']);
         $this->_getUser()
             ->_makeHash()
             ->_addRemoteJs()
@@ -347,7 +347,7 @@ class Assets
     public function getJSVars()
     {
         $foot = $this->_getAnalytics();
-        if (!$this->_active_session) {
+        if (!$this->_active_session && RPX_KEY) {
             $foot .= $this->_getJanrain();
         }
         return $foot;
@@ -406,7 +406,7 @@ class Assets
      */
     private function _addRemoteJs()
     {
-        if (ENVIRONMENT == "production") {
+        if (ENVIRONMENT == "production" && MAPPR_URL) {
             unset($this->local_js_uncombined['jquery']);
             $this->_addJs('jquery', $this->remote_js['jquery']);
         }
@@ -421,7 +421,7 @@ class Assets
     private function _addUncombinedJs()
     {
         foreach ($this->local_js_uncombined as $key => $js_file) {
-            if ($key == "janrain" && $this->_active_session) {
+            if ($key == "janrain" && (!$this->_active_session || !RPX_KEY)) {
                 continue;
             }
             $this->_addJs($key, $js_file);

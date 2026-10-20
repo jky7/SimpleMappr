@@ -60,7 +60,7 @@ class CoordinateConversionTest extends TestCase
     {
         $coord = "-45d.4dt5;0dds";
         $clean = Utility::cleanCoord($coord);
-        $this->assertEquals($clean, -45.450);
+        $this->assertEqualsWithDelta($clean, -45.450, 1e-10);
     }
 
     /**
@@ -100,8 +100,8 @@ class CoordinateConversionTest extends TestCase
     {
         $coord = "52° 32' 25\" N,";
         $dd = Utility::makeCoordinates($coord);
-        $this->assertEquals($dd[0], null);
-        $this->assertEquals($dd[1], null);
+        $this->assertNull($dd[0]);
+        $this->assertNull($dd[1]);
     }
 
     /**
@@ -113,8 +113,8 @@ class CoordinateConversionTest extends TestCase
     {
         $coord = "-120";
         $dd = Utility::makeCoordinates($coord);
-        $this->assertEquals($dd[0], null);
-        $this->assertEquals($dd[1], null);
+        $this->assertNull($dd[0]);
+        $this->assertNull($dd[1]);
     }
 
     /**
@@ -126,8 +126,8 @@ class CoordinateConversionTest extends TestCase
     {
         $coord = "-120,";
         $dd = Utility::makeCoordinates($coord);
-        $this->assertEquals($dd[0], null);
-        $this->assertEquals($dd[1], null);
+        $this->assertNull($dd[0]);
+        $this->assertNull($dd[1]);
     }
 
     /**
@@ -139,8 +139,8 @@ class CoordinateConversionTest extends TestCase
     {
         $coord = "52° 32' 25\" N, 89° 40' 31\" W";
         $dd = Utility::makeCoordinates($coord);
-        $this->assertEquals($dd[0], 52.540277777778);
-        $this->assertEquals($dd[1], -89.675277777778);
+        $this->assertEqualsWithDelta($dd[0], 52.540277777778, 1e-10);
+        $this->assertEqualsWithDelta($dd[1], -89.675277777778, 1e-10);
     }
 
     /**
@@ -152,8 +152,8 @@ class CoordinateConversionTest extends TestCase
     {
         $coord = "52° 32' 25\" N; 89° 40' 31\" W";
         $dd = Utility::makeCoordinates($coord);
-        $this->assertEquals($dd[0], 52.540277777778);
-        $this->assertEquals($dd[1], -89.675277777778);
+        $this->assertEqualsWithDelta($dd[0], 52.540277777778, 1e-10);
+        $this->assertEqualsWithDelta($dd[1], -89.675277777778, 1e-10);
     }
 
     /**
@@ -165,8 +165,8 @@ class CoordinateConversionTest extends TestCase
     {
         $coord = "52.5\t-89.0";
         $dd = Utility::makeCoordinates($coord);
-        $this->assertEquals($dd[0], 52.5);
-        $this->assertEquals($dd[1], -89.0);
+        $this->assertEqualsWithDelta($dd[0], 52.5, 1e-10);
+        $this->assertEqualsWithDelta($dd[1], -89.0, 1e-10);
     }
 
     /**
@@ -178,8 +178,8 @@ class CoordinateConversionTest extends TestCase
     {
         $coord = "-7.483333, - 36.283333";
         $dd = Utility::makeCoordinates($coord);
-        $this->assertEquals($dd[0], -7.483333);
-        $this->assertEquals($dd[1], -36.283333);
+        $this->assertEqualsWithDelta($dd[0], -7.483333, 1e-10);
+        $this->assertEqualsWithDelta($dd[1], -36.283333, 1e-10);
     }
 
     /**
@@ -191,8 +191,8 @@ class CoordinateConversionTest extends TestCase
     {
         $coord = " - 7.483333, - 36.283333";
         $dd = Utility::makeCoordinates($coord);
-        $this->assertEquals($dd[0], -7.483333);
-        $this->assertEquals($dd[1], -36.283333);
+        $this->assertEqualsWithDelta($dd[0], -7.483333, 1e-10);
+        $this->assertEqualsWithDelta($dd[1], -36.283333, 1e-10);
     }
 
     /**
@@ -204,8 +204,8 @@ class CoordinateConversionTest extends TestCase
     {
         $coord = "89° 40' 31\" W, 52° 32' 25\" N";
         $dd = Utility::makeCoordinates($coord);
-        $this->assertEquals($dd[0], 52.540277777778);
-        $this->assertEquals($dd[1], -89.675277777778);
+        $this->assertEqualsWithDelta($dd[0], 52.540277777778, 1e-10);
+        $this->assertEqualsWithDelta($dd[1], -89.675277777778, 1e-10);
     }
     /**
      * Test that a single coordinate in DMS with 'd' is converted.
@@ -216,7 +216,7 @@ class CoordinateConversionTest extends TestCase
     {
         $dms = "45d53'25\"W";
         $dd = Utility::dmsToDeg($dms);
-        $this->assertEquals($dd, -45.890277777778);
+        $this->assertEqualsWithDelta($dd, -45.890277777778, 1e-10);
     }
 
     /**
@@ -228,7 +228,7 @@ class CoordinateConversionTest extends TestCase
     {
         $dms = "45° 53' 25\" W";
         $dd = Utility::dmsToDeg($dms);
-        $this->assertEquals($dd, -45.890277777778);
+        $this->assertEqualsWithDelta($dd, -45.890277777778, 1e-10);
     }
 
     /**
@@ -240,7 +240,7 @@ class CoordinateConversionTest extends TestCase
     {
         $dms = "45º 53' 25\" W";
         $dd = Utility::dmsToDeg($dms);
-        $this->assertEquals($dd, -45.890277777778);
+        $this->assertEqualsWithDelta($dd, -45.890277777778, 1e-10);
     }
 
     /**
@@ -252,7 +252,7 @@ class CoordinateConversionTest extends TestCase
     {
         $dms = "45d53'25\"E";
         $dd = Utility::dmsToDeg($dms);
-        $this->assertEquals($dd, 45.890277777778);
+        $this->assertEqualsWithDelta($dd, 45.890277777778, 1e-10);
     }
 
     /**
@@ -264,7 +264,7 @@ class CoordinateConversionTest extends TestCase
     {
         $dms = "45º 53′ 25″ N";
         $dd = Utility::dmsToDeg($dms);
-        $this->assertEquals($dd, 45.890277777778);
+        $this->assertEqualsWithDelta($dd, 45.890277777778, 1e-10);
     }
 
     /**
@@ -276,7 +276,7 @@ class CoordinateConversionTest extends TestCase
     {
         $dms = "45d 53m 25 N";
         $dd = Utility::dmsToDeg($dms);
-        $this->assertEquals($dd, 45.890277777778);
+        $this->assertEqualsWithDelta($dd, 45.890277777778, 1e-10);
     }
 
     /**
@@ -288,7 +288,7 @@ class CoordinateConversionTest extends TestCase
     {
         $dms = "45d53'25\"S";
         $dd = Utility::dmsToDeg($dms);
-        $this->assertEquals($dd, -45.890277777778);
+        $this->assertEqualsWithDelta($dd, -45.890277777778, 1e-10);
     }
 
     /**
@@ -300,7 +300,7 @@ class CoordinateConversionTest extends TestCase
     {
         $dms = "45º 70′ 25″ N";
         $dd = Utility::dmsToDeg($dms);
-        $this->assertEquals($dd, null);
+        $this->assertNull($dd);
     }
 
     /**
@@ -312,7 +312,7 @@ class CoordinateConversionTest extends TestCase
     {
         $dms = "45º 40′ 85″ N";
         $dd = Utility::dmsToDeg($dms);
-        $this->assertEquals($dd, null);
+        $this->assertNull($dd);
     }
 
     /**
@@ -328,8 +328,8 @@ class CoordinateConversionTest extends TestCase
         $sec = 45/3600;
         $dd_raw = -($deg + $min + $sec);
         $dd = Utility::dmsToDeg($dms);
-        $this->assertEquals($dd, -3.3958333333333);
-        $this->assertEquals($dd, $dd_raw);
+        $this->assertEqualsWithDelta($dd, -3.3958333333333, 1e-10);
+        $this->assertEqualsWithDelta($dd, $dd_raw, 1e-10);
     }
 
     /**
@@ -345,8 +345,8 @@ class CoordinateConversionTest extends TestCase
         $sec = 23/3600;
         $dd_raw = $deg + $min + $sec;
         $dd = Utility::dmsToDeg($dms);
-        $this->assertEquals($dd, 44.889722222222218);
-        $this->assertEquals($dd, $dd_raw);
+        $this->assertEqualsWithDelta($dd, 44.889722222222218, 1e-10);
+        $this->assertEqualsWithDelta($dd, $dd_raw, 1e-10);
     }
 
     /**
@@ -362,8 +362,8 @@ class CoordinateConversionTest extends TestCase
         $sec = 23/3600;
         $dd_raw = -($deg + $min + $sec);
         $dd = Utility::dmsToDeg($dms);
-        $this->assertEquals($dd, -44.889722222222218);
-        $this->assertEquals($dd, $dd_raw);
+        $this->assertEqualsWithDelta($dd, -44.889722222222218, 1e-10);
+        $this->assertEqualsWithDelta($dd, $dd_raw, 1e-10);
     }
 
     /**
@@ -379,8 +379,8 @@ class CoordinateConversionTest extends TestCase
         $sec = 23/3600;
         $dd_raw = -($deg + $min + $sec);
         $dd = Utility::dmsToDeg($dms);
-        $this->assertEquals($dd, -44.889722222222218);
-        $this->assertEquals($dd, $dd_raw);
+        $this->assertEqualsWithDelta($dd, -44.889722222222218, 1e-10);
+        $this->assertEqualsWithDelta($dd, $dd_raw, 1e-10);
     }
 
     /**
@@ -396,8 +396,8 @@ class CoordinateConversionTest extends TestCase
         $sec = 23/3600;
         $dd_raw = $deg + $min + $sec;
         $dd = Utility::dmsToDeg($dms);
-        $this->assertEquals($dd, 44.889722222222218);
-        $this->assertEquals($dd, $dd_raw);
+        $this->assertEqualsWithDelta($dd, 44.889722222222218, 1e-10);
+        $this->assertEqualsWithDelta($dd, $dd_raw, 1e-10);
     }
 
     /**
@@ -413,8 +413,8 @@ class CoordinateConversionTest extends TestCase
         $sec = 23/3600;
         $dd_raw = -($deg + $min + $sec);
         $dd = Utility::dmsToDeg($dms);
-        $this->assertEquals($dd, -44.889722222222218);
-        $this->assertEquals($dd, $dd_raw);
+        $this->assertEqualsWithDelta($dd, -44.889722222222218, 1e-10);
+        $this->assertEqualsWithDelta($dd, $dd_raw, 1e-10);
     }
 
     /**
@@ -426,8 +426,8 @@ class CoordinateConversionTest extends TestCase
     {
         $coord = "52.5g\t-89.0r";
         $dd = Utility::makeCoordinates($coord);
-        $this->assertEquals($dd[0], 52.5);
-        $this->assertEquals($dd[1], -89.0);
+        $this->assertEqualsWithDelta($dd[0], 52.5, 1e-10);
+        $this->assertEqualsWithDelta($dd[1], -89.0, 1e-10);
     }
 
     /**
@@ -439,7 +439,7 @@ class CoordinateConversionTest extends TestCase
     {
         $coord = " 49.129774°  46.677716°";
         $dd = Utility::makeCoordinates($coord);
-        $this->assertEquals($dd[0], 49.129774);
-        $this->assertEquals($dd[1], 46.677716);
+        $this->assertEqualsWithDelta($dd[0], 49.129774, 1e-10);
+        $this->assertEqualsWithDelta($dd[1], 46.677716, 1e-10);
     }
 }

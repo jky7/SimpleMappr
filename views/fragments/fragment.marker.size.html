@@ -1,4 +1,4 @@
-<option value="">{% trans "--select--" %}</option>
+<option value="">{{ "--select--"|trans }}</option>
 {% for value in marker_sizes %}
   <option value="{{ value }}"{% if value == 10 %} selected = "selected"{% endif %}>{{ value }}pt</option>
 {% endfor %}

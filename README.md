@@ -1,6 +1,6 @@
-# Run the modern native runtime
+# Run SimpleMappr with Docker
 
-This branch packages PHP 8.4 and MapServer 8.4 with the SWIG MapScript binding in Docker. P1 verifies native rendering. The legacy editor, database, and application routes remain unported.
+This branch packages PHP 8.4 and MapServer 8.4 with the SWIG MapScript binding in Docker. The guest editor renders points, regions, WKT drawings, labels and graticules through the modern binding. PNG, SVG and TIFF downloads work. Saved maps and authentication require the next persistence phase.
 
 ## Start Docker
 
@@ -8,10 +8,11 @@ This branch packages PHP 8.4 and MapServer 8.4 with the SWIG MapScript binding i
 docker compose up --build -d --wait
 docker compose exec app scripts/check-runtime
 docker compose exec app Tests/smoke/check-http
+docker compose exec app vendor/bin/phpunit -c Tests/phpunit.modern.xml
 curl --fail http://127.0.0.1:8080/_runtime
 ```
 
-Open `http://127.0.0.1:8080/_checks/native-baseline.png` after the check finishes. The check also creates SVG, TIFF, Lambert PNG, and `report.json` files under `/_checks/`.
+Open `http://127.0.0.1:8080/` for the editor. Open `http://127.0.0.1:8080/_checks/native-baseline.png` for the independent native fixture. The check also creates SVG, TIFF, Lambert PNG, and `report.json` files under `/_checks/`.
 
 Copy `.env.example` to `.env` to change `SIMPLEMAPPR_PORT` if port 8080 is occupied. Docker Compose binds to localhost.
 
@@ -30,7 +31,7 @@ The profile contains land, lakes, country map units, province polygons, and prov
 
 ## Rebuild the runtime
 
-The Dockerfile pins the Debian base image by digest and uses the Debian and Debian Security snapshots dated `20261019T000000Z`. Apache mod_php and PHP CLI load the distribution's matching `php-mapscript-ng` package. `check-runtime` loads that binding directly. Composer is not installed or invoked in P1.
+The Dockerfile pins the Debian base image by digest and uses the Debian and Debian Security snapshots dated `20261019T000000Z`. Apache mod_php and PHP CLI load the distribution's matching `php-mapscript-ng` package. `check-runtime` loads that binding directly. Composer installs the locked application dependencies during the image build. PHPPresentation is pinned to upstream commit `67a3b85673a7e05c7347e0c3970f9afb2338e246` because its stable release requires a vulnerable PhpSpreadsheet major. Replace that pin once a compatible stable release ships.
 
 To inspect installed package versions, run:
 
@@ -40,9 +41,19 @@ docker compose exec app cat /usr/local/share/simplemappr-packages.tsv
 
 Update the base digest and snapshot deliberately when applying runtime security updates. A rebuild needs Docker Hub and Debian snapshot access. The snapshot pins package selection, but the Docker image is not guaranteed to be byte-for-byte reproducible.
 
-The Apache document root contains only the P1 landing page. `/_runtime` runs a small native render through Apache without loading legacy application configuration. The endpoint exposes versions, binding readiness, and the profile name. It does not expose PHP configuration. `/_checks/` serves only named native output files and the report. Source, configuration, fixtures, vendor files, and Git metadata are outside the document root.
+The Apache document root contains only the application front controller. Public assets have a separate alias. Generated maps, uploads and asset caches use separate writable volumes. PHP execution under public assets is denied. `/_runtime` runs a small native render through Apache without loading legacy application configuration. The endpoint exposes versions, binding readiness, and the profile name. It does not expose PHP configuration. `/_checks/` serves only named native output files and the report. Source, configuration, fixtures, vendor files, and Git metadata are outside the document root.
 
-`docker compose down` retains both volumes. Do not add `--volumes` if you need to keep generated output.
+`docker compose down` retains the data and output volumes. Do not add `--volumes` if you need to keep generated output.
+
+## Configuration and current limits
+
+`config/defaults.php` provides guest defaults. Set `SIMPLEMAPPR_URL` for an explicit external origin or keep the default relative URLs for localhost. An optional ignored `config/conf.php` can define overrides. The checked-in minimal dataset configuration is used unless `config/shapefiles.yml` exists. Do not expose the repository root through Apache.
+
+Requests keep the original map document fields. Viewports additionally carry `origin_map` with `projection_map` and `bbox_map`, so custom Lambert origins survive repeated refreshes. Changing projections selects a valid geographic area when the current view falls outside that projection. Export dimensions are limited to 5000 pixels per side and 20 megapixels. Invalid requests return JSON errors and preserve the next valid render.
+
+The modern PHPUnit suite covers coordinate parsing, all templates, real HTTP previews and downloads, all eleven projections, custom origin refreshes, request limits and basic API points. It also runs the original coordinate conversion cases with explicit floating point tolerances. The archived database, binary comparison, router and Selenium suites remain in `Tests/`. Their old global database/bootstrap assumptions require migration with persistence and later browser work. The modern suite does not claim those suites pass.
+
+Authentication, database persistence, old service/import endpoints and Office exports have not received full workflow verification. Optional raster and specialist datasets are not installed. Dependency deprecations are logged rather than inserted into JSON or binary output.
 
 ## Archived upstream documentation
 

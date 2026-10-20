@@ -449,7 +449,7 @@ var SimpleMappr = (function($, window, document) {
     mapRebuild: function() {
       var self = this;
 
-      $.each(['bbox_map', 'projection_map', 'bbox_rubberband', 'rotation', 'pan'], function(key, value) {
+      $.each(['bbox_map', 'projection_map', 'origin_map', 'bbox_rubberband', 'rotation', 'pan'], function(key, value) {
         self.unusedVariables(key);
         $('#' + value).val('');
       });
@@ -1609,7 +1609,7 @@ var SimpleMappr = (function($, window, document) {
         self.unusedVariables(key);
         $('#'+value).val(data.map[value]);
       });
-      if(!data.map.origin) { $('#origin').val(self.vars.origins[$("#projection").val()]); }
+      if(data.map.origin === undefined || data.map.origin === null || data.map.origin === '') { $('#origin').val(self.vars.origins[$("#projection").val()]); }
 
       $('#border_thickness').val(1.25);
       $('#border-slider').slider({value:1.25});
@@ -2119,7 +2119,7 @@ var SimpleMappr = (function($, window, document) {
     },
 
     showErrorMessage: function(content) {
-      var message = '<span class="mapper-message-error ui-widget-content">' + content + '</span>';
+      var message = $('<span class="mapper-message-error ui-widget-content"></span>').text(content);
 
       this.vars.mapOutput.append(message);
     },
@@ -2169,11 +2169,9 @@ var SimpleMappr = (function($, window, document) {
           self.addBadRecordsViewer();
         },
         error    : function(xhr, ajaxOptions, thrownError) {
-          self.unusedVariables(xhr,thrownError);
-          if(ajaxOptions === 'timeout') {
-            self.showErrorMessage($('#mapper-loading-error-message').text());
-            self.hideSpinner();
-          }
+          var message = xhr.responseJSON && xhr.responseJSON.error;
+          self.showErrorMessage(message || $('#mapper-loading-error-message').text());
+          self.hideSpinner();
         }
       });
     },
@@ -2185,6 +2183,7 @@ var SimpleMappr = (function($, window, document) {
       $.each(ele, function() { $('#' + this).val(data[this]); });
       $('#bbox_map').val($('#rendered_bbox').val());
       $('#projection_map').val($('#rendered_projection').val());
+      $('#origin_map').val(data.rendered_origin == null ? '' : data.rendered_origin);
       $('#rotation').val($('#rendered_rotation').val());
       $('#pan').val('');
     },

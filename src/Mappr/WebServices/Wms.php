@@ -160,16 +160,16 @@ class Wms extends Mappr
      */
     public function makeService()
     {
-        $this->map_obj->setMetaData("name", "SimpleMappr Web Map Service");
-        $this->map_obj->setMetaData("wms_title", "SimpleMappr Web Map Service");
-        $this->map_obj->setMetaData("wms_onlineresource", MAPPR_URL . "/wms/?");
+        $this->map_obj->web->metadata->set("name", "SimpleMappr Web Map Service");
+        $this->map_obj->web->metadata->set("wms_title", "SimpleMappr Web Map Service");
+        $this->map_obj->web->metadata->set("wms_onlineresource", MAPPR_URL . "/wms/?");
 
-        $srs_projections = implode(array_keys(AcceptedProjections::$projections), " ");
+        $srs_projections = implode(" ", array_keys(AcceptedProjections::$projections));
 
-        $this->map_obj->setMetaData("wms_srs", $srs_projections);
-        $this->map_obj->setMetaData("wms_abstract", "SimpleMappr Web Map Service");
-        $this->map_obj->setMetaData("wms_enable_request", "*");
-        $this->map_obj->setMetaData("wms_connectiontimeout", "60");
+        $this->map_obj->web->metadata->set("wms_srs", $srs_projections);
+        $this->map_obj->web->metadata->set("wms_abstract", "SimpleMappr Web Map Service");
+        $this->map_obj->web->metadata->set("wms_enable_request", "*");
+        $this->map_obj->web->metadata->set("wms_connectiontimeout", "60");
 
         $this->_makeRequest();
         return $this;
@@ -182,19 +182,19 @@ class Wms extends Mappr
      */
     public function createOutput()
     {
-        ms_ioinstallstdouttobuffer();
+        msIO_installStdoutToBuffer();
         $this->map_obj->owsDispatch($this->_req);
-        $contenttype = ms_iostripstdoutbuffercontenttype();
+        $contenttype = msIO_stripStdoutBufferContentType();
         $req = strtolower($this->request->params['REQUEST']);
         if ($req == 'getcapabilities') {
             Header::setHeader("xml");
-            echo ms_iogetstdoutbufferstring();
+            echo msIO_getStdoutBufferString();
         } elseif ($req == 'getmap' || $req == 'getlegendgraphic') {
             Header::setHeader();
             header('Content-type: ' . $contenttype);
-            ms_iogetstdoutbufferbytes();
+            msIO_getStdoutBufferBytes();
         }
-        ms_ioresethandlers();
+        msIO_resetHandlers();
     }
 
     /**

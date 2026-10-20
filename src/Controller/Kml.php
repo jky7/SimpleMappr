@@ -38,7 +38,7 @@
 namespace SimpleMappr\Controller;
 
 use XMLWriter;
-use geoPHP;
+use geoPHP\geoPHP;
 use SimpleMappr\Header;
 use SimpleMappr\Utility;
 
@@ -276,7 +276,7 @@ class Kml implements RestMethods
             }
             $this->_kml->endElement();
         }
-        
+
         foreach($this->_polygon_kml as $data) {
             $this->_kml->startElement('Placemark');
             $this->_kml->writeAttribute('id', "simplemapprpin-wkt-{$data[0]}");

@@ -2,16 +2,16 @@
 <thead>
 <tr>
 {% set sort_dir = (sort == 'username') ? " " ~ dir : "" %}
-<th class="left-align"><a class="sprites-after ui-icon-triangle-sort{{ sort_dir }}" data-sort="username" href="#">{% trans "Username" %}</a> {{ rows|length }} of {{ total }}</th>
-<th class="left-align">{% trans "Email" %}</th>
+<th class="left-align"><a class="sprites-after ui-icon-triangle-sort{{ sort_dir }}" data-sort="username" href="#">{{ "Username"|trans }}</a> {{ rows|length }} of {{ total }}</th>
+<th class="left-align">{{ "Email"|trans }}</th>
 {% set sort_dir = (sort == 'num') ? " " ~ dir : "" %}
-<th><a class="sprites-after ui-icon-triangle-sort{{ sort_dir }}" data-sort="num" href="#">{% trans "Maps" %}</a></th>
+<th><a class="sprites-after ui-icon-triangle-sort{{ sort_dir }}" data-sort="num" href="#">{{ "Maps"|trans }}</a></th>
 {% set sort_dir = (sort == 'access') ? " " ~ dir : "" %}
 {% if sort is empty %}
     {% set sort_dir = " desc" %}
 {% endif %}
-<th><a class="sprites-after ui-icon-triangle-sort{{ sort_dir }}" data-sort="access" href="#">{% trans "Last Access" %}</a></th>
-<th class="actions">{% trans "Actions" %}<a href="#" class="sprites-after toolsRefresh"></a></th>
+<th><a class="sprites-after ui-icon-triangle-sort{{ sort_dir }}" data-sort="access" href="#">{{ "Last Access"|trans }}</a></th>
+<th class="actions">{{ "Actions"|trans }}<a href="#" class="sprites-after toolsRefresh"></a></th>
 </tr>
 </thead>
 <tbody>
@@ -24,7 +24,7 @@
     <td class="usermaps-center">{{ access }}</td>
     <td class="actions">
         {% if roles[row.role] != 'administrator' %}
-        <a class="sprites-before user-delete" data-id="{{ row.uid }}" href="#">{% trans "Delete" %}</a>
+        <a class="sprites-before user-delete" data-id="{{ row.uid }}" href="#">{{ "Delete"|trans }}</a>
         {% endif %}
     </td>
     </tr>

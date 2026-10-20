@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<phpunit bootstrap="modern/bootstrap.php" colors="true" cacheDirectory="/tmp/simplemappr-phpunit">
+    <testsuites>
+        <testsuite name="Restored application">
+            <directory>modern</directory>
+            <file>unit/CoordinateConversionTest.php</file>
+        </testsuite>
+    </testsuites>
+    <source>
+        <include><directory>../src</directory></include>
+    </source>
+</phpunit>

@@ -38,7 +38,7 @@
 namespace SimpleMappr\Mappr\WebServices;
 
 use League\Csv\Reader;
-use geoPHP;
+use geoPHP\geoPHP;
 use SimpleMappr\Header;
 use SimpleMappr\Utility;
 use SimpleMappr\Constants\AcceptedMarkers;
@@ -115,7 +115,7 @@ class Api extends Mappr
         $attr->points           = ((array)$points === $points) ? $points : [$points];
 
         $wkt = Utility::loadParam('wkt', []);
-        $attr->wkt              = ((array)$wkt === $wkt) ? $wkt : [$wkt];
+        $attr->wkt = array_map(static fn($layer) => is_array($layer) ? $layer : ['data' => $layer], is_array($wkt) ? $wkt : [$wkt]);
 
         $attr->legend = Utility::loadParam('legend', []);
 
@@ -135,17 +135,17 @@ class Api extends Mappr
         $attr->border_thickness = (float)Utility::loadParam('thickness', 1.25);
 
         $shaded = Utility::loadParam('shade', []);
-        $attr->regions = [
+        $attr->regions = [[
             'data' => (array_key_exists('places', $shaded)) ? $shaded['places'] : "",
             'title' => (array_key_exists('title', $shaded)) ? $shaded['title'] : "",
             'color' => (array_key_exists('color', $shaded)) ? str_replace(",", " ", $shaded['color']) : "120 120 120"
-        ];
+        ]];
 
         $attr->output           = Utility::loadParam('output', 'png');
         $attr->projection       = Utility::loadParam('projection', 'epsg:4326');
         $attr->projection_map   = 'epsg:4326';
         $attr->rotation         = Utility::loadParam('rotation', 0);
-        $attr->origin           = (int)Utility::loadParam('origin', false);
+        $attr->origin           = Utility::loadParam('origin', null);
         $attr->bbox_map         = Utility::loadParam('bbox', '-180,-90,180,90');
         $attr->zoom             = (int)Utility::loadParam('zoom', false);
 
@@ -224,15 +224,15 @@ class Api extends Mappr
             } else {
                 $title = (is_array($this->request->legend) && isset($this->request->legend[$col])) ? $this->request->legend[$col] : "";
             }
-            $mlayer->set("name", trim(stripslashes($title)));
-            $mlayer->set("status", MS_ON);
-            $mlayer->set("type", MS_LAYER_POINT);
-            $mlayer->set("tolerance", 5);
-            $mlayer->set("toleranceunits", 6);
+            $mlayer->name = trim(stripslashes($title));
+            $mlayer->status = MS_ON;
+            $mlayer->type = MS_LAYER_POINT;
+            $mlayer->tolerance = 5;
+            $mlayer->toleranceunits = 6;
             $mlayer->setProjection(parent::getProjection($this->default_projection));
 
             $class = new \classObj($mlayer);
-            $class->set("name", $title);
+            $class->name = $title;
 
             if (array_key_exists($col, $this->request->shape) && in_array($this->request->shape[$col], AcceptedMarkers::shapes())) {
                 $symbol = $this->request->shape[$col];
@@ -244,16 +244,16 @@ class Api extends Mappr
 
             if ($this->request->shadow && array_key_exists($col, $this->request->shadow)) {
                 $bstyle = new \styleObj($class);
-                $bstyle->set("symbolname", $symbol);
-                $bstyle->set("size", $size);
-                $bstyle->set("offsetx", $offset);
-                $bstyle->set("offsety", $offset);
+                $bstyle->setSymbolByName($this->map_obj, $symbol);
+                $bstyle->size = $size;
+                $bstyle->offsetx = $offset;
+                $bstyle->offsety = $offset;
                 $bstyle->color->setRGB(180, 180, 180);
             }
 
             $style = new \styleObj($class);
-            $style->set("symbolname", $symbol);
-            $style->set("size", $size);
+            $style->setSymbolByName($this->map_obj, $symbol);
+            $style->size = $size;
 
             if (array_key_exists($col, $this->request->color)) {
                 $color = explode(",", $this->request->color[$col]);
@@ -336,27 +336,27 @@ class Api extends Mappr
                                 $type = MS_LAYER_POLYGON;
                             }
                             $layer = new \layerObj($this->map_obj);
-                            $layer->set("name", "wkt_layer_".$j.$key);
-                            $layer->set("status", MS_ON);
-                            $layer->set("type", $type);
-                            $layer->set("template", "template.html");
+                            $layer->name = "wkt_layer_".$j.$key;
+                            $layer->status = MS_ON;
+                            $layer->type = $type;
+                            $layer->template = "template.html";
                             $layer->setProjection(self::getProjection($this->default_projection));
 
                             $class = new \classObj($layer);
-                            $class->set("name", trim(stripslashes($title)));
+                            $class->name = trim(stripslashes($title));
                             $style = new \styleObj($class);
                             if ($type == MS_LAYER_POINT) {
-                                $style->set("symbolname", 'circle');
-                                $style->set("size", 8);
+                                $style->setSymbolByName($this->map_obj, 'circle');
+                                $style->size = 8;
                             }
                             if ($type == MS_LAYER_POLYGON && $border) {
                                 $style->outlinecolor->setRGB(0, 0, 0);
                             }
                             $style->color->setRGB($color[0], $color[1], $color[2]);
-                            $style->set("opacity", 75);
+                            $style->opacity = 75;
 
                             try {
-                                $shape = ms_shapeObjFromWkt($row);
+                                $shape = \shapeObj::fromWKT($row);
                                 $layer->addFeature($shape);
                             } catch (\Exception $e) {
                                 $this->_bad_drawings[] = ($title) ? join(":", [$title, $row]) : $row;
@@ -375,16 +375,16 @@ class Api extends Mappr
      */
     public function addRegions()
     {
-        if ($this->request->regions['data']) {
+        if ($this->request->regions[0]['data']) {
             $layer = new \layerObj($this->map_obj);
-            $layer->set("name", "stateprovinces_polygon");
-            $layer->set("data", $this->shapes['stateprovinces_polygon']['path']);
-            $layer->set("type", $this->shapes['stateprovinces_polygon']['type']);
-            $layer->set("template", "template.html");
+            $layer->name = "stateprovinces_polygon";
+            $layer->data = $this->shapes['stateprovinces_polygon']['path'];
+            $layer->type = $this->shapes['stateprovinces_polygon']['type'];
+            $layer->template = "template.html";
             $layer->setProjection(parent::getProjection($this->default_projection));
 
             //grab the data for regions & split
-            $whole = trim($this->request->regions['data']);
+            $whole = trim($this->request->regions[0]['data']);
             $rows = explode("\n", Utility::removeEmptyLines($whole));
             $qry = [];
             foreach ($rows as $row) {
@@ -408,17 +408,17 @@ class Api extends Mappr
 
             $layer->setFilter("(".implode(" || ", $qry).")");
             $class = new \classObj($layer);
-            $class->set("name", trim(stripslashes($this->request->regions['title'])));
+            $class->name = trim(stripslashes($this->request->regions[0]['title']));
 
             $style = new \styleObj($class);
             $color = explode(" ", "0 0 0");
-            if ($this->request->regions['color']) {
-                $color = explode(" ", $this->request->regions['color']);
+            if ($this->request->regions[0]['color']) {
+                $color = explode(" ", $this->request->regions[0]['color']);
             }
             $style->color->setRGB($color[0], $color[1], $color[2]);
             $style->outlinecolor->setRGB(30, 30, 30);
 
-            $layer->set("status", MS_ON);
+            $layer->status = MS_ON;
         }
     }
 
@@ -431,24 +431,24 @@ class Api extends Mappr
     {
         if ($this->request->graticules) {
             $layer = new \layerObj($this->map_obj);
-            $layer->set("name", 'grid');
-            $layer->set("type", MS_LAYER_LINE);
-            $layer->set("status", MS_ON);
+            $layer->name = 'grid';
+            $layer->type = MS_LAYER_LINE;
+            $layer->status = MS_ON;
             $layer->setProjection(parent::getProjection($this->default_projection));
 
             $class = new \classObj($layer);
 
             $label = new \labelObj();
             if ($this->request->hide_gridlabel) {
-                $label->color->setRGB(255, 255, 255, 0);
+                $label->color->setRGB(255, 255, 255);
             } else {
-                $label->set("encoding", "UTF-8");
-                $label->set("font", "arial");
-                $label->set("size", 10);
-                $label->set("position", MS_UC);
+                $label->encoding = "UTF-8";
+                $label->font = "arial";
+                $label->size = 10;
+                $label->position = MS_UC;
                 $label->color->setRGB(30, 30, 30);
             }
-            $class->addLabel($label);
+            if (empty($this->request->hide_gridlabel)) { $class->addLabel($label); }
 
             $style = new \styleObj($class);
             $style->color->setRGB(200, 200, 200);
@@ -471,11 +471,7 @@ class Api extends Mappr
             $maxinterval = ($this->request->gridspace) ? $this->request->gridspace : $maxarcs;
             $maxsubdivide = 2;
 
-            ms_newGridObj($layer);
-            $layer->grid->set("labelformat", $labelformat);
-            $layer->grid->set("maxarcs", $maxarcs);
-            $layer->grid->set("maxinterval", $maxinterval);
-            $layer->grid->set("maxsubdivide", $maxsubdivide);
+            $this->configureGraticule($layer, $labelformat, $maxarcs, $maxinterval, $maxsubdivide);
         }
     }
 
@@ -486,23 +482,23 @@ class Api extends Mappr
      */
     public function addScalebar()
     {
-        $this->map_obj->scalebar->set("style", 0);
-        $this->map_obj->scalebar->set("intervals", ($this->request->width <= 500) ? 2 : 3);
-        $this->map_obj->scalebar->set("height", 8);
-        $this->map_obj->scalebar->set("width", ($this->request->width <= 500) ? 100 : 200);
+        $this->map_obj->scalebar->style = 0;
+        $this->map_obj->scalebar->intervals = ($this->request->width <= 500) ? 2 : 3;
+        $this->map_obj->scalebar->height = 8;
+        $this->map_obj->scalebar->width = ($this->request->width <= 500) ? 100 : 200;
         $this->map_obj->scalebar->color->setRGB(30, 30, 30);
         $this->map_obj->scalebar->backgroundcolor->setRGB(255, 255, 255);
         $this->map_obj->scalebar->outlinecolor->setRGB(0, 0, 0);
-        $this->map_obj->scalebar->set("units", 4); // 1 feet, 2 miles, 3 meter, 4 km
-        $this->map_obj->scalebar->label->set("encoding", "UTF-8");
-        $this->map_obj->scalebar->label->set("font", "arial");
-        $this->map_obj->scalebar->label->set("size", ($this->request->width <= 500) ? 8 : 10);
+        $this->map_obj->scalebar->units = MS_KILOMETERS;
+        $this->map_obj->scalebar->label->encoding = "UTF-8";
+        $this->map_obj->scalebar->label->font = "arial";
+        $this->map_obj->scalebar->label->size = ($this->request->width <= 500) ? 8 : 10;
         $this->map_obj->scalebar->label->color->setRGB(0, 0, 0);
 
         //svg format cannot do scalebar in MapServer
         if ($this->request->output != 'svg') {
-            $this->map_obj->scalebar->set("status", MS_EMBED);
-            $this->map_obj->scalebar->set("position", MS_LR);
+            $this->map_obj->scalebar->status = MS_EMBED;
+            $this->map_obj->scalebar->position = MS_LR;
             $this->map_obj->drawScalebar();
         }
     }
@@ -514,16 +510,16 @@ class Api extends Mappr
      */
     public function addLegend()
     {
-        $this->map_obj->legend->set("postlabelcache", 1);
-        $this->map_obj->legend->label->set("font", "arial");
-        $this->map_obj->legend->label->set("position", 1);
-        $this->map_obj->legend->label->set("size", ($this->request->width <= 500) ? 8 : 10);
+        $this->map_obj->legend->postlabelcache = 1;
+        $this->map_obj->legend->label->font = "arial";
+        $this->map_obj->legend->label->position = 1;
+        $this->map_obj->legend->label->size = ($this->request->width <= 500) ? 8 : 10;
         $this->map_obj->legend->label->color->setRGB(0, 0, 0);
 
         //svg format cannot do legends in MapServer
         if ($this->request->options['legend'] && $this->request->output != 'svg') {
-            $this->map_obj->legend->set("status", MS_EMBED);
-            $this->map_obj->legend->set("position", MS_UR);
+            $this->map_obj->legend->status = MS_EMBED;
+            $this->map_obj->legend->position = MS_UR;
             $this->map_obj->drawLegend();
         }
     }
@@ -542,12 +538,12 @@ class Api extends Mappr
             if ($this->request->method == 'GET') {
                 Header::setHeader($this->request->output);
                 if ($this->request->output == 'tif') {
-                    error_reporting(0);
+
                     $this->image_url = $this->image->saveWebImage();
                     $image_filename = basename($this->image_url);
                     readfile($this->tmp_path.$image_filename);
                 } else {
-                    $this->image->saveImage("");
+                    echo $this->image->getBytes();
                 }
             } else {
                 $url = $this->image->saveWebImage();
@@ -600,7 +596,7 @@ class Api extends Mappr
         $y = $this->map_obj->height*((90 - $midpoint[1])/180);
         $zoom_point = new \pointObj();
         $zoom_point->setXY($x, $y);
-        $this->map_obj->zoompoint($this->request->zoom*2, $zoom_point, $this->map_obj->width, $this->map_obj->height, $this->map_obj->extent);
+        $this->map_obj->zoompoint($this->request->zoom*2, $zoom_point, $this->map_obj->width, $this->map_obj->height, $this->map_obj->extent, null);
     }
 
     /**
@@ -654,7 +650,7 @@ class Api extends Mappr
      */
     private function _parseUrl()
     {
-        $arrContextOptions = array("ssl" => array("verify_peer" => false, "verify_peer_name" => false)); 
+        $arrContextOptions = array("ssl" => array("verify_peer" => false, "verify_peer_name" => false));
         if (strstr($this->request->url, MAPPR_UPLOAD_DIRECTORY)) {
             $this->request->url_content = @file_get_contents($this->request->url, false, stream_context_create($arrContextOptions));
             $this->_parseFile();
@@ -683,23 +679,21 @@ class Api extends Mappr
      */
     private function _parseFile()
     {
-        $csv = Reader::createFromString($this->request->url_content);
-        $delimiters_list = $csv->fetchDelimitersOccurrence([",", "\t"], 1);
-        $has_single_column = (count($csv->fetchOne()) == 1) ? true : false;
-
-
-        if ($delimiters_list["\t"] > 0 || $has_single_column) {
+        $csv = Reader::fromString($this->request->url_content);
+        $delimiters = \League\Csv\Info::getDelimiterStats($csv, [",", "\t"], 1);
+        $singleColumn = count($csv->nth(0)) === 1;
+        if ($delimiters["\t"] > 0 || $singleColumn) {
             $csv->setDelimiter("\t");
-            $this->legend = $csv->fetchOne();
-            $results = $csv->setOffset(1)->fetchAssoc($this->legend);
+            $this->legend = $csv->nth(0);
+            $csv->setHeaderOffset(0);
+            $results = $csv->getRecords();
         } else {
-            $results = $csv->fetch(
-                function ($row) {
-                    $key = (string)$row[0];
-                    array_shift($row);
-                    return [$key => join(",", $row)];
+            $results = (function () use ($csv) {
+                foreach ($csv->getRecords() as $row) {
+                    $key = (string)array_shift($row);
+                    yield [$key => implode(',', $row)];
                 }
-            );
+            })();
         }
 
         foreach ($results as $row) {
@@ -723,12 +717,8 @@ class Api extends Mappr
         if ($geometries) {
             $num_cols = (isset($num_cols)) ? $num_cols++ : 0;
             $this->legend[$num_cols] = $this->request->url;
-            foreach ($geometries as $geometry) {
-                foreach ($geometry as $item) {
-                    if ($item->geometryType() == 'Point') {
-                        $this->_coord_cols[$num_cols][] = array_reverse($item->coords);
-                    }
-                }
+            foreach ($geometries->getPoints() as $point) {
+                $this->_coord_cols[$num_cols][] = [$point->y(), $point->x()];
             }
         }
     }

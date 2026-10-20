@@ -37,8 +37,8 @@
  */
 namespace SimpleMappr\Mappr\Application;
 
-use geoPHP;
-use GeoJSON;
+use geoPHP\geoPHP;
+use geoPHP\Adapter\GeoJSON;
 use SimpleMappr\Database;
 use SimpleMappr\Utility;
 use SimpleMappr\Constants\AcceptedOutputs;
@@ -154,7 +154,7 @@ class Map extends Mappr
 
         $this->callback         = Utility::loadParam('callback', null);
         $this->output           = $this->_extension; //overwrite the output
-        
+
         return $this;
     }
 
@@ -180,28 +180,28 @@ class Map extends Mappr
     {
         if ($this->graticules) {
             $layer = new \layerObj($this->map_obj);
-            $layer->set("name", 'grid');
-            $layer->set("type", MS_LAYER_LINE);
-            $layer->set("status", MS_ON);
+            $layer->name = 'grid';
+            $layer->type = MS_LAYER_LINE;
+            $layer->status = MS_ON;
             $layer->setProjection(parent::getProjection($this->default_projection));
 
             $class = new \classObj($layer);
 
             $label = new \labelObj();
-            if (isset($this->hide_gridlabel)) {
-                $label->color->setRGB(255, 255, 255, 0);
+            if (!empty($this->hide_gridlabel)) {
+                $label->color->setRGB(255, 255, 255);
             } else {
-                $label->set("encoding", "UTF-8");
-                $label->set("font", "arial");
-                $label->set("size", 10);
-                $label->set("position", MS_UC);
+                $label->encoding = "UTF-8";
+                $label->font = "arial";
+                $label->size = 10;
+                $label->position = MS_UC;
                 $label->color->setRGB(30, 30, 30);
             }
-            $class->addLabel($label);
+            if (empty($this->hide_gridlabel)) { $class->addLabel($label); }
 
             $style = new \styleObj($class);
             $style->color->setRGB(200, 200, 200);
-            
+
             $minx = $this->map_obj->extent->minx;
             $maxx = $this->map_obj->extent->maxx;
 
@@ -220,11 +220,7 @@ class Map extends Mappr
             $maxinterval = ($this->gridspace) ? $this->gridspace : $maxarcs;
             $maxsubdivide = 2;
 
-            ms_newGridObj($layer);
-            $layer->grid->set("labelformat", $labelformat);
-            $layer->grid->set("maxarcs", $maxarcs);
-            $layer->grid->set("maxinterval", $maxinterval);
-            $layer->grid->set("maxsubdivide", $maxsubdivide);
+            $this->configureGraticule($layer, $labelformat, $maxarcs, $maxinterval, $maxsubdivide);
         }
     }
 
@@ -236,20 +232,20 @@ class Map extends Mappr
     public function addScalebar()
     {
         if ($this->_extension == 'png' || $this->_extension == 'jpg') {
-            $this->map_obj->scalebar->set("style", 0);
-            $this->map_obj->scalebar->set("intervals", 3);
-            $this->map_obj->scalebar->set("height", 8);
-            $this->map_obj->scalebar->set("width", 200);
+            $this->map_obj->scalebar->style = 0;
+            $this->map_obj->scalebar->intervals = 3;
+            $this->map_obj->scalebar->height = 8;
+            $this->map_obj->scalebar->width = 200;
             $this->map_obj->scalebar->color->setRGB(30, 30, 30);
             $this->map_obj->scalebar->backgroundcolor->setRGB(255, 255, 255);
             $this->map_obj->scalebar->outlinecolor->setRGB(0, 0, 0);
-            $this->map_obj->scalebar->set("units", 4); // 1 feet, 2 miles, 3 meter, 4 km
-            $this->map_obj->scalebar->label->set("encoding", "UTF-8");
-            $this->map_obj->scalebar->label->set("font", "arial");
-            $this->map_obj->scalebar->label->set("size", 8);
+            $this->map_obj->scalebar->units = MS_KILOMETERS;
+            $this->map_obj->scalebar->label->encoding = "UTF-8";
+            $this->map_obj->scalebar->label->font = "arial";
+            $this->map_obj->scalebar->label->size = 8;
             $this->map_obj->scalebar->label->color->setRGB(0, 0, 0);
-            $this->map_obj->scalebar->set("status", MS_EMBED);
-            $this->map_obj->scalebar->set("position", MS_LR);
+            $this->map_obj->scalebar->status = MS_EMBED;
+            $this->map_obj->scalebar->position = MS_LR;
             $this->map_obj->drawScalebar();
         }
     }
@@ -263,18 +259,18 @@ class Map extends Mappr
     {
         if ($this->request->options['legend']) {
             if ($this->request->output == 'png' || $this->request->output == 'jpg') {
-                $this->map_obj->legend->set("keysizex", 20);
-                $this->map_obj->legend->set("keysizey", 20);
-                $this->map_obj->legend->set("keyspacingx", 5);
-                $this->map_obj->legend->set("keyspacingy", 5);
-                $this->map_obj->legend->set("postlabelcache", 1);
-                $this->map_obj->legend->label->set("font", "arial");
-                $this->map_obj->legend->label->set("encoding", "UTF-8");
-                $this->map_obj->legend->label->set("position", 1);
-                $this->map_obj->legend->label->set("size", 10);
+                $this->map_obj->legend->keysizex = 20;
+                $this->map_obj->legend->keysizey = 20;
+                $this->map_obj->legend->keyspacingx = 5;
+                $this->map_obj->legend->keyspacingy = 5;
+                $this->map_obj->legend->postlabelcache = 1;
+                $this->map_obj->legend->label->font = "arial";
+                $this->map_obj->legend->label->encoding = "UTF-8";
+                $this->map_obj->legend->label->position = 1;
+                $this->map_obj->legend->label->size = 10;
                 $this->map_obj->legend->label->color->setRGB(0, 0, 0);
-                $this->map_obj->legend->set("status", MS_EMBED);
-                $this->map_obj->legend->set("position", MS_UR);
+                $this->map_obj->legend->status = MS_EMBED;
+                $this->map_obj->legend->position = MS_UR;
                 $this->map_obj->drawLegend();
             }
         }
@@ -291,7 +287,7 @@ class Map extends Mappr
         case 'jpg':
         case 'png':
         case 'svg':
-            $this->image->saveImage("");
+            echo $this->image->getBytes();
             break;
 
         case 'json':
@@ -401,7 +397,7 @@ class Map extends Mappr
                     foreach ($rows as $row) {
                         $shape = geoPHP::load($row, 'wkt');
                         $geojson = new GeoJSON();
-                        $geometry = $geojson->write($shape, true);
+                        $geometry = json_decode($geojson->write($shape), true, 512, JSON_THROW_ON_ERROR);
                         $output[] = [
                             'type' => 'Feature',
                             'geometry' => $geometry,

@@ -153,7 +153,7 @@ class Session
      */
     public static function updateActivity()
     {
-        if (isset($_REQUEST["locale"]) 
+        if (isset($_REQUEST["locale"])
             && !array_key_exists($_REQUEST["locale"], self::$accepted_locales)
         ) {
             http_response_code(404);
@@ -166,11 +166,11 @@ class Session
             $cookie = (array)json_decode(stripslashes($_COOKIE["simplemappr"]));
         }
 
-        if (!isset($_REQUEST["locale"]) 
+        if (!isset($_REQUEST["locale"])
             && $cookie["locale"] != "en_US"
         ) {
             self::redirect(MAPPR_URL . self::makeLocaleParam($cookie["locale"]));
-        } elseif (isset($_REQUEST["locale"]) 
+        } elseif (isset($_REQUEST["locale"])
             && $_REQUEST["locale"] == "en_US"
         ) {
             if (isset($_COOKIE["simplemappr"])) {
@@ -180,7 +180,7 @@ class Session
                 setcookie("simplemappr", $cookie, COOKIE_TIMEOUT, "/", $host);
             }
             self::redirect(MAPPR_URL);
-        } elseif (isset($_REQUEST["locale"]) 
+        } elseif (isset($_REQUEST["locale"])
             && $_REQUEST["locale"] != "en_US"
         ) {
             $cookie["locale"] = $_REQUEST["locale"];
@@ -237,19 +237,19 @@ class Session
     public static function selectLocale()
     {
         $locale = self::$accepted_locales['en_US'];
-        if (isset($_REQUEST["locale"]) 
+        if (isset($_REQUEST["locale"])
             && array_key_exists($_REQUEST["locale"], self::$accepted_locales)
         ) {
             $locale = self::$accepted_locales[$_REQUEST["locale"]];
             putenv('LC_ALL='.$locale['code']);
             setlocale(LC_MESSAGES, $locale['code']);
-            bindtextdomain(self::$domain, $_SERVER["DOCUMENT_ROOT"]."/i18n");
+            bindtextdomain(self::$domain, ROOT."/i18n");
             bind_textdomain_codeset(self::$domain, 'UTF-8');
             textdomain(self::$domain);
         } else {
             putenv('LC_ALL='.$locale['code']);
             setlocale(LC_MESSAGES, $locale['code']);
-            bindtextdomain(self::$domain, $_SERVER["DOCUMENT_ROOT"]."/i18n");
+            bindtextdomain(self::$domain, ROOT."/i18n");
             bind_textdomain_codeset(self::$domain, 'UTF-8');
             textdomain(self::$domain);
         }
@@ -371,7 +371,7 @@ class Session
      */
     private function _makeSession()
     {
-        if (isset($this->_auth_info['stat']) 
+        if (isset($this->_auth_info['stat'])
             && $this->_auth_info['stat'] == 'ok'
         ) {
             $email = "";

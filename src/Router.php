@@ -41,9 +41,11 @@ use \Phroute\Phroute\Autoloader;
 use \Phroute\Phroute\RouteCollector;
 use \Phroute\Phroute\Dispatcher;
 use \Symfony\Component\Yaml\Yaml;
-use Twig_Loader_Filesystem;
-use Twig_Environment;
-use Twig_Extensions_Extension_I18n;
+use Twig\Loader\FilesystemLoader;
+use Twig\Environment;
+use Symfony\Bridge\Twig\Extension\TranslationExtension;
+use Symfony\Component\Translation\Translator;
+use Symfony\Component\Translation\Loader\PoFileLoader;
 use SimpleMappr\Constants\AcceptedMarkers;
 use SimpleMappr\Constants\AcceptedProjections;
 use SimpleMappr\Controller\Citation;
@@ -381,11 +383,20 @@ class Router
 
         try {
             $dispatcher = new Dispatcher($router->getData());
-            $parsed_url = parse_url(str_replace(":", "%3A", $_SERVER['REQUEST_URI']), PHP_URL_PATH);
+            $parsed_url = rtrim(parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH), '/') ?: '/';
             $response = $dispatcher->dispatch($_SERVER['REQUEST_METHOD'], $parsed_url);
             echo $response;
-        } catch (\Exception $e) {
+        } catch (\Phroute\Phroute\Exception\HttpRouteNotFoundException $e) {
             echo $this->_renderError(404);
+        } catch (\InvalidArgumentException $e) {
+            http_response_code(400);
+            Header::setHeader('json');
+            echo json_encode(['error' => $e->getMessage()]);
+        } catch (\Throwable $e) {
+            error_log((string)$e);
+            http_response_code($e->getCode() === 503 ? 503 : 500);
+            Header::setHeader('json');
+            echo json_encode(['error' => $e->getCode() === 503 ? $e->getMessage() : 'Map rendering failed. Check the map settings and installed data.']);
         }
     }
 
@@ -464,8 +475,8 @@ class Router
             header('Location: '.MAPPR_URL);
             exit();
         } else {
-            Session::updateActivity();
-            $shapes_file = file_get_contents(Mappr::$shapefile_config);
+            if (MAPPR_PERSISTENCE) { Session::updateActivity(); } else { Session::selectLocale(); }
+            $shapes_file = file_get_contents(Mappr::getShapefileConfigPath());
             $shapes = Yaml::parse($shapes_file)['environments'][ENVIRONMENT];
             unset($shapes['layers']['base'], $shapes['layers']['stateprovinces_polygon']);
 
@@ -493,18 +504,29 @@ class Router
      */
     private function _twig($include_page_elements = false)
     {
-        $loader = new Twig_Loader_Filesystem(ROOT. "/views");
+        $loader = new FilesystemLoader(ROOT. "/views");
         $cache = (ENVIRONMENT == "development") ? false : ROOT . "/public/tmp";
         $reload = (ENVIRONMENT == "development" || ENVIRONMENT == "testing") ? true : false;
-        $twig = new Twig_Environment($loader, ['cache' => $cache, 'auto_reload' => $reload]);
-        $twig->addExtension(new Twig_Extensions_Extension_I18n());
+        $twig = new Environment($loader, ['cache' => $cache, 'auto_reload' => $reload]);
+        $locale = Utility::loadParam('locale', 'en_US');
+        if (!isset(Session::$accepted_locales[$locale])) { $locale = 'en_US'; }
+        $translator = new Translator($locale);
+        $translator->addLoader('po', new PoFileLoader());
+        $messages = ROOT.'/i18n/'.Session::$accepted_locales[$locale]['code'].'/LC_MESSAGES/messages.po';
+        if (is_file($messages)) {
+            $translator->addResource('po', $messages, $locale);
+            $catalogue = $translator->getCatalogue($locale);
+            foreach ($catalogue->all('messages') as $id => $translation) {
+                if ($translation === '') { $catalogue->set($id, $id); }
+            }
+        }
+        $twig->addExtension(new TranslationExtension($translator));
         $twig->addGlobal('environment', ENVIRONMENT);
 
-        $locale = Utility::loadParam("locale", "en_US");
         $qlocale = "?locale={$locale}";
 
         $session = [];
-        if (isset($_SESSION['simplemappr'])) {
+        if (MAPPR_PERSISTENCE && isset($_SESSION['simplemappr'])) {
             $session = (array)(new User)->showByHash($_SESSION['simplemappr']['hash'])->results;
         }
         $twig->addGlobal('session', $session);

@@ -12,50 +12,50 @@
 </style>
 <div id="map-about">
 <div id="general-about" class="panel">
-<p>{% trans "Create free point maps suitable for reproduction on print media by copying and pasting geographic coordinates in layers, choosing pushpin styles, then downloading the result." %}</p>
+<p>{{ "Create free point maps suitable for reproduction on print media by copying and pasting geographic coordinates in layers, choosing pushpin styles, then downloading the result."|trans }}</p>
 </div>
-<div class="header"><h2>{% trans "Citing" %}</h2></div>
-<p><a href="http://creativecommons.org/publicdomain/zero/1.0/"><img class="map-license" src="/public/images/cc0.png" alt="CC0" /></a>{% trans "All versions of SimpleMappr map data found on this website are in the Public Domain. You may use the maps in any manner, including modifying the content and design, electronic dissemination, and offset printing. The primary author, David P. Shorthouse has waived all copyright, related or neighboring rights, and financial claim to the maps and invites you to use them for personal, educational, and commercial purposes. No permission is needed to use SimpleMappr. Crediting the author is unnecessary. However, if you wish to cite the application, simply use the following." %}</p>
+<div class="header"><h2>{{ "Citing"|trans }}</h2></div>
+<p><a href="http://creativecommons.org/publicdomain/zero/1.0/"><img class="map-license" src="/public/images/cc0.png" alt="CC0" /></a>{{ "All versions of SimpleMappr map data found on this website are in the Public Domain. You may use the maps in any manner, including modifying the content and design, electronic dissemination, and offset printing. The primary author, David P. Shorthouse has waived all copyright, related or neighboring rights, and financial claim to the maps and invites you to use them for personal, educational, and commercial purposes. No permission is needed to use SimpleMappr. Crediting the author is unnecessary. However, if you wish to cite the application, simply use the following."|trans }}</p>
 <p>Shorthouse, David P. 2010. SimpleMappr, an online tool to produce publication-quality point maps. [Retrieved from https://www.simplemappr.net. Accessed {{ "now"|date("F d, Y") }}].</p>
 <div class="ui-helper-clearfix">
 <div id="recent-updates">
-<div class="header"><h2>{% trans "Recent Updates" %}</h2></div>
+<div class="header"><h2>{{ "Recent Updates"|trans }}</h2></div>
 <dl>
-<dt class="update">{% trans "May 8, 2018" %}</dt><dd>{% trans "Improvements: Added option to make oceans and lakes blue." %}</dd>
-<dt class="update">{% trans "February 20, 2018" %}</dt><dd>{% trans "Improvements: Update OpenAPI document to version 3." %}</dd>
-<dt class="update">{% trans "January 15, 2018" %}</dt><dd>{% trans "Improvements: Add checkbox to toggle region borders. Requested by Carlos Vermeersch Santana." %}</dd>
-<dt class="update">{% trans "December 8, 2017" %}</dt><dd>{% trans "Bug fixes: Rapidly sharing and unsharing a map resulted in double entries. Reported by François Génier." %}</dd>
-<dt class="update">{% trans "October 21, 2017" %}</dt><dd>{% trans "Improvements: Added Drawing layers to KML outputs." %}</dd>
-<dt class="update">{% trans "August 15, 2017" %}</dt><dd>{% trans "Improvements: Added US counties from the US Census Bureau. Requested by Frank Krell." %}</dd>
-<dt class="update">{% trans "July 23, 2017" %}</dt><dd>{% trans "Improvements: Added hatch fill option for Regions and Drawings." %}</dd>
-<dt class="update">{% trans "June 28, 2017" %}</dt><dd>{% trans "Improvements: Added World Mercator projection. Requested by Russ Charrif." %}</dd>
-<dt class="update">{% trans "June 20, 2017" %}</dt><dd>{% trans "Improvements: Added border option for drawings." %}</dd>
-<dt class="update">{% trans "March 22, 2017" %}</dt><dd>{% trans "Improvements: Automated selection of markers for text file uploads." %}</dd>
-<dt class="update">{% trans "March 9, 2017" %}</dt><dd>{% trans "Improvements: Added World Robinson projection as an option." %}</dd>
-<dt class="update">{% trans "December 9, 2016" %}</dt><dd>{% trans "Bug fixes: Coordinates in the form DDdMMmSSs were incorrectly transformed to DD. Reported by Lorenzo Gallo." %}</dd>
-<dt class="update">{% trans "November 21, 2016" %}</dt><dd>{% trans "Bug fixes: Remote files incompletely parsed via the API. Reported by Larry Gall." %}</dd>
-<dt class="update">{% trans "November 7, 2016" %}</dt><dd>{% trans "Improvements: Added a new tab to permit submission of well-known text (WKT)." %}</dd>
-<dt class="update">{% trans "July 10, 2016" %}</dt><dd>{% trans "Improvements: Added shadow option for points." %}</dd>
-<dt class="update">{% trans "April 6, 2016" %}</dt><dd>{% trans "Improvements: Added NASA's Blue Marble raster layer as an option. Requested by François Génier." %}</dd>
-<dt class="update">{% trans "September 5, 2015" %}</dt><dd>{% trans "Improvements: Upgraded to MapServer 7.0.0. Regions overlay selected layers. Blank colours for Regions result in transparency. Requested by Ryan St Laurent." %}</dd>
-<dt class="update">{% trans "February 27, 2015" %}</dt><dd>{% trans "Bug fixes: Points disappear when the interface is Français. Reported by Carole Sinou." %}</dd>
+<dt class="update">{{ "May 8, 2018"|trans }}</dt><dd>{{ "Improvements: Added option to make oceans and lakes blue."|trans }}</dd>
+<dt class="update">{{ "February 20, 2018"|trans }}</dt><dd>{{ "Improvements: Update OpenAPI document to version 3."|trans }}</dd>
+<dt class="update">{{ "January 15, 2018"|trans }}</dt><dd>{{ "Improvements: Add checkbox to toggle region borders. Requested by Carlos Vermeersch Santana."|trans }}</dd>
+<dt class="update">{{ "December 8, 2017"|trans }}</dt><dd>{{ "Bug fixes: Rapidly sharing and unsharing a map resulted in double entries. Reported by François Génier."|trans }}</dd>
+<dt class="update">{{ "October 21, 2017"|trans }}</dt><dd>{{ "Improvements: Added Drawing layers to KML outputs."|trans }}</dd>
+<dt class="update">{{ "August 15, 2017"|trans }}</dt><dd>{{ "Improvements: Added US counties from the US Census Bureau. Requested by Frank Krell."|trans }}</dd>
+<dt class="update">{{ "July 23, 2017"|trans }}</dt><dd>{{ "Improvements: Added hatch fill option for Regions and Drawings."|trans }}</dd>
+<dt class="update">{{ "June 28, 2017"|trans }}</dt><dd>{{ "Improvements: Added World Mercator projection. Requested by Russ Charrif."|trans }}</dd>
+<dt class="update">{{ "June 20, 2017"|trans }}</dt><dd>{{ "Improvements: Added border option for drawings."|trans }}</dd>
+<dt class="update">{{ "March 22, 2017"|trans }}</dt><dd>{{ "Improvements: Automated selection of markers for text file uploads."|trans }}</dd>
+<dt class="update">{{ "March 9, 2017"|trans }}</dt><dd>{{ "Improvements: Added World Robinson projection as an option."|trans }}</dd>
+<dt class="update">{{ "December 9, 2016"|trans }}</dt><dd>{{ "Bug fixes: Coordinates in the form DDdMMmSSs were incorrectly transformed to DD. Reported by Lorenzo Gallo."|trans }}</dd>
+<dt class="update">{{ "November 21, 2016"|trans }}</dt><dd>{{ "Bug fixes: Remote files incompletely parsed via the API. Reported by Larry Gall."|trans }}</dd>
+<dt class="update">{{ "November 7, 2016"|trans }}</dt><dd>{{ "Improvements: Added a new tab to permit submission of well-known text (WKT)."|trans }}</dd>
+<dt class="update">{{ "July 10, 2016"|trans }}</dt><dd>{{ "Improvements: Added shadow option for points."|trans }}</dd>
+<dt class="update">{{ "April 6, 2016"|trans }}</dt><dd>{{ "Improvements: Added NASA's Blue Marble raster layer as an option. Requested by François Génier."|trans }}</dd>
+<dt class="update">{{ "September 5, 2015"|trans }}</dt><dd>{{ "Improvements: Upgraded to MapServer 7.0.0. Regions overlay selected layers. Blank colours for Regions result in transparency. Requested by Ryan St Laurent."|trans }}</dd>
+<dt class="update">{{ "February 27, 2015"|trans }}</dt><dd>{{ "Bug fixes: Points disappear when the interface is Français. Reported by Carole Sinou."|trans }}</dd>
 </dl>
 </div>
 </div>
 
-<div class="header"><h2>{% trans "Acknowledgments" %}</h2></div>
+<div class="header"><h2>{{ "Acknowledgments"|trans }}</h2></div>
 {% set urls_naturalearth = '<a href="http://www.naturalearthdata.com/" target="_blank">http://www.naturalearthdata.com/</a>' %}
 {% set urls_mapserver = '<a href="http://mapserver.org" target="_blank">http://mapserver.org</a>' %}
 {% set urls_conservation = '<a href="http://www.conservation.org/where/priority_areas/hotspots/Pages/hotspots_main.aspx" target="_blank">Conservation International</a>' %}
 {% set urls_wwf = '<a href="http://www.worldwildlife.org/pages/conservation-science-data-and-tools">World Wildlife Fund</a>' %}
 {% set urls_nasa = '<a href="http://visibleearth.nasa.gov/view.php?id=57752">NASA</a>' %}
 {% set urls_us_census = '<a href="https://www.census.gov/geo/maps-data/data/cbf/cbf_counties.html">US Census Bureau</a>' %}
-<p>{% trans %}Underlying ArcView shapefiles were obtained from Natural Earth, {{ urls_naturalearth }} and the mapping software used is MapServer, {{ urls_mapserver }} via PHP MapScript. Biodiversity Hotspot data were obtained from {{ urls_conservation }} and ecoregions from the {{ urls_wwf }}. Blue Marble from {{ urls_nasa }} and US Counties from the {{ urls_us_census }}.{% endtrans %}</p>
+<p>{{ "Underlying ArcView shapefiles were obtained from Natural Earth, %urls_naturalearth% and the mapping software used is MapServer, %urls_mapserver% via PHP MapScript. Biodiversity Hotspot data were obtained from %urls_conservation% and ecoregions from the %urls_wwf%. Blue Marble from %urls_nasa% and US Counties from the %urls_us_census%."|trans({"%urls_naturalearth%": urls_naturalearth, "%urls_mapserver%": urls_mapserver, "%urls_conservation%": urls_conservation, "%urls_wwf%": urls_wwf, "%urls_nasa%": urls_nasa, "%urls_us_census%": urls_us_census})|raw }}</p>
 
-<div class="header"><h2>{% trans "History" %}</h2></div>
-<p>{% trans "The first version of this application was developed by David P. Shorthouse to help participants in two Planetary Biodiversity Inventory (National Science Foundation) projects create publication-quality maps. Funding for that work was coordinated by Dr. Norman Platnick, American Museum of Natural History." %}</p>
+<div class="header"><h2>{{ "History"|trans }}</h2></div>
+<p>{{ "The first version of this application was developed by David P. Shorthouse to help participants in two Planetary Biodiversity Inventory (National Science Foundation) projects create publication-quality maps. Funding for that work was coordinated by Dr. Norman Platnick, American Museum of Natural History."|trans }}</p>
 
-<div class="header"><h2>{% trans "Applications" %}</h2></div>
+<div class="header"><h2>{{ "Applications"|trans }}</h2></div>
 <h3>Microsoft Excel</h3>
 <p class="citation">Brown, Brian. V. 2013. Automating the "Material examined" section of taxonomic papers to speed up species descriptions. <em>Zootaxa</em> 3683(3): 297. <a href="https://doi.org/10.11646/zootaxa.3683.3.8">https://doi.org/10.11646/zootaxa.3683.3.8</a>, <a href="http://phorid.net/software/">http://phorid.net/software/</a>.</p>
 <h3>Ruby 2+</h3>
@@ -67,11 +67,11 @@
 <h3>R Script</h3>
 <p class="citation"><a href="https://gist.github.com/dshorthouse/f6ed3029a696b1285f81d2688bdc7b5f">simple_mappr.r</a> Sample R script that uses the dplyr and httr packages to send requests to the SimpleMappr API and download image files to disk.</p>
 
-<div class="header"><h2>{% trans "Code" %}</h2></div>
+<div class="header"><h2>{{ "Code"|trans }}</h2></div>
 {% set urls_github = '<a href="https://github.com/dshorthouse/SimpleMappr">https://github.com/dshorthouse/SimpleMappr</a>' %}
-<p>{% trans %}The opensource, MIT-licensed code for SimpleMappr may be obtained at {{ urls_github }}.{% endtrans %}</p>
+<p>{{ "The opensource, MIT-licensed code for SimpleMappr may be obtained at %urls_github%."|trans({"%urls_github%": urls_github})|raw }}</p>
 
-<div class="header"><h2>{% trans "In the Wild" %} ({{ citations['citations']|length }}) <a href="/citation.rss"><img width="16" height="16" alt="RSS Feed" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAACGklEQVQ4T53TX0hTURzA8e/d3XbnxLUlpaOkFZW0IQqJkQ8t6GHuodAX3YOi/aGQeqgnrd4iCOrVpIdhovUWIiQsoX9oPkSFPdjIbGrDJ3Pq5pzc/bk3NuWWNkI7T4dzzu9zfr8f5wg/b5a6VUV4jMBBdjZmUWkV5jvs0/8RvH6Vyoww32lXs3PDgWr0ZcdRFn+QCn9EiS9sKx8NMJ++RqHn1oaskpoeIzH6iOTk639CGmAsP4Op2oe+pBxxz2EtKPn1JSvPbqCsRvJCGvDnrljsoKD2EgUnWkA0kFmeI+pvJBOZ/QvRAKmqAaniHOm5ceTxgVyQ3u7C0tKDaCsjsxRmucuLkljahOTvgZJmbcxPfPgeusLdWNufI1r3I38JEHtyMT8g7j2K8YgbyenBcKg2dyj57S3Rvlb0die29iHQiSz7G0mF3mlI3h5IzjqKmroQjGYSI92sBu5S1HAfU00zyclXRHtb8gCCgFRxFjJp5GAAyenF0uyHTIrIg5PoTEXYrr8BJc3CHReqvJJDfjexsh6Lrzu3GOs/jxwcxnplEIOjJpdBNpPijg/orPuI9vhITo1sAaoasDQ93AAuIAdfYHZfpbDuNvLEELGnl9nV1k/2vcQHO1l737cZIFtCZf16CRNDoKroS49hdHrILIaRPw8gubyIJeWkvo+SCn/SgBnAsa2Hv/WQIISyv/EU0LvjHykIIRTafgEZntfprlNojgAAAABJRU5ErkJggg==" /></a></h2></div>
+<div class="header"><h2>{{ "In the Wild"|trans }} ({{ citations['citations']|length }}) <a href="/citation.rss"><img width="16" height="16" alt="RSS Feed" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAACGklEQVQ4T53TX0hTURzA8e/d3XbnxLUlpaOkFZW0IQqJkQ8t6GHuodAX3YOi/aGQeqgnrd4iCOrVpIdhovUWIiQsoX9oPkSFPdjIbGrDJ3Pq5pzc/bk3NuWWNkI7T4dzzu9zfr8f5wg/b5a6VUV4jMBBdjZmUWkV5jvs0/8RvH6Vyoww32lXs3PDgWr0ZcdRFn+QCn9EiS9sKx8NMJ++RqHn1oaskpoeIzH6iOTk639CGmAsP4Op2oe+pBxxz2EtKPn1JSvPbqCsRvJCGvDnrljsoKD2EgUnWkA0kFmeI+pvJBOZ/QvRAKmqAaniHOm5ceTxgVyQ3u7C0tKDaCsjsxRmucuLkljahOTvgZJmbcxPfPgeusLdWNufI1r3I38JEHtyMT8g7j2K8YgbyenBcKg2dyj57S3Rvlb0die29iHQiSz7G0mF3mlI3h5IzjqKmroQjGYSI92sBu5S1HAfU00zyclXRHtb8gCCgFRxFjJp5GAAyenF0uyHTIrIg5PoTEXYrr8BJc3CHReqvJJDfjexsh6Lrzu3GOs/jxwcxnplEIOjJpdBNpPijg/orPuI9vhITo1sAaoasDQ93AAuIAdfYHZfpbDuNvLEELGnl9nV1k/2vcQHO1l737cZIFtCZf16CRNDoKroS49hdHrILIaRPw8gubyIJeWkvo+SCn/SgBnAsa2Hv/WQIISyv/EU0LvjHykIIRTafgEZntfprlNojgAAAABJRU5ErkJggg==" /></a></h2></div>
 {% for citation in citations['citations'] %}
     {% set doi = (citation.doi) ? ' <a href="https://doi.org/' ~ citation.doi ~ '">https://doi.org/' ~ citation.doi ~ '</a>.' : "" %}
     {% set link = (citation.link) ? ' (<a href="' ~ citation.link ~ '">link</a>)' : "" %}

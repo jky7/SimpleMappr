@@ -74,26 +74,26 @@ class Application extends Mappr
     {
         switch ($this->request->output) {
         case 'tif':
-            error_reporting(0);
+
             $this->image_url = $this->image->saveWebImage();
             $image_filename = basename($this->image_url);
             $clean_filename = Utility::cleanFilename($this->request->file_name, $this->request->output);
             $filesize = filesize($this->tmp_path.$image_filename);
             Header::setHeader('tif', $clean_filename, $filesize);
-            ob_clean();
+            if (ob_get_level()) { ob_clean(); }
             flush();
             readfile($this->tmp_path.$image_filename);
             break;
 
         case 'png':
             if ($this->request->download) {
-                error_reporting(0);
+
                 $this->image_url = $this->image->saveWebImage();
                 $image_filename = basename($this->image_url);
                 $clean_filename = Utility::cleanFilename($this->request->file_name, $this->request->output);
                 $filesize = filesize($this->tmp_path.$image_filename);
                 Header::setHeader('png', $clean_filename, $filesize);
-                ob_clean();
+                if (ob_get_level()) { ob_clean(); }
                 flush();
                 readfile($this->tmp_path.$image_filename);
             } else {
@@ -105,7 +105,7 @@ class Application extends Mappr
         case 'svg':
             $clean_filename = Utility::cleanFilename($this->request->file_name, $this->request->output);
             Header::setHeader('svg', $clean_filename);
-            $this->image->saveImage("");
+            echo $this->image->getBytes();
             break;
 
         default:
@@ -136,6 +136,7 @@ class Application extends Mappr
           'rendered_bbox'       => implode(",", $bbox),
           'rendered_rotation'   => $this->request->rotation,
           'rendered_projection' => $this->request->projection,
+          'rendered_origin'     => $this->request->origin,
           'legend_url'          => $this->legend_url,
           'scalebar_url'        => $this->scalebar_url,
           'bad_points'          => $this->getBadPoints(),

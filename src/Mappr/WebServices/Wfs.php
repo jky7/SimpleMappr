@@ -157,17 +157,17 @@ class Wfs extends Mappr
      */
     public function makeService()
     {
-        $this->map_obj->setMetaData("name", "SimpleMappr Web Feature Service");
-        $this->map_obj->setMetadata("wfs_encoding", "UTF-8");
-        $this->map_obj->setMetaData("wfs_title", "SimpleMappr Web Feature Service");
-        $this->map_obj->setMetaData("wfs_onlineresource", MAPPR_URL . "/wfs/?");
+        $this->map_obj->web->metadata->set("name", "SimpleMappr Web Feature Service");
+        $this->map_obj->web->metadata->set("wfs_encoding", "UTF-8");
+        $this->map_obj->web->metadata->set("wfs_title", "SimpleMappr Web Feature Service");
+        $this->map_obj->web->metadata->set("wfs_onlineresource", MAPPR_URL . "/wfs/?");
 
-        $srs_projections = strtoupper(implode(array_keys(AcceptedProjections::$projections), " "));
+        $srs_projections = strtoupper(implode(" ", array_keys(AcceptedProjections::$projections)));
 
-        $this->map_obj->setMetaData("wfs_srs", $srs_projections);
-        $this->map_obj->setMetaData("wfs_abstract", "SimpleMappr Web Feature Service");
-        $this->map_obj->setMetaData("wfs_enable_request", "*");
-        $this->map_obj->setMetaData("wfs_connectiontimeout", "60");
+        $this->map_obj->web->metadata->set("wfs_srs", $srs_projections);
+        $this->map_obj->web->metadata->set("wfs_abstract", "SimpleMappr Web Feature Service");
+        $this->map_obj->web->metadata->set("wfs_enable_request", "*");
+        $this->map_obj->web->metadata->set("wfs_connectiontimeout", "60");
 
         $this->_makeRequest();
 
@@ -181,11 +181,11 @@ class Wfs extends Mappr
      */
     public function createOutput()
     {
-        ms_ioinstallstdouttobuffer();
+        msIO_installStdoutToBuffer();
         $this->map_obj->owsDispatch($this->_req);
-        ms_iostripstdoutbuffercontenttype();
-        $buffer = mb_convert_encoding(ms_iogetstdoutbufferstring(), "UTF-8");
-        ms_ioresethandlers();
+        msIO_stripStdoutBufferContentType();
+        $buffer = mb_convert_encoding(msIO_getStdoutBufferString(), "UTF-8");
+        msIO_resetHandlers();
         return $buffer;
     }
 

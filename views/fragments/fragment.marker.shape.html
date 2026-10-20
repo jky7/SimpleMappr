@@ -1,4 +1,4 @@
-<option value="">{% trans "--select--" %}</option>
+<option value="">{{ "--select--"|trans }}</option>
 {% for key,value in marker_shapes %}
     {% if key == "general" %}
         {% for key1,value1 in value %}
@@ -6,14 +6,14 @@
         {% endfor %}
     {% endif %}
     {% if key == "closed" %}
-    <optgroup label='{% trans "solid" %}'>
+    <optgroup label='{{ "solid"|trans }}'>
         {% for key1,value1 in value %}
         <option value="{{ key1 }}"{% if key1 == "circle" %} selected = "selected"{% endif %}>{{ value1['name']|trans }}</option>
         {% endfor %}
     </optgroup>
     {% endif %}
     {% if key == "open" %}
-    <optgroup label='{% trans "open" %}'>
+    <optgroup label='{{ "open"|trans }}'>
         {% for key1,value1 in value %}
         <option value="{{ key1 }}">{{ value1['name']|trans }}</option>
         {% endfor %}

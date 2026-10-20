@@ -8,26 +8,22 @@
         {% endif %}
         {% set sort_dir = (sort == "title") ? " " ~ dir : "" %}
     <th class="left-align">
-        <a class="sprites-after ui-icon-triangle-sort{{ sort_dir }}" data-sort="title" href="#">{% trans "Title" %}</a>
+        <a class="sprites-after ui-icon-triangle-sort{{ sort_dir }}" data-sort="title" href="#">{{ "Title"|trans }}</a>
         <input type="text" id="filter-mymaps" size="25" maxlength="35" value="" name="filter-mymap"{{ data_uid }} />
         {% if filter_uid %}
-            {% trans %}
-                {{ row_count}} of {{ total }} for {{ filter_username }}
-            {% endtrans %}
+            {{ "%row_count% of %total% for %filter_username%"|trans({"%row_count%": row_count, "%total%": total, "%filter_username%": filter_username}) }}
         {% else %}
-            {% trans %}
-                {{ row_count}} of {{ total }}
-            {% endtrans %}
+            {{ "%row_count% of %total%"|trans({"%row_count%": row_count, "%total%": total}) }}
         {% endif %}
     </th>
     {% set sort_dir = (sort == "created") ? " " ~ dir : "" %}
     {% if sort is empty %}
         {% set sort_dir = " desc" %}
     {% endif %}
-    <th class="center-align"><a class="sprites-after ui-icon-triangle-sort{{ sort_dir }}" data-sort="created" href="#">{% trans "Created" %}</a></th>
+    <th class="center-align"><a class="sprites-after ui-icon-triangle-sort{{ sort_dir }}" data-sort="created" href="#">{{ "Created"|trans }}</a></th>
     {% set sort_dir = (sort == "updated") ? " " ~ dir : "" %}
-    <th class="center-align"><a class="sprites-after ui-icon-triangle-sort{{ sort_dir }}" data-sort="updated" href="#">{% trans "Updated" %}</th>
-    <th class="actions">{% trans "Actions" %}
+    <th class="center-align"><a class="sprites-after ui-icon-triangle-sort{{ sort_dir }}" data-sort="updated" href="#">{{ "Updated"|trans }}</th>
+    <th class="actions">{{ "Actions"|trans }}
     {% if roles[session['role']] == 'administrator' %}
         <a href="#" class="sprites-after toolsRefresh"></a>
     {% endif %}
@@ -48,17 +44,17 @@
                 {% if row.updated %}
                     {{ row.updated|date("M d, Y") }}
                 {% else %}
-                    - 
+                    -
                 {% endif %}
             </td>
             <td class="actions">
                 {% if row.sid %}
-                    <a class="sprites-before map-unshare" data-id="{{ row.sid }}" href="#">{% trans "Unshare" %}</a>
+                    <a class="sprites-before map-unshare" data-id="{{ row.sid }}" href="#">{{ "Unshare"|trans }}</a>
                 {% else %}
-                    <a class="sprites-before map-share" data-id="{{ row.mid }}" href="#">{% trans "Share" %}</a>
+                    <a class="sprites-before map-share" data-id="{{ row.mid }}" href="#">{{ "Share"|trans }}</a>
                 {% endif %}
                 {% if session['uid'] == row.uid or roles[session['role']] == 'administrator' %}
-                    <a class="sprites-before map-delete" data-id="{{ row.mid }}" href="#">{% trans "Delete" %}</a>
+                    <a class="sprites-before map-delete" data-id="{{ row.mid }}" href="#">{{ "Delete"|trans }}</a>
                 {% endif %}
             </td>
             </tr>
@@ -66,5 +62,5 @@
     </tbody>
     </table>
 {% else %}
-    <div id="mymaps" class="panel"><p>{% trans "Start by adding data on the Point Data or Regions tabs, press the Preview buttons there, then save your map from the top bar of the Preview tab." %}</p><p>{% trans "Alternatively, you may create and save a generic template by setting the extent, projection, and layer options you like without adding point data or specifying what political regions to shade." %}</p></div>
+    <div id="mymaps" class="panel"><p>{{ "Start by adding data on the Point Data or Regions tabs, press the Preview buttons there, then save your map from the top bar of the Preview tab."|trans }}</p><p>{{ "Alternatively, you may create and save a generic template by setting the extent, projection, and layer options you like without adding point data or specifying what political regions to shade."|trans }}</p></div>
 {% endif %}

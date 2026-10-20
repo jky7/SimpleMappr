@@ -10,7 +10,7 @@
 </style>
 <div id="map-api">
   <div id="general-api" class="panel">
-    <p>{% trans "A simple, restful API may be used with Internet accessible, tab-separated text files, a collection of coordinates, or by sending files with additional parameters outlined below. A Web Feature Service (WFS) and a Web Map Service (WMS) are also available for vector- and raster-based layers, respectively." %}</p>
+    <p>{{ "A simple, restful API may be used with Internet accessible, tab-separated text files, a collection of coordinates, or by sending files with additional parameters outlined below. A Web Feature Service (WFS) and a Web Map Service (WMS) are also available for vector- and raster-based layers, respectively."|trans }}</p>
   </div>
   <h3>RESTful API</h3>
   {% set url = openapi.servers.0.url %}
@@ -36,13 +36,13 @@
 &amp;shade[places]=Alberta,USA[MT|WA]<br>
 &amp;shade[title]=Selected Regions<br>
 &amp;shade[color]=150,150,150</span></p>
-  <p><strong>{% trans "Produces" %}</strong></p>
-  <p><a href="{{ url }}/api/?url={{api_file|url_encode}}&amp;shape[0]=square&amp;size[0]=10&amp;color[0]=20,20,20&amp;shape[1]=triangle&amp;size[1]=10&amp;color[1]=40,40,40&amp;shape[2]=star&amp;size[2]=14&amp;color[2]=60,60,60&amp;width=500&amp;height=300&amp;bbox=-130,40,-60,50&amp;layers=lakes,stateprovinces&amp;graticules=true&amp;projection=esri:102009&amp;legend=true&amp;shade[places]=Alberta,USA[MT|WA]&amp;shade[title]=Selected Regions&amp;shade[color]=150,150,150"><img src="{{ url }}/public/images/api.png" width="500" height="300" alt="{% trans "My Map" %}" /></a></p>
+  <p><strong>{{ "Produces"|trans }}</strong></p>
+  <p><a href="{{ url }}/api/?url={{api_file|url_encode}}&amp;shape[0]=square&amp;size[0]=10&amp;color[0]=20,20,20&amp;shape[1]=triangle&amp;size[1]=10&amp;color[1]=40,40,40&amp;shape[2]=star&amp;size[2]=14&amp;color[2]=60,60,60&amp;width=500&amp;height=300&amp;bbox=-130,40,-60,50&amp;layers=lakes,stateprovinces&amp;graticules=true&amp;projection=esri:102009&amp;legend=true&amp;shade[places]=Alberta,USA[MT|WA]&amp;shade[title]=Selected Regions&amp;shade[color]=150,150,150"><img src="{{ url }}/public/images/api.png" width="500" height="300" alt="{{ "My Map"|trans }}" /></a></p>
 
-  <p>{% trans "Send GET or POST requests using the Base URL and Parameters below. A POST request returns a HTTP 303 redirect to a URL for the map image. If you elect not to follow the redirect, JSON is returned in which you can find this same URL." %}</p>
+  <p>{{ "Send GET or POST requests using the Base URL and Parameters below. A POST request returns a HTTP 303 redirect to a URL for the map image. If you elect not to follow the redirect, JSON is returned in which you can find this same URL."|trans }}</p>
 
   <div class="header">
-    <h2>{% trans "Base URL" %}</h2>
+    <h2>{{ "Base URL"|trans }}</h2>
   </div>
 
   <div id="general-base" class="panel">
@@ -50,7 +50,7 @@
   </div>
 
   <div class="header">
-    <h2>{% trans "Parameters" %}</h2>
+    <h2>{{ "Parameters"|trans }}</h2>
   </div>
 
   <dl>
@@ -63,7 +63,7 @@
 
   <h3>OpenAPI Specification</h3>
   {% set oai_url = '<a href="https://www.openapis.org/">https://www.openapis.org/</a>' %}
-  <p>{% trans %}SimpleMappr exposes its API as a compliant OpenAPI v3.0.0 Specification, described by the OpenAPI Initiative (OAI), {{ oai_url }}. The definition document can be found at <a href="{{ url }}/openapi.json">{{ url }}/openapi.json</a>.{% endtrans %}</p>
+  <p>{{ "SimpleMappr exposes its API as a compliant OpenAPI v3.0.0 Specification, described by the OpenAPI Initiative (OAI), %oai_url%. The definition document can be found at <a href=\"%url%/openapi.json\">%url%/openapi.json</a>."|trans({"%oai_url%": oai_url, "%url%": url})|raw }}</p>
 
   <h3>Web Feature Service (WFS)</h3>
 
@@ -79,7 +79,7 @@
 
   <h3>Ruby Gem</h3>
   {% set github_url = '<a href="https://github.com/dshorthouse/simple-mappr">https://github.com/dshorthouse/simple-mappr</a>' %}
-  <p>{% trans %}Documentation found on the simple-mappr GitHub repository, {{ github_url }}{% endtrans %}</a>.
+  <p>{{ "Documentation found on the simple-mappr GitHub repository, %github_url%"|trans({"%github_url%": github_url}) }}</a>.
   <div class="panel general-base-ws">
     <p>$ gem install simple-mappr</p>
   </div>

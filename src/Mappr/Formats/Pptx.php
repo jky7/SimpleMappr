@@ -99,7 +99,6 @@ class Pptx extends Mappr
 
         // Create slide
         $currentSlide = $objPHPPowerPoint->getActiveSlide();
-        $currentSlide->setSlideLayout(Layout::TITLE_AND_CONTENT);
 
         $width = 950;
         $height = 720;
