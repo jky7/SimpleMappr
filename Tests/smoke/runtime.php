@@ -13,7 +13,7 @@ function nativeRuntimeReport(): array
     }
     return [
         'status' => 'ok',
-        'phase' => 'P1 native runtime; application port pending',
+        'phase' => 'Independent PHP and native MapScript health',
         'php' => PHP_VERSION,
         'sapi' => PHP_SAPI,
         'mapserver' => msGetVersion(),

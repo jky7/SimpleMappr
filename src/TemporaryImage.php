@@ -51,10 +51,16 @@ final class TemporaryImage
         if (!$lock || !flock($lock,LOCK_EX|LOCK_NB)) { return; }
         if ((int)stream_get_contents($lock) > time()-300) { fclose($lock); return; }
         ftruncate($lock,0); rewind($lock); fwrite($lock,(string)time());
-        foreach (glob(ROOT.'/public/tmp/preview-*') ?: [] as $path) { if (is_file($path) && filemtime($path) < time()-self::LIFETIME) { unlink($path); } }
+        foreach (glob(ROOT.'/public/tmp/preview-*') ?: [] as $path) { if (preg_match('/^preview-[0-9a-f]{32}\.(?:png|jpg|svg|tif)$/D',basename($path)) && !is_link($path) && is_file($path) && filemtime($path) < time()-self::LIFETIME) { unlink($path); } }
         foreach (glob(self::PRIVATE_DIRECTORY.'/*.json') ?: [] as $metadata) {
+            if (is_link($metadata) || !preg_match('/^([0-9a-f]{32})\.json$/D',basename($metadata),$matches) || filesize($metadata) > 2048) { continue; }
             $record=json_decode(file_get_contents($metadata),true);
-            if ($record && $record['expires'] < time()) { $path=self::PRIVATE_DIRECTORY.'/'.basename($record['filename']); if (is_file($path)) { unlink($path); } unlink($metadata); }
+            if (!is_array($record) || !is_int($record['expires'] ?? null) || !is_int($record['uid'] ?? null) || !is_string($record['filename'] ?? null) || $record['expires'] >= time()
+                || !preg_match('/^preview-'.preg_quote($matches[1],'/').'\.(?:png|jpg|svg|tif)$/D',$record['filename'])) { continue; }
+            $path=self::PRIVATE_DIRECTORY.'/'.$record['filename'];
+            if (is_link($path)) { continue; }
+            if (is_file($path)) { unlink($path); }
+            unlink($metadata);
         }
         fclose($lock);
     }

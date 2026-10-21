@@ -37,101 +37,47 @@
  */
 namespace SimpleMappr\Controller;
 
-use \Suin\RSSWriter\Feed;
-use \Suin\RSSWriter\Channel;
-use \Suin\RSSWriter\Item;
+use SimpleMappr\CitationDocument;
+use SimpleMappr\SiteUrl;
 
-/**
- * CitationFeed for SimpleMappr
- *
- * @category  Class
- * @package   SimpleMappr
- * @author    David P. Shorthouse <davidpshorthouse@gmail.com>
- * @copyright 2010-2018 David P. Shorthouse
- * @license   MIT, https://github.com/dshorthouse/SimpleMappr/blob/master/LICENSE
- * @link      http://github.com/dshorthouse/SimpleMappr
- */
-class CitationFeed extends Citation
+final class CitationFeed
 {
-    /**
-     * An RSS feed Object
-     *
-     * @var object $_feed
-     */
-    private $_feed;
+    private string $base;
+    private array $items = [];
 
-    /**
-     * An RSS channel Object
-     *
-     * @var object $_channel
-     */
-    private $_channel;
-
-    /**
-     * Make the Channel
-     *
-     * @return object $this
-     */
-    public function makeChannel()
+    public function makeChannel(): self
     {
-        $description = "Channel of recent publications that have used SimpleMappr";
-        $rssURL = MAPPR_URL . "/citation.rss";
-
-        $this->_feed = new Feed();
-        $this->_channel = new Channel();
-        $this->_channel
-            ->title('SimpleMappr Recent Citations')
-            ->description($description)
-            ->url(MAPPR_URL)
-            ->language('en-US')
-            ->pubDate(time())
-            ->ttl(60)
-            ->pubsubhubbub($rssURL, "https://pubsubhubbub.appspot.com/")
-            ->appendTo($this->_feed);
+        $this->base = SiteUrl::base();
+        $this->items = [];
         return $this;
     }
 
-    /**
-     * Add items to the channel
-     *
-     * @return object $this
-     */
-    public function addItems()
+    public function addItems(?array $entries = null): self
     {
-        $week_ago = time() - (7 * 24 * 60 * 60);
-        $entries = $this->index();
-        usort(
-            $entries['citations'], function ($a, $b) {
-                return $b->year > $a->year;
-            }
-        );
-        foreach ($entries['citations'] as $citation) {
+        $entries ??= (new Citation())->index()['citations'];
+        usort($entries, static fn($a,$b) => [(int)$b->year,(int)$b->created,(int)$b->id] <=> [(int)$a->year,(int)$a->created,(int)$a->id]);
+        foreach ($entries as $citation) {
+            if ($citation->created < time()-604800 || $citation->created > time()) { continue; }
             $url = $citation->link;
-            if ($citation->doi) {
-                $url = "https://doi.org/{$citation->doi}";
-            }
-            if ($url && $citation->created >= $week_ago) {
-                $item = new Item();
-                $item
-                    ->preferCdata(true)
-                    ->title($citation->reference)
-                    ->description($citation->reference)
-                    ->url($url)
-                    ->guid($url, true)
-                    ->pubDate($citation->created)
-                    ->appendTo($this->_channel);
-            }
+            if ($citation->doi !== '' && preg_match('~^10\.[0-9]{4,9}/[^\s<>]+$~D',$citation->doi)) { $url = 'https://doi.org/'.str_replace('%2F','/',rawurlencode($citation->doi)); }
+            if (!CitationDocument::validLink($url)) { continue; }
+            $this->items[] = ['id'=>(int)$citation->id,'text'=>$citation->reference,'url'=>$url,'created'=>(int)$citation->created];
         }
         return $this;
     }
 
-    /**
-     * Return the feed
-     *
-     * @return object $_feed
-     */
-    public function getFeed()
+    public function getFeed(): string
     {
-        return $this->_feed;
+        $xml = new \XMLWriter();$xml->openMemory();$xml->startDocument('1.0','UTF-8');
+        $xml->startElement('rss');$xml->writeAttribute('version','2.0');$xml->startElement('channel');
+        $xml->writeElement('title','SimpleMappr Recent Citations');$xml->writeElement('link',$this->base);
+        $xml->writeElement('description','Recent publications that have used SimpleMappr');$xml->writeElement('language','en-US');$xml->writeElement('ttl','60');
+        foreach ($this->items as $item) {
+            $xml->startElement('item');$xml->writeElement('title',$item['text']);
+            $xml->writeElement('description',htmlspecialchars($item['text'],ENT_QUOTES|ENT_SUBSTITUTE,'UTF-8'));
+            $xml->writeElement('link',$item['url']);$xml->startElement('guid');$xml->writeAttribute('isPermaLink','false');$xml->text($this->base.'/citation/'.$item['id']);$xml->endElement();
+            $xml->writeElement('pubDate',date(DATE_RSS,$item['created']));$xml->endElement();
+        }
+        $xml->endElement();$xml->endElement();$xml->endDocument();return $xml->outputMemory();
     }
 }

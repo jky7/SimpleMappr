@@ -194,14 +194,14 @@ class Router
             ->post('/citation', function () {
                 Header::setHeader("json");
                 $klass = $this->_klass("Controller\Citation");
-                return json_encode($klass->create($_POST['citation']));
+                return json_encode($klass->create($_POST['citation'] ?? null));
             })
             ->put('/citation/{id:i}', function ($id) {
                 Header::setHeader("json");
                 $klass = $this->_klass("Controller\Citation");
                 $put = array();
                 parse_str(file_get_contents('php://input'), $put);
-                return json_encode($klass->update($put['citation'], ['id'=>(int)$id]));
+                return json_encode($klass->update($put['citation'] ?? null, ['id'=>(int)$id]));
             })
             ->delete('/citation/{id:i}', function ($id) {
                 Header::setHeader("json");
@@ -485,9 +485,6 @@ class Router
     private function _log($type)
     {
         $ip = $_SERVER["REMOTE_ADDR"];
-        if (defined("CLOUDFLARE_KEY") && ENVIRONMENT == "production" && array_key_exists("HTTP_CF_CONNECTING_IP", $_SERVER)) {
-            $ip = $_SERVER["HTTP_CF_CONNECTING_IP"];
-        }
         $message = implode(" - ", [date('Y-m-d H:i:s'), $ip, $type, $_SERVER['REQUEST_METHOD'], $_SERVER["REQUEST_URI"]]);
         error_log($message);
     }
@@ -499,23 +496,15 @@ class Router
      */
     private function _tailLog()
     {
-        $string = "";
-        $logger = new Logger(ROOT."/log/logger.log");
+        $logger = new Logger(ROOT.'/log/logger.log');
         $entries = $logger->tail(20)->parse(Logger::$capture)->entries;
+        $lines = [];
         foreach ($entries as $entry) {
-            if (isset($entry["time"]) && isset($entry["ip"]) && isset($entry["url"]) && isset($entry["method"])) {
-                $url = (strlen($entry["url"]) < 100) ? $entry["url"] : substr($entry["url"], 0, 100) . "...";
-                $string .= $entry["time"];
-                $string .= " - ";
-                $string .= "<a href=\"https://who.is/whois-ip/ip-address/${entry['ip']}\" target=\"_blank\">${entry['ip']}</a>";
-                $string .= " - ";
-                $string .= $entry["method"];
-                $string .= " - ";
-                $string .= "<a href=\"${entry['url']}\" target=\"_blank\">${url}</a>";
-                $string .= "<br>\n";
+            if (isset($entry['time'],$entry['ip'],$entry['url'],$entry['method'])) {
+                $lines[] = htmlspecialchars(implode(' - ',[$entry['time'],$entry['ip'],$entry['method'],mb_substr($entry['url'],0,250)]),ENT_QUOTES|ENT_SUBSTITUTE,'UTF-8');
             }
         }
-        return (strlen($string) > 0) ? $string : "No log entries";
+        return $lines ? implode("<br>\n",$lines) : 'Current request events are available through docker compose logs app. No archived log entries.';
     }
 
     /**

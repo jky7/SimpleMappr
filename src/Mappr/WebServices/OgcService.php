@@ -126,10 +126,7 @@ abstract class OgcService extends Mappr
 
     public static function baseUrl(): string
     {
-        if (preg_match('~^https?://~i', MAPPR_URL)) { return MAPPR_URL; }
-        $host = $_SERVER['HTTP_HOST'] ?? 'localhost';
-        if (!preg_match('/^(?:[a-z0-9.-]+|\[[0-9a-f:]+\])(?::[0-9]{1,5})?$/iD', $host)) { $host = 'localhost'; }
-        return (($_SERVER['HTTPS'] ?? '') === 'on' ? 'https' : 'http').'://'.$host.MAPPR_URL;
+        return \SimpleMappr\SiteUrl::base();
     }
 
     public function execute()
