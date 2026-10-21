@@ -75,6 +75,7 @@ class Docx extends Mappr
      */
     public function createOutput()
     {
+        \PhpOffice\PhpWord\Settings::setOutputEscapingEnabled(true);
         $objPHPWord = new PhpWord();
 
         $clean_filename = Utility::cleanFilename($this->request->file_name);

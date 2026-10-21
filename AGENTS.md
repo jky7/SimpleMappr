@@ -15,7 +15,7 @@ docker compose exec app scripts/bootstrap-assets --check
 curl --fail http://127.0.0.1:8080/_runtime
 ```
 
-`SIMPLEMAPPR_PORT` changes the localhost port. P3 serves the editor with local owner login, private saved maps and revocable sharing. Full API/service/import/Office workflows still require later phases. Existing deployments keep their ignored .env; do not rerun configure-local-owner over an existing file.
+`SIMPLEMAPPR_PORT` changes the localhost port. The editor supports local owner login, private saved maps, revocable sharing, imports, publication exports, and WMS/WFS. Existing deployments keep their ignored .env; do not rerun configure-local-owner over an existing file.
 
 The runtime uses Debian Apache prefork, mod_php 8.4, PHP CLI 8.4, and `php-mapscript-ng` from one dated Debian snapshot. Do not install MapScript compiled for another PHP ABI. Native map text loads with `msLoadMapFromString($text, $basePath, null)`. `new mapObj($filename)` loads a file.
 
@@ -44,3 +44,13 @@ MariaDB 11.8.9 is pinned by digest and has no published port. Compose requires r
 `scripts/migrate-database` creates an empty baseline or verifies `20261020000000`. It refuses implicit adoption. `scripts/adopt-legacy-database /absolute/new-backup.sql` validates known legacy schemas, backs up, and preserves original map JSON bytes. Historical migrations under `db/legacy-migrations` must not run. Old shares remain private until the owner explicitly creates a token.
 
 All saved-map operations include the server-side uid. Admin roles never bypass map ownership. Mutations require session CSRF. SavedMapDocument owns the versioned settings allowlist, including case-sensitive layer names, bbox_map, projection_map and origin_map. Settings JSON is distinct from GeoJSON. Private preview images use TemporaryImage outside Apache public assets and an expiring owner-checked route. Guest image names contain 128 random bits.
+
+## Imports and services
+
+`ImportData` parses bounded uploaded or remote bytes, with explicit text encoding, XML entity rejection, and row errors. Import parsing never unlinks a caller-supplied path. Multipart uploads must pass `is_uploaded_file`. `RemoteImport` allows public HTTP/HTTPS destinations on standard ports, validates every DNS answer and redirect, pins the selected address, verifies TLS, and disables inherited proxies. Its 15-second deadline includes a separate, terminable DNS process. Limits apply to decoded bodies at 5 MiB and response headers at 64 KiB. Do not add a private-host override to production.
+
+`GeometryExport` owns GeoJSON and KML geometry. Settings remain a separate `SavedMapDocument` contract. `RenderedImage` handles GDAL TIFF through an owned temporary file because native `getBytes()` does not support that driver. Native polygon opacity uses the MapScript style parser; assigning an unknown SWIG property can silently do nothing.
+
+`OgcService` bounds both KVP and XML requests. WMS supports 1.1.1 and 1.3.0 with explicit EPSG:4326 axis-order tests. WFS supports 1.0.0, 1.1.0, and 2.0.0, including zero count and a server maximum of 1000. WFS reads an OGR SQL view exposing `FID AS mappr_id` for stable XML IDs without changing checksummed DBF assets. Advertise only tested service CRS values. Keep MapServer error responses as XML and ordinary API errors as JSON.
+
+The P4 contract tests are in the modern suite. `Tests/smoke/check-import-boundary` runs from the host with Docker access and creates an isolated HTTPS fixture network. It checks actual transport limits, certificate name validation, redirects, and 20 decoded import-to-map samples. The detailed endpoint contract is in `docs/import-export.md`. PHP 8.4 currently logs 11 implicit-nullable deprecations from the locked GeoPHP dependency. They must not appear in binary response bodies.

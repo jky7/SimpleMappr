@@ -37,8 +37,6 @@
  */
 namespace SimpleMappr\Mappr\Application;
 
-use geoPHP\geoPHP;
-use geoPHP\Adapter\GeoJSON;
 use SimpleMappr\SavedMapDocument;
 use SimpleMappr\Utility;
 use SimpleMappr\Constants\AcceptedOutputs;
@@ -115,18 +113,12 @@ class Map extends Mappr
 
         $this->watermark        = true;
 
-        unset($this->options['border']);
-        $this->width            = (float)Utility::loadParam('width', 900);
-        $this->height           = (float)Utility::loadParam('height', (isset($_GET['width']) && !isset($_GET['height'])) ? $this->width/2 : 450);
-        if ($this->width == 0 || $this->height == 0) {
-            $this->width = 900;
-            $this->height = 450;
-        }
-
-        $this->options['legend'] = true;
-        if (!Utility::loadParam('legend', true)) {
-            $this->options['legend'] = false;
-        }
+        $storedWidth = $this->width ?? 900;
+        $storedHeight = $this->height ?? 450;
+        $this->width = (float)Utility::loadParam('width', $storedWidth);
+        $this->height = (float)Utility::loadParam('height', isset($_GET['width']) ? $this->width * $storedHeight / $storedWidth : $storedHeight);
+        if (array_key_exists('legend', $_GET)) { $this->options['legend'] = filter_var($_GET['legend'], FILTER_VALIDATE_BOOLEAN); }
+        $this->options['legend'] ??= true;
 
         $this->callback         = null;
         $this->output           = $this->_extension; //overwrite the output
@@ -267,19 +259,7 @@ class Map extends Mappr
             break;
 
         case 'json':
-            $output = new \stdClass;
-            $output->type = 'FeatureCollection';
-            $output->features = array_merge($this->_getCoordinates(), $this->_getWKT());
-            $output->crs = [
-                'type'       => 'name',
-                'properties' => ['name' => 'urn:ogc:def:crs:OGC:1.3:CRS84']
-            ];
-            $output = json_encode($output);
-            if (isset($this->callback) && $this->callback) {
-                $output = $this->callback . '(' . $output . ');';
-            }
-            return $output;
-            break;
+            return json_encode(\SimpleMappr\GeometryExport::features(SavedMapDocument::renderingFields($this->_record['map'])), JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR);
 
         case 'kml':
             return (new Kml)->create(["file_name" => $this->title, "coords" => $this->coords, "wkt" => $this->wkt]);
@@ -317,72 +297,4 @@ class Map extends Mappr
         }
     }
 
-    /**
-     * Get all coordinates in GeoJSON format
-     *
-     * @return array $output
-     */
-    private function _getCoordinates()
-    {
-        $output = [];
-        if (property_exists($this, 'coords')) {
-            $count = count($this->coords)-1;
-            for ($j=0; $j<=$count; $j++) {
-                $title = ($this->coords[$j]['title']) ? stripslashes($this->coords[$j]['title']) : "";
-
-                if (trim($this->coords[$j]['data'])) {
-                    $whole = trim($this->coords[$j]['data']);
-                    $row = explode("\n", Utility::removeEmptyLines($whole));
-
-                    foreach ($row as $loc) {
-                        $coord_array = Utility::makeCoordinates($loc);
-                        $coord = new \stdClass();
-                        $coord->x = array_key_exists(1, $coord_array) ? (float)trim($coord_array[1]) : "nil";
-                        $coord->y = array_key_exists(0, $coord_array) ? (float)trim($coord_array[0]) : "nil";
-                        if (Utility::onEarth($coord) && $title != "") {
-                            $output[] = [
-                                'type' => 'Feature',
-                                'geometry' => ['type' => 'Point', 'coordinates' => [$coord->x,$coord->y]],
-                                'properties' => ['title' => $title]
-                            ];
-                        }
-                    }
-                }
-            }
-        }
-        return $output;
-    }
-
-    /**
-     * Get all drawings in GeoJSON format
-     *
-     * @return array $output
-     */
-    private function _getWKT()
-    {
-        $output = [];
-        if (property_exists($this, 'wkt')) {
-            $count = count($this->wkt)-1;
-            for ($j=0; $j<=$count; $j++) {
-                $title = ($this->wkt[$j]['title']) ? stripslashes($this->wkt[$j]['title']) : "";
-
-                if (trim($this->wkt[$j]['data'])) {
-                    $whole = trim($this->wkt[$j]['data']);
-                    $rows = explode("\n", Utility::removeEmptyLines($whole));
-
-                    foreach ($rows as $row) {
-                        $shape = geoPHP::load($row, 'wkt');
-                        $geojson = new GeoJSON();
-                        $geometry = json_decode($geojson->write($shape), true, 512, JSON_THROW_ON_ERROR);
-                        $output[] = [
-                            'type' => 'Feature',
-                            'geometry' => $geometry,
-                            'properties' => ['title' => $title]
-                        ];
-                    }
-                }
-            }
-        }
-        return $output;
-    }
 }

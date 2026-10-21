@@ -138,6 +138,9 @@ class Request
     }
     public static function validateMapDocument($document): void
     {
+        if (!in_array($document->output, array_merge(\SimpleMappr\Constants\AcceptedOutputs::outputList(), ['docx','pptx','json','kml']), true)) {
+            throw new \InvalidArgumentException('The output format is not supported.');
+        }
         foreach (['width', 'height'] as $key) {
             $value = $document->{$key};
             if (!is_numeric($value) || !is_finite((float)$value) || $value < 2 || $value > 5000) {
@@ -167,10 +170,12 @@ class Request
             foreach ($document->{$key} as &$layer) {
                 if (!is_array($layer)) { throw new \InvalidArgumentException('Invalid map layer.'); }
                 $layer += ['title' => '', 'data' => '', 'color' => '', 'size' => 8, 'shape' => 'circle'];
+                if (!is_string($layer['data']) || strlen($layer['data']) > 500000 || !mb_check_encoding($layer['data'], 'UTF-8') || str_contains($layer['data'], "\0")) { throw new \InvalidArgumentException('Map data must be UTF-8 text no longer than 500 KB per group.'); }
                 if (!is_numeric($layer['size']) || $layer['size'] < 1 || $layer['size'] > 200) { throw new \InvalidArgumentException('Marker size must be between 1 and 200.'); }
                 if (!in_array($layer['shape'], \SimpleMappr\Constants\AcceptedMarkers::shapes(), true)) { throw new \InvalidArgumentException('The selected marker shape is not supported.'); }
                 foreach (['title', 'data', 'color', 'shape'] as $field) {
                     if (!is_scalar($layer[$field])) { throw new \InvalidArgumentException('Invalid map layer value.'); }
+                    if ($field === 'title' && (strlen((string)$layer[$field]) > 1024 || !mb_check_encoding((string)$layer[$field], 'UTF-8'))) { throw new \InvalidArgumentException('Map group titles must be UTF-8 text no longer than 1024 bytes.'); }
                 }
             }
             unset($layer);

@@ -100,8 +100,8 @@ class Pptx extends Mappr
         // Create slide
         $currentSlide = $objPHPPowerPoint->getActiveSlide();
 
-        $width = 950;
-        $height = 720;
+        $width = $objPHPPowerPoint->getLayout()->getCX(\PhpOffice\PhpPresentation\DocumentLayout::UNIT_PIXEL);
+        $height = $objPHPPowerPoint->getLayout()->getCY(\PhpOffice\PhpPresentation\DocumentLayout::UNIT_PIXEL);
 
         $files = [];
         $images = ['image', 'scale', 'legend'];

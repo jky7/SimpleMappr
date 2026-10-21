@@ -49,7 +49,6 @@ use Symfony\Component\Translation\Loader\PoFileLoader;
 use SimpleMappr\Constants\AcceptedMarkers;
 use SimpleMappr\Constants\AcceptedProjections;
 use SimpleMappr\Controller\Citation;
-use SimpleMappr\Controller\OpenAPI;
 use SimpleMappr\Controller\User;
 use SimpleMappr\Mappr\Mappr;
 
@@ -237,6 +236,20 @@ class Router
                 'locale' => Session::selectLocale()
             ];
             return $this->_twig()->render("help.html", $config);
+        });
+
+        $router->post('/geojson', function () {
+            Header::setHeader('json', Utility::cleanFilename(Utility::loadParam('file_name', 'map'), 'json'));
+            return json_encode(GeometryExport::features(array_replace($_POST, ['output'=>'json'])), JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR);
+        });
+        $router->post('/import', function () {
+            Header::setHeader('json');
+            if (!isset($_FILES['file']) || ($_FILES['file']['error'] ?? UPLOAD_ERR_NO_FILE) !== UPLOAD_ERR_OK
+                || !is_string($_FILES['file']['tmp_name'] ?? null) || !is_uploaded_file($_FILES['file']['tmp_name'])
+                || ($_FILES['file']['size'] ?? 0) > RemoteImport::MAX_BYTES
+            ) { throw new \InvalidArgumentException('Upload a file no larger than 5 MiB.'); }
+            $bytes = file_get_contents($_FILES['file']['tmp_name'], false, null, 0, RemoteImport::MAX_BYTES + 1);
+            return json_encode(ImportData::parse($bytes, (string)($_POST['input_format'] ?? 'auto'), (string)($_POST['encoding'] ?? 'UTF-8')), JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR);
         });
 
         $router->post('/kml', function () {
@@ -471,13 +484,12 @@ class Router
      */
     private function _log($type)
     {
-        $logger = new Logger(ROOT."/log/logger.log");
         $ip = $_SERVER["REMOTE_ADDR"];
         if (defined("CLOUDFLARE_KEY") && ENVIRONMENT == "production" && array_key_exists("HTTP_CF_CONNECTING_IP", $_SERVER)) {
             $ip = $_SERVER["HTTP_CF_CONNECTING_IP"];
         }
         $message = implode(" - ", [date('Y-m-d H:i:s'), $ip, $type, $_SERVER['REQUEST_METHOD'], $_SERVER["REQUEST_URI"]]);
-        $logger->write($message);
+        error_log($message);
     }
 
     /**

@@ -266,11 +266,21 @@ abstract class Mappr
         return $this;
     }
 
-    /**
-     * Execute the process. This is the main method that calls other req'd and optional methods.
-     *
-     * @return object $this
-     */
+    public function prepareServiceMap(): void
+    {
+        $this->_loadOutputFormats();
+        $this->_loadProjection();
+        $this->_loadShapes();
+        $this->_loadSymbols();
+        $this->_setWebConfig();
+        $this->_setUnits();
+        $this->_setMapColor();
+        $this->_setOutputFormat();
+        $this->_setMapExtent();
+        $this->_setMapSize();
+        $this->_addLayers();
+    }
+
     public function execute()
     {
         $this->_loadOutputFormats();
@@ -359,7 +369,7 @@ abstract class Mappr
                 if (isset($this->request->coords[$j]['shape'])) {
                     $shape = $this->request->coords[$j]['shape'];
                 }
-                if (array_key_exists('shadow', $this->request->coords[$j])) {
+                if (!empty($this->request->coords[$j]['shadow']) && filter_var($this->request->coords[$j]['shadow'], FILTER_VALIDATE_BOOLEAN)) {
                     $shadow = true;
                 }
                 if ($this->request->coords[$j]['color']) {
@@ -410,6 +420,11 @@ abstract class Mappr
                         $style->outlinecolor->setRGB(0, 0, 0);
                     }
 
+                    if (!empty($this->request->outlinecolor) && substr($shape, 0, 4) !== 'open') {
+                        $outline = preg_split('/\s+/', trim($this->request->outlinecolor));
+                        if (count($outline) === 3 && count(array_filter($outline, 'is_numeric')) === 3) { $style->outlinecolor->setRGB(...array_map('intval', $outline)); }
+                    }
+
                     $style->width = $this->_determineWidth();
 
                     $new_shape = new \shapeObj(MS_SHAPE_POINT);
@@ -423,13 +438,12 @@ abstract class Mappr
                         $coord = new \stdClass();
                         $coord->x = is_numeric($coord_array[1]) ? Utility::cleanCoord($coord_array[1]) : null;
                         $coord->y = is_numeric($coord_array[0]) ? Utility::cleanCoord($coord_array[0]) : null;
-                        //only add point when data are good & have a title
-                        if (Utility::onEarth($coord) && !empty($title)) {
-                            if (!array_key_exists($coord->x.$coord->y, $points)) { //unique locations
+                        if (Utility::onEarth($coord)) {
+                            if (!array_key_exists($coord->x.','.$coord->y, $points)) {
                                 $new_point = new \pointObj();
                                 $new_point->setXY($coord->x, $coord->y);
                                 $new_line->add($new_point);
-                                $points[$coord->x.$coord->y] = [];
+                                $points[$coord->x.','.$coord->y] = [];
                             }
                         } else {
                             $this->bad_points[] = Utility::checkPlain(stripslashes($this->request->coords[$j]['title'] . ' : ' . $row));
@@ -463,10 +477,10 @@ abstract class Mappr
                 if ($this->request->wkt[$j]['title']) {
                     $title = $this->request->wkt[$j]['title'];
                 }
-                if (array_key_exists('border', $this->request->wkt[$j])) {
+                if (!empty($this->request->wkt[$j]['border']) && filter_var($this->request->wkt[$j]['border'], FILTER_VALIDATE_BOOLEAN)) {
                     $border = true;
                 }
-                if (array_key_exists('hatch', $this->request->wkt[$j])) {
+                if (!empty($this->request->wkt[$j]['hatch']) && filter_var($this->request->wkt[$j]['hatch'], FILTER_VALIDATE_BOOLEAN)) {
                     $hatched = true;
                 }
                 if ($this->request->wkt[$j]['color']) {
@@ -482,9 +496,9 @@ abstract class Mappr
                     $this->_legend_required = true;
                     $rows = explode("\n", Utility::removeEmptyLines($data));
                     foreach ($rows as $key => $row) {
-                        if (strpos($row, "POINT") !== false) {
+                        if (stripos($row, "POINT") !== false) {
                             $type = MS_LAYER_POINT;
-                        } elseif (strpos($row, "LINE") !== false) {
+                        } elseif (stripos($row, "LINE") !== false) {
                             $type = MS_LAYER_LINE;
                         } else {
                             $type = MS_LAYER_POLYGON;
@@ -510,21 +524,21 @@ abstract class Mappr
                         if (!empty($color)) {
                             $style->color->setRGB($color[0], $color[1], $color[2]);
                         }
-                        $style->opacity = 75;
+                        $style->updateFromString('STYLE OPACITY 75 END');
 
                         if ($hatched && !empty($color)) {
                             $style = new \styleObj($class);
                             $style->setSymbolByName($this->map_obj, "hatch");
                             $style->angle = 45;
                             $style->size = 5;
-                            $style->color->setRGB($color[0]-100, $color[1]-100, $color[2]-100);
+                            $style->color->setRGB(max(0, $color[0]-100), max(0, $color[1]-100), max(0, $color[2]-100));
                         }
 
                         try {
                             $shape = \shapeObj::fromWKT($row);
                             $layer->addFeature($shape);
                         } catch (\Exception $e) {
-                            $this->bad_drawings[] = Utility::checkPlain(stripslashes($title));
+                            $this->bad_drawings[] = Utility::checkPlain(stripslashes($title.' : '.$row));
                         }
                     }
                 }
@@ -556,10 +570,10 @@ abstract class Mappr
                         $color = [];
                     }
                 }
-                if (array_key_exists('hatch', $this->request->regions[$j])) {
+                if (!empty($this->request->regions[$j]['hatch']) && filter_var($this->request->regions[$j]['hatch'], FILTER_VALIDATE_BOOLEAN)) {
                     $hatched = true;
                 }
-                if (array_key_exists('border', $this->request->regions[$j])) {
+                if (!empty($this->request->regions[$j]['border']) && filter_var($this->request->regions[$j]['border'], FILTER_VALIDATE_BOOLEAN)) {
                     $border = true;
                 }
                 $data = trim($this->request->regions[$j]['data']);
@@ -623,14 +637,14 @@ abstract class Mappr
                         $style->outlinecolor->setRGB(0, 0, 0);
                         $style->width = $this->_determineWidth();
                     }
-                    $style->opacity = 75;
+                    $style->updateFromString('STYLE OPACITY 75 END');
 
                     if ($hatched && !empty($color)) {
                         $style = new \styleObj($class);
                         $style->setSymbolByName($this->map_obj, "hatch");
                         $style->angle = 45;
                         $style->size = 5;
-                        $style->color->setRGB($color[0]-100, $color[1]-100, $color[2]-100);
+                        $style->color->setRGB(max(0, $color[0]-100), max(0, $color[1]-100), max(0, $color[2]-100));
                     }
 
                     $layer->status = MS_ON;
@@ -1273,7 +1287,7 @@ abstract class Mappr
                 $layer->metadata->set("wms_title", $name);
                 $layer->metadata->set("wms_srs", $srs_projections);
                 $layer->metadata->set("gml_include_items", "all");
-                $layer->metadata->set("gml_featureid", "OBJECTID");
+                $layer->metadata->set("gml_geometries", "geometry");
                 $layer->type = $this->shapes[$name]['type'];
                 $layer->status = MS_ON;
                 $layer->setConnectionType(MS_SHAPEFILE, '');

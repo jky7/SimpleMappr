@@ -70,7 +70,7 @@ class OpenApi implements RestMethods
     public function index($params = null)
     {
         $this->_url_parts = Utility::parsedURL();
-        $this->_url_whole = implode("://", $this->_url_parts);
+        $this->_url_whole = \SimpleMappr\Mappr\WebServices\OgcService::baseUrl();
         return $this->_swaggerData();
     }
 
@@ -131,7 +131,7 @@ class OpenApi implements RestMethods
         'info' => [
           'title' => 'SimpleMappr API',
           'description' => 'Create free point maps for publications and presentations. Find out more at ['.$this->_url_whole.']('.$this->_url_whole.').',
-          'version' => '1.0.0',
+          'version' => '1.1.0',
           'contact' => [
             'name' => 'David P. Shorthouse',
             'email' => 'davidpshorthouse@gmail.com'
@@ -199,8 +199,8 @@ class OpenApi implements RestMethods
                           'examples' => [
                               'response' => [
                                   'value' => [
-                                      'imageURL' => MAPPR_MAPS_URL . '/50778960_464f_0.png',
-                                      'expiry' => '2016-11-14T11:42:46-05:00',
+                                      'imageURL' => MAPPR_MAPS_URL . 'preview-0123456789abcdef0123456789abcdef.png',
+                                      'expiry' => '2026-10-20T12:00:00-04:00',
                                       'bad_points' => [],
                                       'bad_drawings' => []
                                    ]
@@ -224,6 +224,11 @@ class OpenApi implements RestMethods
           ]
         ]
         ];
+        $images = [];
+        foreach (['image/png','image/jpeg','image/tiff','image/svg+xml'] as $mime) { $images[$mime] = ['schema'=>['type'=>'string','format'=>'binary']]; }
+        $swagger['paths']['/api']['get']['responses'][200]['content'] += $images;
+        $swagger['paths']['/api']['get']['responses'][400] = ['description'=>'Invalid import, map request, or blocked remote destination.','content'=>['application/json'=>['schema'=>['type'=>'object','properties'=>['error'=>['type'=>'string']]]]]];
+        $swagger['paths']['/api']['post']['responses'][400] = $swagger['paths']['/api']['get']['responses'][400];
         return $swagger;
     }
 
@@ -255,7 +260,7 @@ class OpenApi implements RestMethods
         [
           'name' => 'url',
           'in' => 'query',
-          'description' => "a URL-encoded, remote tab-separated text file the columns within which are treated as groups of points; the first row used for an optional legend; rows are comma- or space-separated points as latitude,longitude. It may also be a URL-encoded GeoRSS, GeoJSON, or KML feed. Examples: {$this->_url_whole}/public/files/demo.txt, {$this->_url_whole}/public/files/demo2.csv",
+          'description' => "a URL-encoded, remote tab-separated text file the columns within which are treated as groups of points; the first row used for an optional legend; rows are comma- or space-separated points as latitude,longitude. It may also be GeoRSS, GeoJSON, KML, WKT, or SimpleMappr settings JSON. HTTP and HTTPS on their standard ports only. All DNS addresses and redirects must be public. TLS certificates are verified. Maximum 5 MiB decoded bytes and 15 seconds total including DNS. Local paths and private URLs are rejected. Local deployment examples must be uploaded rather than fetched through loopback. Examples: {$this->_url_whole}/public/files/demo.txt, {$this->_url_whole}/public/files/demo2.csv",
           'required' => false,
           'schema' => [
               'type' => 'string'
@@ -540,8 +545,8 @@ class OpenApi implements RestMethods
           'schema' => [
               'type' => 'integer',
               'format' => 'int32',
-              'minimum' => 600,
-              'maximum' => 4500
+              'minimum' => 2,
+              'maximum' => 5000
           ]
         ],
         [
@@ -552,8 +557,8 @@ class OpenApi implements RestMethods
           'schema' => [
               'type' => 'integer',
               'format' => 'int32',
-              'minimum' => 300,
-              'maximum' => 4500
+              'minimum' => 2,
+              'maximum' => 5000
           ]
         ],
         [
@@ -594,6 +599,9 @@ class OpenApi implements RestMethods
           ]
         ]
         ];
+        $params[] = ['name'=>'data','in'=>'query','description'=>'Pasted CSV, WKT, GeoJSON, KML or settings JSON text. Maximum 5 MiB.','required'=>false,'schema'=>['type'=>'string']];
+        $params[] = ['name'=>'input_format','in'=>'query','description'=>'Declared import format. Automatic detection accepts CSV, JSON, XML and WKT.','required'=>false,'schema'=>['type'=>'string','enum'=>['auto','csv','wkt','geojson','kml','georss','settings'],'default'=>'auto']];
+        $params[] = ['name'=>'encoding','in'=>'query','description'=>'Text encoding. UTF-16 byte order marks are detected. Invalid byte sequences are rejected.','required'=>false,'schema'=>['type'=>'string','enum'=>['UTF-8','UTF-16LE','UTF-16BE','ISO-8859-1','WINDOWS-1252'],'default'=>'UTF-8']];
         if ($request_method == "GET") {
             foreach ($params as $param => $value) {
                 if ($value['name'] == 'file') {
