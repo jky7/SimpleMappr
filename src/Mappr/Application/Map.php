@@ -84,46 +84,19 @@ class Map extends Mappr
      */
     public function getRequest()
     {
-        $this->title = $this->_record['title'];
-        $this->coords = [];
-        $this->regions = [];
-        $this->wkt = [];
-        foreach (SavedMapDocument::renderingFields($this->_record['map']) as $key => $value) { $this->{$key} = $value; }
-
-        if (isset($this->border_thickness) && !$this->border_thickness) {
-            $this->border_thickness = 1.25;
-        }
-        if (isset($this->bbox_rubberband) && $this->bbox_rubberband) {
-            $this->crop = true;
-        }
-
-        $this->graticules = false;
-        if (isset($this->layers['grid'])) {
-            $this->graticules = true;
-        }
-        if (!isset($this->projection_map) || empty($this->projection_map)) {
-            $this->projection_map = 'epsg:4326';
-        }
-        if (!isset($this->bbox_map) || empty($this->bbox_map) || $this->bbox_map == "0,0,0,0") {
-            $this->bbox_map = '-180,-90,180,90';
-        }
-        if (!isset($this->origin)) {
-            $this->origin = (int)Utility::loadParam('origin', false);
-        }
-
-        $this->watermark        = true;
-
-        $storedWidth = $this->width ?? 900;
-        $storedHeight = $this->height ?? 450;
-        $this->width = (float)Utility::loadParam('width', $storedWidth);
-        $this->height = (float)Utility::loadParam('height', isset($_GET['width']) ? $this->width * $storedHeight / $storedWidth : $storedHeight);
-        if (array_key_exists('legend', $_GET)) { $this->options['legend'] = filter_var($_GET['legend'], FILTER_VALIDATE_BOOLEAN); }
-        $this->options['legend'] ??= true;
-
-        $this->callback         = null;
-        $this->output           = $this->_extension; //overwrite the output
-
-        return $this;
+        $request = \SimpleMappr\Request::fromDocument(SavedMapDocument::renderingFields($this->_record['map']));
+        if (!$request->border_thickness) { $request->border_thickness = 1.25; }
+        if ($request->bbox_rubberband) { $request->crop = true; }
+        if ($request->bbox_map === '0,0,0,0') { $request->bbox_map = '-180,-90,180,90'; }
+        $storedWidth = $request->width;
+        $storedHeight = $request->height;
+        $request->width = (float)Utility::loadParam('width', $storedWidth);
+        $request->height = (float)Utility::loadParam('height', isset($_GET['width']) ? $request->width * $storedHeight / $storedWidth : $storedHeight);
+        if (array_key_exists('legend', $_GET)) { $request->options['legend'] = filter_var($_GET['legend'], FILTER_VALIDATE_BOOLEAN); }
+        $request->options['legend'] ??= true;
+        $request->watermark = true;
+        $request->output = $this->_extension;
+        return $request;
     }
 
     /**
@@ -146,7 +119,7 @@ class Map extends Mappr
      */
     public function addGraticules()
     {
-        if ($this->graticules) {
+        if ($this->request->graticules) {
             $layer = new \layerObj($this->map_obj);
             $layer->name = 'grid';
             $layer->type = MS_LAYER_LINE;
@@ -156,7 +129,7 @@ class Map extends Mappr
             $class = new \classObj($layer);
 
             $label = new \labelObj();
-            if (!empty($this->hide_gridlabel)) {
+            if (!empty($this->request->hide_gridlabel)) {
                 $label->color->setRGB(255, 255, 255);
             } else {
                 $label->encoding = "UTF-8";
@@ -165,7 +138,7 @@ class Map extends Mappr
                 $label->position = MS_UC;
                 $label->color->setRGB(30, 30, 30);
             }
-            if (empty($this->hide_gridlabel)) { $class->addLabel($label); }
+            if (empty($this->request->hide_gridlabel)) { $class->addLabel($label); }
 
             $style = new \styleObj($class);
             $style->color->setRGB(200, 200, 200);
@@ -185,7 +158,7 @@ class Map extends Mappr
                 $labelformat = "DDMMSS";
             }
 
-            $maxinterval = ($this->gridspace) ? $this->gridspace : $maxarcs;
+            $maxinterval = ($this->request->gridspace) ? $this->request->gridspace : $maxarcs;
             $maxsubdivide = 2;
 
             $this->configureGraticule($layer, $labelformat, $maxarcs, $maxinterval, $maxsubdivide);
@@ -262,7 +235,7 @@ class Map extends Mappr
             return json_encode(\SimpleMappr\GeometryExport::features(SavedMapDocument::renderingFields($this->_record['map'])), JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR);
 
         case 'kml':
-            return (new Kml)->create(["file_name" => $this->title, "coords" => $this->coords, "wkt" => $this->wkt]);
+            return (new Kml)->create(["file_name" => $this->_record['title'], "coords" => $this->request->coords, "wkt" => $this->request->wkt]);
             break;
 
         default:

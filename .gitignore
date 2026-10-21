@@ -50,3 +50,6 @@ vendor/*
 .env
 
 /backups/
+
+/node_modules/
+/public/build/

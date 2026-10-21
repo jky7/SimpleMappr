@@ -14,6 +14,15 @@
 
 {% block content %}
     <div id="wrapper">
+    <p class="visually-hidden" id="preview-keyboard-help">{{ "Use Tab to reach map controls. Map shortcuts work while the preview has keyboard focus."|trans }}</p>
+    <span hidden id="mapper-rotation-label">{{ "Rotation"|trans }}</span>
+    <span hidden id="mapper-preview-label">{{ "Map preview"|trans }}</span>
+    <span hidden id="mapper-import-success">{{ "Data imported into the editor. Save to keep a private map."|trans }}</span>
+    <span hidden id="settings-import-size">{{ "Map settings exceed 2 MB."|trans }}</span>
+    <span hidden id="settings-import-success">{{ "Map imported. Open it from My Maps."|trans }}</span>
+    <span hidden id="settings-import-error">{{ "Map import failed."|trans }}</span>
+    <span hidden id="settings-import-read-error">{{ "The selected file could not be read."|trans }}</span>
+    <span hidden id="mapper-import-warning">{{ "Some drawings could not be imported."|trans }}</span>
     <noscript>
     <div id="noscript">{{ "Sorry, you must enable JavaScript to use this site."|trans }}</div>
     </noscript>
@@ -48,7 +57,10 @@
     <div id="general-points" class="panel">
     <p>{{ "Type geographic coordinates on separate lines in decimal degrees (DD) or DD°MM'SS\" as latitude,longitude separated by a space (DD only), comma, or semicolon"|trans }} <a href="#" class="sprites-before help show-examples">{{ "examples"|trans }}</a></p>
     </div>
-    <div id="upload-panel" class="panel"><h3>{{ "Upload text or csv file"|trans }}</h3><p><input type="file" id="fileInput" /><a href="public/files/demo.txt">{{ "Example 1"|trans }}</a>, <a href="public/files/demo2.csv">{{ "Example 2"|trans }}</a></p></div>
+    <div id="upload-panel" class="panel"><h3><label for="fileInput">{{ "Import map data or settings"|trans }}</label></h3>
+    <p>{{ "CSV, TSV, WKT, GeoJSON, KML, GeoRSS or saved map settings. Maximum 5 MiB; settings 2 MB."|trans }}</p>
+    <p><input type="file" id="fileInput" /> <label for="import-encoding">{{ "Text encoding"|trans }}</label> <select id="import-encoding"><option value="UTF-8">UTF-8</option><option value="UTF-16LE">UTF-16 LE</option><option value="UTF-16BE">UTF-16 BE</option><option value="ISO-8859-1">ISO-8859-1</option><option value="WINDOWS-1252">Windows-1252</option></select></p>
+    <p><a href="public/files/demo.txt">{{ "Example 1"|trans }}</a>, <a href="public/files/demo2.csv">{{ "Example 2"|trans }}</a></p><p id="import-status" role="status"></p></div>
 
     <div id="fieldSetsPoints" class="fieldSets">
     {% include "fragments/fragment.layers.point.html" %}
@@ -60,8 +72,7 @@
 
     <div id="map-wkt">
     <div id="wkt-introduction" class="panel">
-    {% set wkt_url = '<a href="https://rawgit.com/dshorthouse/0afc690b83ed056f6762a96702c041e7/raw/190037de4152654a2e4b1e13394b40ba67249fd4/wkt.html" target="_blank">WKT</a>' %}
-    <p>{{ "Type Well-Known Text (WKT). Try this %wkt_url% generator. <em>e.g.</em>POLYGON((-70 63,-70 48,-106 48,-106 63,-70 63))"|trans({"%wkt_url%": wkt_url})|raw }}</p>
+    <p>{{ "Type Well-Known Text (WKT), or import a geometry file in Point Data."|trans }} <code>POLYGON((-70 63,-70 48,-106 48,-106 63,-70 63))</code></p>
     </div>
 
     <div id="fieldSetsWKT" class="fieldSets">
@@ -127,9 +138,9 @@
     <div class="thumb ui-widget-header"></div>
     </div>
     <div id="badRecordsWarning"><a href="#" class="sprites-before toolsBadRecords">{{ "Data Out of Range"|trans }}</a></div>
-    <div id="mapOutput"><img id="mapOutputImage" src="public/images/basemap.png" alt="" width="900" height="450" /></div>
+    <div id="mapOutput" tabindex="0" role="region" aria-label="{{ "Map preview"|trans }}" aria-busy="false" aria-describedby="preview-keyboard-help"><img id="mapOutputImage" src="public/images/basemap.png" alt="{{ "Rendered map"|trans }}" width="900" height="450" /></div>
     </div>
-    <div id="mapScale"><img id="mapOutputScale" src="public/images/basemap-scalebar.png" alt="" width="200" height="27" /></div>
+    <div id="mapScale"><img id="mapOutputScale" src="public/images/basemap-scalebar.png" alt="{{ "Map scale"|trans }}" width="200" height="27" /></div>
     <div id="mapToolsCollapse" class="mapTools-default ui-widget-header"><a href="#" class="sprites tooltip" title="{{ "expand/collapse ctrl+e"|trans }}"></a></div>
     </div>
     <div id="mapTools">
@@ -149,7 +160,7 @@
     <h2>{{ "Options"|trans }}</h2>
     {% include "fragments/fragment.options.html" %}
 
-    <h3>{{ "Line Thickness"|trans }}</h3>
+    <h3 id="border-thickness-label">{{ "Line Thickness"|trans }}</h3>
     <div id="border-slider"></div>
 
     <h2>{{ "Projection"|trans }}*</h2>
@@ -163,7 +174,7 @@
 
     <div id="map-mymaps">
     {% if session %}
-        <div class="panel"><label for="settings-import">Import saved map settings (.json)</label> <input type="file" id="settings-import" accept=".json,application/json"><p id="settings-import-status" role="status"></p></div>
+        <div class="panel"><label for="settings-import">{{ "Import settings into My Maps (.json)"|trans }}</label> <input type="file" id="settings-import" accept=".json,application/json"><p id="settings-import-status" role="status"></p></div>
         <div id="usermaps"></div>
     {% else %}
         <div class="panel">
@@ -240,7 +251,7 @@
 
     {% include "fragments/fragment.error-dialogs.html" %}
 
-    <div id="colorpicker"><div class="colorpicker colorpicker_background"><div class="colorpicker_color"><div class="colorpicker"><div class="colorpicker"></div></div></div><div class="colorpicker_hue"><div class="colorpicker"></div></div><div class="colorpicker_new_color"></div><div class="colorpicker_current_color"></div><div class="colorpicker colorpicker_hex"><input type="text" maxlength="6" size="6" /></div><div class="colorpicker_rgb_r colorpicker colorpicker_field"><input type="text" maxlength="3" size="3" /><span></span></div><div class="colorpicker_rgb_g colorpicker colorpicker_field"><input type="text" maxlength="3" size="3" /><span></span></div><div class="colorpicker_rgb_b colorpicker colorpicker_field"><input type="text" maxlength="3" size="3" /><span></span></div><div class="colorpicker_hsb_h colorpicker colorpicker_field"><input type="text" maxlength="3" size="3" /><span></span></div><div class="colorpicker_hsb_s colorpicker colorpicker_field"><input type="text" maxlength="3" size="3" /><span></span></div><div class="colorpicker_hsb_b colorpicker colorpicker_field"><input type="text" maxlength="3" size="3" /><span></span></div><div class="sprites-before colorpicker_submit">{{ "Apply"|trans }}</div></div></div>
+    <div id="colorpicker"><div class="colorpicker colorpicker_background"><div class="colorpicker_color"><div class="colorpicker"><div class="colorpicker"></div></div></div><div class="colorpicker_hue"><div class="colorpicker"></div></div><div class="colorpicker_new_color"></div><div class="colorpicker_current_color"></div><div class="colorpicker colorpicker_hex"><input aria-label="{{ "Hexadecimal color"|trans }}" type="text" maxlength="6" size="6" /></div><div class="colorpicker_rgb_r colorpicker colorpicker_field"><input type="text" maxlength="3" size="3" /><span></span></div><div class="colorpicker_rgb_g colorpicker colorpicker_field"><input type="text" maxlength="3" size="3" /><span></span></div><div class="colorpicker_rgb_b colorpicker colorpicker_field"><input type="text" maxlength="3" size="3" /><span></span></div><div class="colorpicker_hsb_h colorpicker colorpicker_field"><input type="text" maxlength="3" size="3" /><span></span></div><div class="colorpicker_hsb_s colorpicker colorpicker_field"><input type="text" maxlength="3" size="3" /><span></span></div><div class="colorpicker_hsb_b colorpicker colorpicker_field"><input type="text" maxlength="3" size="3" /><span></span></div><button type="button" class="sprites-before colorpicker_submit">{{ "Apply"|trans }}</button></div></div>
 
 {% endblock content %}
 

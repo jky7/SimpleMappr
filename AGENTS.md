@@ -39,7 +39,7 @@ The modern suite uses PHPUnit 13. The original coordinate suite is included with
 
 ## Private persistence
 
-MariaDB 11.8.9 is pinned by digest and has no published port. Compose requires random database credentials in ignored `.env`; scripts/configure-local-owner writes that file mode 0600 and stores only a password hash. Never log deployment credentials. The `database-init` service is the schema/provision/lookup writer. Database and session state use separate volumes.
+MariaDB 11.8.9 is pinned by digest and has no published port. Compose requires random database credentials in ignored `.env`; scripts/configure-local-owner writes that file mode 0600 and stores only a password hash. Never log deployment credentials. The `database-init` service is the schema/provision/lookup writer. Database and session state use separate volumes. The configured local deployment owner is provisioned as administrator for private citation administration; this role never bypasses map ownership.
 
 `scripts/migrate-database` creates an empty baseline or verifies `20261020000000`. It refuses implicit adoption. `scripts/adopt-legacy-database /absolute/new-backup.sql` validates known legacy schemas, backs up, and preserves original map JSON bytes. Historical migrations under `db/legacy-migrations` must not run. Old shares remain private until the owner explicitly creates a token.
 
@@ -54,3 +54,9 @@ All saved-map operations include the server-side uid. Admin roles never bypass m
 `OgcService` bounds both KVP and XML requests. WMS supports 1.1.1 and 1.3.0 with explicit EPSG:4326 axis-order tests. WFS supports 1.0.0, 1.1.0, and 2.0.0, including zero count and a server maximum of 1000. WFS reads an OGR SQL view exposing `FID AS mappr_id` for stable XML IDs without changing checksummed DBF assets. Advertise only tested service CRS values. Keep MapServer error responses as XML and ordinary API errors as JSON.
 
 The P4 contract tests are in the modern suite. `Tests/smoke/check-import-boundary` runs from the host with Docker access and creates an isolated HTTPS fixture network. It checks actual transport limits, certificate name validation, redirects, and 20 decoded import-to-map samples. The detailed endpoint contract is in `docs/import-export.md`. PHP 8.4 currently logs 11 implicit-nullable deprecations from the locked GeoPHP dependency. They must not appear in binary response bodies.
+
+## Frontend build and state
+
+The Docker Node stage runs `npm ci`, `npm run build`, `npm test` and `npm run check:build`. PHP serves the content-hashed `public/build/manifest.json` in every environment and never writes public assets. Keep lock integrity and the Node image digest pinned. Generated frontend license notices and retained Jcrop/ColorPicker/Tiny Circleslider input hashes are part of the manifest. These retained plugins are not covered by npm audit.
+
+The browser document follows `SavedMapDocument` schema version one. Empty PHP dictionaries can arrive as `[]`; accept only the empty array as a dictionary. Preserve independent groups, raw invalid rows, case-sensitive and underscore layer names, explicit false flags, and the complete viewport source tuple. Browser current/history/crop state is scoped to the server-provided owner or guest namespace. Only authenticated owners may migrate recognized unscoped legacy history. Never store CSRF or transport fields. The general importer loads transient editable settings; the My Maps importer writes private persistence.

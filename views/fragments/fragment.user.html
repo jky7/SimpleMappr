@@ -17,15 +17,13 @@
 <tbody>
 {% for row in rows %}
     <tr class="{{ cycle(['odd', 'even'], loop.index0) }}">
-    <td><a class="user-load" data-uid="{{ row.uid }}" href="#">{{ row.username }}</a></td>
+    <td>{{ row.username }}</td>
     <td>{{ row.email }}</td>
     <td class="usermaps-number">{{ row.num }}</td>
     {% set access = (row.access) ? row.access|date("M d, Y") : '' %}
     <td class="usermaps-center">{{ access }}</td>
     <td class="actions">
-        {% if roles[row.role] != 'administrator' %}
-        <a class="sprites-before user-delete" data-id="{{ row.uid }}" href="#">{{ "Delete"|trans }}</a>
-        {% endif %}
+
     </td>
     </tr>
 {% endfor %}

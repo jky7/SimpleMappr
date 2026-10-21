@@ -1102,3 +1102,99 @@ msgstr ""
 msgid "Apply"
 msgstr ""
 
+
+msgid "Import map data or settings"
+msgstr "Import map data or settings"
+
+msgid "CSV, TSV, WKT, GeoJSON, KML, GeoRSS or saved map settings. Maximum 5 MiB; settings 2 MB."
+msgstr "CSV, TSV, WKT, GeoJSON, KML, GeoRSS or saved map settings. Maximum 5 MiB; settings 2 MB."
+
+msgid "Text encoding"
+msgstr "Text encoding"
+
+msgid "Type Well-Known Text (WKT), or import a geometry file in Point Data."
+msgstr "Type Well-Known Text (WKT), or import a geometry file in Point Data."
+
+msgid "Map preview"
+msgstr "Map preview"
+
+msgid "Rendered map"
+msgstr "Rendered map"
+
+msgid "Map scale"
+msgstr "Map scale"
+
+msgid "Map data"
+msgstr "Map data"
+
+msgid "Data imported into the editor. Save to keep a private map."
+msgstr "Data imported into the editor. Save to keep a private map."
+
+msgid "Some drawings could not be imported."
+msgstr "Some drawings could not be imported."
+
+msgid "PNG with transparency"
+msgstr "PNG with transparency"
+
+msgid "Import a supported map data file with valid text encoding. Existing data is kept when import fails."
+msgstr "Import a supported map data file with valid text encoding. Existing data is kept when import fails."
+
+msgid "Import settings into My Maps (.json)"
+msgstr "Import settings into My Maps (.json)"
+
+msgid "Assets use versioned filenames. Rebuild the image to update them."
+msgstr "Assets use versioned filenames. Rebuild the image to update them."
+
+msgid "Report an issue or request a feature"
+msgstr "Report an issue or request a feature"
+
+msgid "The download failed or exceeded 90 seconds. Your map is kept. Try again."
+msgstr "The download failed or exceeded 90 seconds. Your map is kept. Try again."
+
+msgid "Map settings exceed 2 MB."
+msgstr "Map settings exceed 2 MB."
+
+msgid "Map imported. Open it from My Maps."
+msgstr "Map imported. Open it from My Maps."
+
+msgid "Map import failed."
+msgstr "Map import failed."
+
+msgid "The selected file could not be read."
+msgstr "The selected file could not be read."
+
+msgid "Use Tab to reach map controls. Map shortcuts work while the preview has keyboard focus."
+msgstr "Use Tab to reach map controls. Map shortcuts work while the preview has keyboard focus."
+
+msgid "Password"
+msgstr "Password"
+
+msgid "Return to the map editor"
+msgstr "Return to the map editor"
+
+msgid "Saving is available after the deployment owner is configured."
+msgstr "Saving is available after the deployment owner is configured."
+
+msgid "Hexadecimal color"
+msgstr "Hexadecimal color"
+
+msgid "Red"
+msgstr "Red"
+
+msgid "Green"
+msgstr "Green"
+
+msgid "Blue"
+msgstr "Blue"
+
+msgid "Hue"
+msgstr "Hue"
+
+msgid "Saturation"
+msgstr "Saturation"
+
+msgid "Brightness"
+msgstr "Brightness"
+
+msgid "Rotation"
+msgstr "Rotation"

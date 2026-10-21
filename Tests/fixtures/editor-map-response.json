@@ -1,0 +1,91 @@
+{
+  "status": "ok",
+  "map": {
+    "schema_version": 1,
+    "projection": "esri:102009",
+    "projection_map": "epsg:4326",
+    "bbox_map": "-180,-90,180,90",
+    "rotation": 0,
+    "origin": -96,
+    "origin_map": null,
+    "width": "",
+    "height": "",
+    "save": {
+      "title": "P5 comparison fixture"
+    },
+    "coords": [
+      {
+        "title": "Pardosa moesta",
+        "data": "45.755\t-110.12\n55.6\t-101\n48\t-109",
+        "color": "0 0 0",
+        "shape": "circle",
+        "size": "10"
+      },
+      {
+        "title": "Pardosa fuscula",
+        "data": "47.9\t-112",
+        "color": "0 0 0",
+        "shape": "star",
+        "size": "10"
+      },
+      {
+        "title": "Pardosa xerampelina",
+        "data": "48.9\t-103.55\n43.02\t-105.9",
+        "color": "0 0 0",
+        "shape": "square",
+        "size": "10"
+      },
+      {
+        "title": "Trochosa terricola",
+        "data": "45.5\t-103.8\n46\t-100\n47.7\t-110.9",
+        "color": "0 0 0",
+        "shape": "triangle",
+        "size": "10"
+      }
+    ],
+    "regions": [
+      {
+        "title": "",
+        "data": "",
+        "color": "150 150 150",
+        "border": "on"
+      },
+      {
+        "title": "",
+        "data": "",
+        "color": "150 150 150",
+        "border": "on"
+      },
+      {
+        "title": "",
+        "data": "",
+        "color": "150 150 150",
+        "border": "on"
+      }
+    ],
+    "wkt": [
+      {
+        "title": "",
+        "data": "",
+        "color": "150 150 150",
+        "border": "on"
+      },
+      {
+        "title": "",
+        "data": "",
+        "color": "150 150 150",
+        "border": "on"
+      },
+      {
+        "title": "",
+        "data": "",
+        "color": "150 150 150",
+        "border": "on"
+      }
+    ],
+    "layers": {
+      "countries": "on"
+    },
+    "options": []
+  }
+}

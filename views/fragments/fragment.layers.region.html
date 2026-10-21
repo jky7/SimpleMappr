@@ -5,13 +5,13 @@
     <h3><a href="#">{{ "Region %d%"|trans({"%d%": d}) }}</a></h3>
     <div>
     <div class="fieldset-taxon">
-    <span class="fieldset-title">{{ "Legend"|trans }}<span class="required">*</span>:</span> <input type="text" class="m-mapTitle" size="60" maxlength="60" name="regions[{{ i }}][title]" />
+    <label class="fieldset-title" data-field="title">{{ "Legend"|trans }}<span class="required">*</span>:</label> <input type="text" class="m-mapTitle" size="60" maxlength="60" name="regions[{{ i }}][title]" />
     </div>
     <div class="resizable-textarea">
-    <span><textarea class="resizable m-mapCoord" rows="5" cols="60" name="regions[{{ i }}][data]"></textarea></span>
+    <label class="visually-hidden" data-field="data">{{ "Map data"|trans }} {{ d }}</label><span><textarea class="resizable m-mapCoord" rows="5" cols="60" name="regions[{{ i }}][data]"></textarea></span>
     </div>
     <div class="fieldset-extras">
-    <span class="fieldset-title">{{ "Color"|trans }}:</span> <input type="text" class="colorPicker" size="12" maxlength="11" name="regions[{{ i }}][color]" value="150 150 150" /> <span class="fieldset-title">{{ "Border"|trans }}</span> <input class="m-mapBorder" type="checkbox" name="regions[{{ i }}][border]" checked /> <span class="fieldset-title">{{ "Hatched"|trans }}</span> <input class="m-mapHatch" type="checkbox" name="regions[{{ i }}][hatch]" />
+    <label class="fieldset-title" data-field="color">{{ "Color"|trans }}:</label> <input type="text" class="colorPicker" size="12" maxlength="11" name="regions[{{ i }}][color]" value="150 150 150" /> <label class="fieldset-title" data-field="border">{{ "Border"|trans }}</label> <input class="m-mapBorder" type="checkbox" name="regions[{{ i }}][border]" checked /> <label class="fieldset-title" data-field="hatch">{{ "Hatched"|trans }}</label> <input class="m-mapHatch" type="checkbox" name="regions[{{ i }}][hatch]" />
     </div>
     <button class="sprites-before clear clearself negative">{{ "Clear"|trans }}</button>
     </div>

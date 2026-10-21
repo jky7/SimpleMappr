@@ -1391,3 +1391,98 @@ msgstr "Trop de champs de données"
 #: ./tabs/main.php:171
 msgid "A maximum of %num_textarea% data fields is supported."
 msgstr "Un maximum de %num_textarea% champs de données est supporté"
+msgid "Import map data or settings"
+msgstr "Importer des données ou des paramètres de carte"
+
+msgid "CSV, TSV, WKT, GeoJSON, KML, GeoRSS or saved map settings. Maximum 5 MiB; settings 2 MB."
+msgstr "CSV, TSV, WKT, GeoJSON, KML, GeoRSS ou paramètres enregistrés. Maximum de 5 Mio ; paramètres de 2 Mo."
+
+msgid "Text encoding"
+msgstr "Encodage du texte"
+
+msgid "Type Well-Known Text (WKT), or import a geometry file in Point Data."
+msgstr "Saisissez du texte WKT ou importez un fichier géométrique dans Données ponctuelles."
+
+msgid "Map preview"
+msgstr "Aperçu de la carte"
+
+msgid "Rendered map"
+msgstr "Carte générée"
+
+msgid "Map scale"
+msgstr "Échelle de la carte"
+
+msgid "Map data"
+msgstr "Données de la carte"
+
+msgid "Data imported into the editor. Save to keep a private map."
+msgstr "Données importées dans l’éditeur. Enregistrez pour conserver une carte privée."
+
+msgid "Some drawings could not be imported."
+msgstr "Certains dessins n’ont pas pu être importés."
+
+msgid "PNG with transparency"
+msgstr "PNG avec transparence"
+
+msgid "Import a supported map data file with valid text encoding. Existing data is kept when import fails."
+msgstr "Importez un fichier pris en charge avec un encodage valide. Les données existantes sont conservées si l’importation échoue."
+
+msgid "Import settings into My Maps (.json)"
+msgstr "Importer des paramètres dans Mes cartes (.json)"
+
+msgid "Assets use versioned filenames. Rebuild the image to update them."
+msgstr "Les fichiers de l’interface sont versionnés. Reconstruisez l’image pour les actualiser."
+
+msgid "Report an issue or request a feature"
+msgstr "Signaler un problème ou demander une fonctionnalité"
+
+msgid "The download failed or exceeded 90 seconds. Your map is kept. Try again."
+msgstr "Le téléchargement a échoué ou dépassé 90 secondes. Votre carte est conservée. Réessayez."
+
+msgid "Map settings exceed 2 MB."
+msgstr "Les paramètres de la carte dépassent 2 Mo."
+
+msgid "Map imported. Open it from My Maps."
+msgstr "Carte importée. Ouvrez-la dans Mes cartes."
+
+msgid "Map import failed."
+msgstr "L’importation de la carte a échoué."
+
+msgid "The selected file could not be read."
+msgstr "Le fichier sélectionné n’a pas pu être lu."
+
+msgid "Use Tab to reach map controls. Map shortcuts work while the preview has keyboard focus."
+msgstr "Utilisez Tab pour atteindre les commandes. Les raccourcis fonctionnent lorsque l’aperçu a le focus."
+
+msgid "Password"
+msgstr "Mot de passe"
+
+msgid "Return to the map editor"
+msgstr "Retour à l’éditeur de carte"
+
+msgid "Saving is available after the deployment owner is configured."
+msgstr "L’enregistrement est disponible après la configuration du propriétaire."
+
+msgid "Hexadecimal color"
+msgstr "Couleur hexadécimale"
+
+msgid "Red"
+msgstr "Rouge"
+
+msgid "Green"
+msgstr "Vert"
+
+msgid "Blue"
+msgstr "Bleu"
+
+msgid "Hue"
+msgstr "Teinte"
+
+msgid "Saturation"
+msgstr "Saturation"
+
+msgid "Brightness"
+msgstr "Luminosité"
+
+msgid "Rotation"
+msgstr "Rotation"

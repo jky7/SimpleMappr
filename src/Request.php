@@ -97,6 +97,12 @@ class Request
         $request = (object)array_merge($defaults, $values);
         if (!isset($values['height']) && is_numeric($request->width)) { $request->height = (float)$request->width / 2; }
         if ($request->origin_map === null) { $request->origin_map = $request->origin; }
+        if (is_array($request->layers)) {
+            $request->layers = array_filter($request->layers, static function ($value) {
+                if (!is_scalar($value) && $value !== null) { throw new \InvalidArgumentException('Invalid map layer flag.'); }
+                return $value === true || $value === 1 || $value === 1.0 || (is_string($value) && in_array(strtolower(trim($value)), ['1','true','on','yes'], true));
+            });
+        }
         $request->graticules = is_array($request->layers) && array_key_exists('grid', $request->layers);
         return $request;
     }

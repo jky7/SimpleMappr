@@ -14,3 +14,6 @@ log/**
 *.log
 
 backups
+
+/node_modules/
+/public/build/

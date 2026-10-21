@@ -530,29 +530,23 @@ class Router
             exit();
         }
 
-        $host = explode(".", $_SERVER['HTTP_HOST']);
-        if (ENVIRONMENT == "production" && $host[0] !== "www" && !in_array("local", $host)) {
-            header('Location: '.MAPPR_URL);
-            exit();
-        } else {
-            if (MAPPR_PERSISTENCE) { Session::updateActivity(); } else { Session::selectLocale(); }
-            $shapes_file = file_get_contents(Mappr::getShapefileConfigPath());
-            $shapes = Yaml::parse($shapes_file)['environments'][ENVIRONMENT];
-            unset($shapes['layers']['base'], $shapes['layers']['stateprovinces_polygon']);
+        if (MAPPR_PERSISTENCE) { Session::updateActivity(); } else { Session::selectLocale(); }
+        $shapes_file = file_get_contents(Mappr::getShapefileConfigPath());
+        $shapes = Yaml::parse($shapes_file)['environments'][ENVIRONMENT];
+        unset($shapes['layers']['base'], $shapes['layers']['stateprovinces_polygon']);
 
-            $config = [
-                'og_url' => MAPPR_URL,
-                'og_logo' => MAPPR_URL . '/public/images/logo_og.png',
-                'layers' => array_combine(array_keys($shapes['layers']), array_column($shapes['layers'], 'name')),
-                'labels' => array_combine(array_keys($shapes['labels']), array_column($shapes['labels'], 'name')),
-                'projections' => AcceptedProjections::$projections,
-                'marker_sizes' => AcceptedMarkers::sizes(),
-                'marker_shapes' => AcceptedMarkers::$shapes,
-                'locales' => Session::$accepted_locales,
-                'num_textarea' => MAXNUMTEXTAREA
-            ];
-            return $this->_twig(true)->render("main.html", $config);
-        }
+        $config = [
+            'og_url' => MAPPR_URL,
+            'og_logo' => MAPPR_URL . '/public/images/logo_og.png',
+            'layers' => array_combine(array_keys($shapes['layers']), array_column($shapes['layers'], 'name')),
+            'labels' => array_combine(array_keys($shapes['labels']), array_column($shapes['labels'], 'name')),
+            'projections' => AcceptedProjections::$projections,
+            'marker_sizes' => AcceptedMarkers::sizes(),
+            'marker_shapes' => AcceptedMarkers::$shapes,
+            'locales' => Session::$accepted_locales,
+            'num_textarea' => MAXNUMTEXTAREA
+        ];
+        return $this->_twig(true)->render("main.html", $config);
     }
 
     /**
@@ -632,7 +626,6 @@ class Router
         $config = [
             'title' => $title,
             'og_url' => MAPPR_URL,
-            'google_analytics' => GOOGLE_ANALYTICS
         ];
 
         return $this->_twig(true)->render("{$code}.html", $config);

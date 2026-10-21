@@ -1,0 +1,52 @@
+:focus-visible{outline:3px solid #176caf;outline-offset:2px}
+#mapOutputImage{max-width:none}
+#map-preview{overflow-x:auto}
+#mapOutput[aria-busy="true"]{cursor:progress}
+@media screen and (max-width:1200px){
+ #header,#tabs{min-width:0}
+ #header{height:auto;min-height:3rem;display:flex;flex-wrap:wrap;align-items:center;gap:.5rem;padding:.5rem}
+ #site-title,#site-tagline,#site-user,#site-session,#site-languages,#map-loader{position:static;margin:0}
+ #site-tagline{display:none}
+ #site-title{font-size:1.2rem}
+ #tabs>.navigation{display:flex;flex-wrap:wrap}
+ #tabs>.navigation li{float:none;white-space:nowrap}
+ .fieldset-points,.fieldset-regions,.fieldset-wkt,.panel{width:auto!important;max-width:100%;box-sizing:border-box}
+ .fieldset-taxon input{max-width:calc(100% - 6rem)}
+ .fieldset-extras{display:flex;flex-wrap:wrap;align-items:center;gap:.5rem}
+ .fieldset-extras select,.fieldset-extras input{max-width:100%}
+ .resizable-textarea textarea{box-sizing:border-box;max-width:100%;resize:vertical}
+ #mapWrapper{min-width:1175px}
+ .ui-dialog{max-width:calc(100vw - 2rem);box-sizing:border-box}
+ .ui-dialog .ui-dialog-content{max-width:100%;box-sizing:border-box;overflow:auto}
+ #upload-panel{overflow-wrap:anywhere}
+}
+.visually-hidden{position:absolute!important;width:1px;height:1px;padding:0;overflow:hidden;clip-path:inset(50%);white-space:nowrap;border:0}
+#mapOutput:focus-visible{outline-offset:1px}
+#mapOutputImage{display:block}
+#admin-status[role=alert],.mapper-message-error{color:#9d1717}
+#upload-panel input[type=file]{max-width:100%}
+@media screen and (max-width:1200px){
+ #map-preview{height:auto;max-width:100%;overflow:auto}
+ #mapWrapper{min-width:0;height:auto}
+ #actionsBar{position:relative;display:flex;flex-wrap:wrap;align-items:center;gap:.4rem;width:100%!important;height:auto;min-height:2rem;box-sizing:border-box;padding:.3rem}
+ #actionsBar ul{float:none!important;margin:0}
+ #mapTitle{position:static!important;float:none!important;margin:0!important;max-width:100%;overflow-wrap:anywhere}
+ #map{position:relative;top:auto;margin-top:.5rem;max-width:none}
+ #mapTools{position:relative;left:auto;right:auto;top:auto;min-height:0;max-width:100%;margin-top:1rem}
+ #mapToolsCollapse{position:relative;right:auto;top:auto;margin-top:.3rem}
+ #mapTools .columns{display:flex;flex-wrap:wrap}
+ #mapTools .columns li{float:none}
+ .fieldSets{width:100%}
+ .fieldset-taxon input{width:100%;max-width:100%;box-sizing:border-box}
+ .resizable-textarea textarea{width:100%}
+ .fieldset-extras input{max-width:8rem}
+ .ui-dialog{left:1rem!important;max-height:calc(100vh - 2rem);overflow:auto}
+}
+#site-session form{margin:0}
+#site-session button{color:#f2f2f2;background-color:#333;border-color:#aaa;font-size:1em!important;line-height:1.25;padding:.35em .6em}
+#site-session button:hover{color:#fff;background-color:#4f4f4f;border-color:#ddd}
+button.positive{color:#3f6f13!important}
+.ui-accordion-header[role=button]{cursor:pointer}
+button.positive:hover{background-color:#3d5b40!important;color:#fff!important}
+button.negative{color:#b32616!important}
+button.negative:hover{background-color:#782c21!important;color:#fff!important}
