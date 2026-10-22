@@ -6,6 +6,10 @@ Download the result as an image, a Word document, or a PowerPoint presentation.
 
 The original SimpleMappr online service has been retired. This version continues the project for self-hosted use, on your own computer or a server you manage. Online hosting with separate accounts and social logins are not yet supported.
 
+## Status
+
+This fork is still a work in progress and requires additional testing
+
 ## Requirements
 
 To run SimpleMappr on your own computer, you need:
