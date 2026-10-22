@@ -4,8 +4,7 @@ Create geographic maps for publications and presentations from your location dat
 Plot points, shade regions, add drawings and labels, and choose how your map looks.
 Download the result as an image, a Word document, or a PowerPoint presentation.
 
-This version continues the original SimpleMappr project for use on your own computer or a server you manage.
-The original online service has retired.
+The original SimpleMappr online service has been retired. This version continues the project for self-hosted use, on your own computer or a server you manage. Online hosting and social logins are not yet supported.
 
 ## Requirements
 
@@ -34,13 +33,12 @@ docker compose up --build -d --wait
 The setup asks you to choose an owner username and password. Use a password of at least 12 characters.
 Keep these credentials to sign in and save maps. The first build downloads the required software and can take several minutes.
 
-Once startup finishes, open [SimpleMappr on this computer](http://127.0.0.1:8080/).
+Once startup finishes, SimpleMappr will be available at [http://127.0.0.1:8080](http://127.0.0.1:8080/).
 For an existing installation, keep its `.env` file and follow the [maintenance guide](docs/private-deployment.md).
 
 ## Open SimpleMappr
 
-Open the address provided by the person running your SimpleMappr installation.
-If you installed it on your own computer with the default settings, open [SimpleMappr on this computer](http://127.0.0.1:8080/).
+Open [http://127.0.0.1:8080](http://127.0.0.1:8080/) in your browser.
 You can make and download maps without signing in.
 
 ## Make your first map
@@ -77,6 +75,7 @@ The [original installation instructions](docs/legacy-readme.md) are archived for
 
 ## Credits and license
 
-SimpleMappr was created by David P. Shorthouse. This project continues his work.
+SimpleMappr was created by [David P. Shorthouse](https://github.com/dshorthouse/SimpleMappr). This project continues his work.
+
 The software is released under the [MIT license](LICENSE).
 See [Third-party software and map data](docs/third-party.md) for data sources and their terms.
