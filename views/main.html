@@ -180,7 +180,7 @@
         <div class="panel">
             <p>{{ "Save and reload your map data or create a generic template."|trans }}</p>
         </div>
-        {% if login_enabled %}<p><a href="/login{{ qlocale }}">{{ "Sign In"|trans }}</a></p>{% else %}<p>Saving is available after the deployment owner is configured.</p>{% endif %}
+        {% if login_enabled %}<p><a href="{{ base }}/login{{ qlocale }}">{{ "Sign In"|trans }}</a></p>{% else %}<p>Saving is available after the deployment owner is configured.</p>{% endif %}
     {% endif %}
     </div>
 

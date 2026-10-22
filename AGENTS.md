@@ -33,6 +33,8 @@ The Dockerfile pins the Debian base digest and package snapshot. Keep `/usr/loca
 
 The canonical request is the original map document. Keep `bbox_map`, `projection_map` and `origin_map` together as source viewport state. Rendered responses include `rendered_origin`; the browser echoes it into `origin_map`. Native projection changes require explicit extent transformation. Never mutate the shared projection registry per request.
 
+Sub-path deployments set `SIMPLEMAPPR_URL` to an absolute URL with a path (for example `https://example.org/simplemappr`) behind a prefix-stripping proxy. In-page links, asset URLs, redirects and `MAPPR_MAPS_URL` use only its path (`SiteUrl::path()`, `{{ base }}` in templates); browser requests use `baseUrl`. Never hardcode a root-relative URL. The HTTP tests in the modern suite assume a root deployment, so run them against an app started with `SIMPLEMAPPR_URL` unset.
+
 Use `config/defaults.php` for checked-in guest defaults and optional ignored `config/conf.php` overrides. The minimal dataset YAML is shared by the editor and renderer. The native health endpoint remains independent of Composer. Keep errors logged and binary responses clean.
 
 The modern suite uses PHPUnit 13. The original coordinate suite is included with numeric tolerances. Other archived tests remain available but their database and Selenium bootstrap is pending migration. Do not delete their coverage or claim that a modern-suite pass covers persistence.

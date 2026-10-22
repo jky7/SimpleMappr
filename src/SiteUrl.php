@@ -17,4 +17,10 @@ final class SiteUrl
         if (!is_string($host) || !preg_match('/^(?:[a-z0-9.-]+|\[[0-9a-f:]+\])(?::[0-9]{1,5})?$/iD',$host) || filter_var('http://'.$host,FILTER_VALIDATE_URL) === false) { throw new HttpException(400,'Invalid request host.'); }
         return ((!empty($server['HTTPS']) && $server['HTTPS'] !== 'off') ? 'https' : 'http').'://'.$host.$configured;
     }
+
+    // Path-only prefix for in-page links, so they stay on whatever host served the page.
+    public static function path(?string $configured = null): string
+    {
+        return rtrim((string)parse_url(self::base(['HTTP_HOST'=>'localhost'], $configured), PHP_URL_PATH), '/');
+    }
 }

@@ -814,7 +814,7 @@ var SimpleMappr = (function($, window, document) {
         if (e.keyCode === $.ui.keyCode.TAB && $(this).data("autocomplete").menu.active) { e.preventDefault(); }
       }).autocomplete({
         source: function(request, response) {
-          $.getJSON( "/places.json?term=" + self.extractLast(request.term), {}, response);
+          $.getJSON( self.settings.baseUrl + "/places.json?term=" + self.extractLast(request.term), {}, response);
         },
         search: function() {
           term = self.extractLast(this.value);

@@ -12,7 +12,7 @@
 <ul>
 {% for locale_choice in locales %}
     {% set selected = (locale_choice['locale'] == locale) ? " class=selected" : "" %}
-  <li><a href="/?locale={{ locale_choice['locale'] }}#tabs=0"{{ selected }}>{{ locale_choice['native'] }}</a></li>
+  <li><a href="{{ base }}/?locale={{ locale_choice['locale'] }}#tabs=0"{{ selected }}>{{ locale_choice['native'] }}</a></li>
 {% endfor %}
 </ul>
 </div>
@@ -29,9 +29,9 @@
 
 <div id="site-session">
 {% if session %}
-    <form action="/logout" method="post"><input type="hidden" name="_csrf" value="{{ csrf_token }}"><button class="sprites-before logout" type="submit">{{ "Sign Out"|trans }}</button></form>
+    <form action="{{ base }}/logout" method="post"><input type="hidden" name="_csrf" value="{{ csrf_token }}"><button class="sprites-before logout" type="submit">{{ "Sign Out"|trans }}</button></form>
 {% else %}
-    {% if login_enabled %}<a class="sprites-before login" href="/login{{ qlocale }}">{{ "Sign In"|trans }}</a>{% endif %}
+    {% if login_enabled %}<a class="sprites-before login" href="{{ base }}/login{{ qlocale }}">{{ "Sign In"|trans }}</a>{% endif %}
 {% endif %}
 </div>
 

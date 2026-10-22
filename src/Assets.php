@@ -61,7 +61,7 @@ final class Assets
         if (!is_string($asset['file'] ?? null) || !preg_match('/^[a-z-]+\.[a-f0-9]{12}\.(?:js|css)$/D', $asset['file']) || !is_file(dirname(__DIR__).'/public/build/'.$asset['file'])) {
             throw new \RuntimeException('The frontend asset manifest is incomplete. Rebuild the Docker image.');
         }
-        return '/public/build/'.$asset['file'];
+        return SiteUrl::path().'/public/build/'.$asset['file'];
     }
 
     public function getCSSHeader(): string
