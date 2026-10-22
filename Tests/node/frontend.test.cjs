@@ -62,6 +62,13 @@ test('successive Undo and Redo traverse each viewport and a new preview discards
  const count=e.requests.length;e.p.mapRedo();assert.equal(e.requests.length,count);
  e.p.mapUndo();assert.equal(e.request().get('bbox_map'),a);
 });
+test('failed Undo and Redo previews leave their destinations available for retry',t=>{
+ const e=viewportEditor(t),a='-90,-60,-30,10',b='-80,-60,-20,10',c='-80,-50,-20,20';
+ e.p.showMap();e.render(a);e.p.mapPan('right');e.render(b);e.p.mapPan('up');e.render(c);
+ e.p.mapUndo();e.requests.at(-1).error({},'error');e.p.mapUndo();assert.equal(e.request().get('bbox_map'),b);e.render(b);
+ e.p.mapRedo();e.respond(c);e.$('#mapOutputImage').trigger('error');
+ const count=e.requests.length;e.p.mapRedo();assert.equal(e.requests.length,count+1);assert.equal(e.request().get('bbox_map'),c);e.render(c);
+});
 test('jQuery and UI expose the required live editor widget APIs',t=>{
  const e=finish(t,editor());
  assert.equal(e.$.fn.jquery,'3.7.1');assert.equal(e.$.ui.version,'1.14.2');
