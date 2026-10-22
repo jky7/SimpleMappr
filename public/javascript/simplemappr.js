@@ -1981,6 +1981,10 @@ var SimpleMappr = (function($, window, document) {
 
     postData: function(formData, load_data, onRendered) {
       var self = this, sequence = ++self.vars.renderSequence;
+      var submittedDocument = window.SimpleMapprDocument.fromEntries(
+        Array.from(new window.URLSearchParams(formData), function(entry) { return {name: entry[0], value: entry[1]}; }),
+        self.settings.maxTextareaCount
+      );
       if (self.vars.renderRequest) { self.vars.renderRequest.abort(); }
       self.hideErrorMessage();
       self.vars.renderRequest = $.ajax({
@@ -1992,10 +1996,16 @@ var SimpleMappr = (function($, window, document) {
           }
           self.resetFormValues(data);
           self.resetJbbox();
-          var renderedDocument = self.readDocument();
+          var renderedDocument = Object.assign(submittedDocument, {
+            bbox_map: data.rendered_bbox,
+            projection_map: data.rendered_projection,
+            origin_map: data.rendered_origin == null || data.rendered_origin === false ? '' : data.rendered_origin,
+            rotation: data.rendered_rotation,
+            bbox_rubberband: ''
+          });
           self.drawMap(data, load_data, function() {
-            window.SimpleMapprStorage.current(renderedDocument);
             if (onRendered) { onRendered(renderedDocument); }
+            window.SimpleMapprStorage.current(self.readDocument());
           });
           self.drawLegend(); self.drawScalebar(); self.showBadPoints(); self.showBadDrawings(); self.addBadRecordsViewer();
         },
