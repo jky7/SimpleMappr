@@ -10,16 +10,21 @@ COPY Tests/node/ Tests/node/
 COPY Tests/fixtures/editor-map-response.json Tests/fixtures/
 RUN npm run build && npm test && npm run check:build
 
-FROM debian:trixie-slim@sha256:a29215f6a35e51e22adffa17f89e9d2ef06214e64a2bad10d765c46aea49f11f
+FROM debian:trixie-slim@sha256:62bd423aeee912639ca8ee681c2b762cb3e25137e0a92b20be455898a9f034ad
 
-ARG DEBIAN_SNAPSHOT=20261019T000000Z
+ARG DEBIAN_SNAPSHOT=20261021T134156Z
 RUN printf 'deb [check-valid-until=no] http://snapshot.debian.org/archive/debian/%s/ trixie main\ndeb [check-valid-until=no] http://snapshot.debian.org/archive/debian-security/%s/ trixie-security main\n' "$DEBIAN_SNAPSHOT" "$DEBIAN_SNAPSHOT" > /etc/apt/sources.list \
     && rm /etc/apt/sources.list.d/debian.sources \
+    && apt-get update \
+    && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends ca-certificates \
+    && sed -i 's|http://snapshot.debian.org|https://snapshot.debian.org|g' /etc/apt/sources.list \
+    && rm -rf /var/lib/apt/lists/* \
     && apt-get update \
     && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
         apache2 libapache2-mod-php8.4 php8.4-cli php-mapscript-ng \
         php8.4-gd php8.4-mysql php8.4-curl php8.4-mbstring php8.4-xml php8.4-zip \
         gdal-bin gettext ca-certificates fonts-dejavu-core curl composer \
+    && php -r 'if (PHP_VERSION_ID < 80427) { fwrite(STDERR, "PHP 8.4.27 or newer is required for CVE-2026-109618 and CVE-2026-109619.\n"); exit(1); }' \
     && dpkg-query -W -f='${Package}\t${Version}\n' > /usr/local/share/simplemappr-packages.tsv \
     && rm -rf /var/lib/apt/lists/* \
     && a2dismod mpm_event \

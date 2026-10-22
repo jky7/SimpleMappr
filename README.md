@@ -33,7 +33,7 @@ The minimal profile contains land, lakes, country map units, province polygons, 
 
 ## Rebuild the runtime
 
-The Dockerfile pins the Debian base image by digest and uses the Debian and Debian Security snapshots dated `20261019T000000Z`. Apache mod_php and PHP CLI load the distribution's matching `php-mapscript-ng` package. `check-runtime` loads that binding directly. Composer installs the locked application dependencies during the image build. PHPPresentation is pinned to upstream commit `67a3b85673a7e05c7347e0c3970f9afb2338e246` because its stable release requires a vulnerable PhpSpreadsheet major. Replace that pin once a compatible stable release ships.
+The Dockerfile pins the Debian base image by digest and uses the Debian and Debian Security snapshots dated `20261021T134156Z`. The build requires PHP 8.4.27 or newer, which fixes [CVE-2026-109618 and CVE-2026-109619](https://www.php.net/archive/2026.php#2026-10-21-5). Apache mod_php and PHP CLI load the distribution's matching `php-mapscript-ng` package. `check-runtime` loads that binding directly. Composer installs the locked application dependencies during the image build. PHPPresentation is pinned to upstream commit `67a3b85673a7e05c7347e0c3970f9afb2338e246` because its stable release requires a vulnerable PhpSpreadsheet major. Replace that pin once a compatible stable release ships.
 
 To inspect installed package versions, run:
 
@@ -108,7 +108,7 @@ SimpleMappr, [http://www.simplemappr.net](http://www.simplemappr.net) is a web-b
 Server Requirements
 --------------------------
 
-See how the [travis.yml](.travis.yml) file is configured for [Travis-CI](https://travis-ci.org/)'s continuous integration of automated unit and functional testing.
+The original [Travis configuration](docs/legacy-ci/travis.yml) is archived for reference. Maintained checks use [GitHub Actions](.github/workflows/release.yml) and the Docker runtime above.
 
 1. PHP5.6+ [with cli, PDO, PDO-MySQL, GD]
 2. Apache2.2.24+ [with rewrite]
