@@ -1087,9 +1087,9 @@ var SimpleMappr = (function($, window, document) {
           clone = button.parent().prev().children("div:last").clone();
           num = parseInt(clone.find("h3 a").text().split(" ")[1],10);
           counter = self.textareaCounter(data_type, 'increase');
-          clone.find("h3").attr("id", clone.find("h3").attr("id").replace(/(\d+)+/g, num));
+          clone.find("h3").removeAttr("id aria-controls");
           clone.find("h3 a").text(clone.find("h3 a").text().split(" ")[0] + " " + (num+1).toString());
-          clone.find("div").eq(0).attr("id", clone.find("div").eq(0).attr("id").replace(/(\d+)+/g, num));
+          clone.find("div").eq(0).removeAttr("id aria-labelledby");
           clone.find("input.m-mapTitle").attr("name", data_type + "["+num.toString()+"][title]").val("");
           clone.find("textarea")
                   .attr("name", data_type + "["+num.toString()+"][data]")
@@ -2254,7 +2254,7 @@ var SimpleMappr = (function($, window, document) {
     },
 
     performRotation: function(element) {
-      $('#rotation').val($(element).attr("data-rotate"));
+      this.setRotation($(element).attr("data-rotate"));
       this.resetJbbox();
       this.destroyRedo();
       this.showMap();
