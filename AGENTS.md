@@ -45,6 +45,12 @@ MariaDB 11.8.9 is pinned by digest and has no published port. Compose requires r
 
 All saved-map operations include the server-side uid. Admin roles never bypass map ownership. Mutations require session CSRF. SavedMapDocument owns the versioned settings allowlist, including case-sensitive layer names, bbox_map, projection_map and origin_map. Settings JSON is distinct from GeoJSON. Private preview images use TemporaryImage outside Apache public assets and an expiring owner-checked route. Guest image names contain 128 random bits.
 
+## Social sign-in
+
+Google and Microsoft OIDC are optional and allow open registration. `SocialLoginConfig` owns fixed provider endpoints and credential validation without Composer or network access. `SocialLogin` owns state, nonce, PKCE, bounded HTTPS exchange, and signed claims. `Session::loginSocial` resolves the verified identity through User and establishes the session privately. New accounts are ordinary users. Never link by email or assign the local owner's UID. Provider/issuer/subject hashes fit the existing unique identifier without a schema migration; provider email and access/refresh tokens are not stored.
+
+Sessions use separate local/provider credential fingerprints. Keep SameSite=Lax; Google and Microsoft return query callbacks. Explicit HTTPS deployment origins set Secure cookies behind TLS termination without trusting forwarded headers. Apache access logs omit query strings and referrers. Preserve the protected provider configuration in backups; recovery at a changed origin clears active provider pairs until callbacks are reconfigured. The local owner remains the recovery login. Real provider consent requires operator credentials; signed local fixtures do not prove console configuration.
+
 ## Imports and services
 
 `ImportData` parses bounded uploaded or remote bytes, with explicit text encoding, XML entity rejection, and row errors. Import parsing never unlinks a caller-supplied path. Multipart uploads must pass `is_uploaded_file`. `RemoteImport` allows public HTTP/HTTPS destinations on standard ports, validates every DNS answer and redirect, pins the selected address, verifies TLS, and disables inherited proxies. Its 15-second deadline includes a separate, terminable DNS process. Limits apply to decoded bodies at 5 MiB and response headers at 64 KiB. Do not add a private-host override to production.

@@ -262,7 +262,29 @@ class Router
 
         $router->get('/login', function () {
             Header::setHeader('html');
-            return $this->_twig()->render('login.html', ['login_enabled'=>Session::configured()]);
+            $this->_privateHeaders();
+            header('Referrer-Policy: no-referrer');
+            $error = $_SESSION['social_login_error'] ?? null;
+            unset($_SESSION['social_login_error']);
+            return $this->_twig()->render('login.html', ['login_error'=>$error]);
+        });
+        $router->post('/auth/{provider:(?:google|microsoft)}/start', function ($provider) {
+            $this->_privateHeaders();
+            header('Referrer-Policy: no-referrer');
+            Session::currentUser();
+            Session::redirect((new SocialLogin())->begin($provider));
+        });
+        $router->get('/auth/{provider:(?:google|microsoft)}/callback', function ($provider) {
+            $this->_privateHeaders();
+            header('Referrer-Policy: no-referrer');
+            try {
+                Session::loginSocial($provider, $_GET);
+            } catch (\Throwable $error) {
+                error_log('Social sign-in failed for '.$provider.' ('.$error::class.').');
+                $_SESSION['social_login_error'] = 'Social sign-in could not be completed. Please try again.';
+                Session::redirect('/login'.Session::makeLocaleParam($_SESSION['locale'] ?? 'en_US'));
+            }
+            Session::redirect('/'.Session::makeLocaleParam($_SESSION['locale'] ?? 'en_US'));
         });
         $router->post('/logout', function () { Session::destroy(); });
 
@@ -572,6 +594,8 @@ class Router
         unset($session['hash'], $session['identifier']);
         $twig->addGlobal('csrf_token', Session::csrfToken());
         $twig->addGlobal('login_enabled', Session::configured());
+        $twig->addGlobal('local_login_enabled', Session::localConfigured());
+        $twig->addGlobal('social_providers', MAPPR_PERSISTENCE ? SocialLoginConfig::providers() : []);
         $twig->addGlobal('session', $session);
         $twig->addGlobal('locale', $locale);
         $twig->addGlobal('qlocale', $qlocale);

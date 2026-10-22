@@ -4,10 +4,12 @@ require dirname(__DIR__).'/config/defaults.php';
 require ROOT.'/src/AssetProfiles.php';
 require ROOT.'/src/SiteUrl.php';
 require ROOT.'/src/HttpException.php';
+require ROOT.'/src/SocialLoginConfig.php';
 try {
     if (!in_array(ENVIRONMENT,['development','production','testing'],true)) { throw new RuntimeException('Unknown SIMPLEMAPPR_ENV.'); }
     SimpleMappr\AssetProfiles::selected();
     if (!is_file(SimpleMappr\AssetProfiles::configuration())) { throw new RuntimeException('Selected dataset configuration is missing.'); }
     SimpleMappr\SiteUrl::base(['HTTP_HOST'=>'localhost']);
+    SimpleMappr\SocialLoginConfig::validate();
     echo "Deployment configuration verified\n";
 } catch(Throwable $error){fwrite(STDERR,$error->getMessage()."\n");exit(1);}

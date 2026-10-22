@@ -17,9 +17,12 @@ FORMAT = 'simplemappr-deployment-v1'
 DATABASE_IMAGE = 'mariadb:11.8.9@sha256:f16d7a344413e519dff518f27bdb221388f84b0d274c97c4fb5f2cb0dc1b34fa'
 PROFILES = ('minimal-vector-v1', 'extended-vector-v1', 'gray-relief-v1')
 OVERRIDES = {'config/conf.php': 'config-conf.php', 'config/shapefiles.yml': 'config-shapefiles.yml'}
+SOCIAL_PROVIDERS = ('GOOGLE', 'MICROSOFT')
+SOCIAL_ENV_KEYS = tuple('SIMPLEMAPPR_' + provider + suffix
+                        for provider in SOCIAL_PROVIDERS for suffix in ('_CLIENT_ID', '_CLIENT_SECRET'))
 ENV_KEYS = {'SIMPLEMAPPR_OWNER_USERNAME', 'SIMPLEMAPPR_OWNER_PASSWORD_HASH', 'SIMPLEMAPPR_DB_PASSWORD',
             'SIMPLEMAPPR_DB_ROOT_PASSWORD', 'SIMPLEMAPPR_PORT', 'SIMPLEMAPPR_ASSET_PROFILE',
-            'SIMPLEMAPPR_IMAGE', 'SIMPLEMAPPR_ENV', 'SIMPLEMAPPR_URL', 'SIMPLEMAPPR_ASSET_CACHE'}
+            'SIMPLEMAPPR_IMAGE', 'SIMPLEMAPPR_ENV', 'SIMPLEMAPPR_URL', 'SIMPLEMAPPR_ASSET_CACHE', *SOCIAL_ENV_KEYS}
 REQUIRED_ENV = {'SIMPLEMAPPR_OWNER_USERNAME', 'SIMPLEMAPPR_OWNER_PASSWORD_HASH',
                 'SIMPLEMAPPR_DB_PASSWORD', 'SIMPLEMAPPR_DB_ROOT_PASSWORD'}
 DUMP = ('export MYSQL_PWD="$MARIADB_ROOT_PASSWORD"; exec mariadb-dump --user=root '
@@ -137,6 +140,27 @@ def parse_env(data):
             parsed = urlsplit(url)
             if parsed.scheme not in ('http', 'https') or not parsed.hostname or parsed.username is not None or parsed.password is not None or '?' in url or '#' in url or any(char.isspace() or char == '\\' for char in url):
                 fail('Deployment URL must be HTTP or HTTPS without credentials, whitespace, query, or fragment.')
+    social_enabled = False
+    for provider in SOCIAL_PROVIDERS:
+        client = values.get('SIMPLEMAPPR_' + provider + '_CLIENT_ID', '')
+        secret = values.get('SIMPLEMAPPR_' + provider + '_CLIENT_SECRET', '')
+        if not client and not secret:
+            continue
+        if not client or not secret or len(client.encode('utf-8')) > 512 or len(secret.encode('utf-8')) > 4096 or any(ord(char) <= 32 or ord(char) == 127 for char in client + secret):
+            fail('Social sign-in requires a complete client ID and secret pair within the supported limits.')
+        social_enabled = True
+    if social_enabled:
+        from urllib.parse import urlsplit
+        url = values.get('SIMPLEMAPPR_URL', '')
+        try:
+            parsed = urlsplit(url)
+            valid_port = parsed.port is None or 1 <= parsed.port <= 65535
+        except ValueError:
+            fail('Social sign-in requires a valid absolute origin.')
+        if not url.startswith(('http://', 'https://')) or not parsed.hostname or parsed.path not in ('', '/') or not valid_port:
+            fail('Social sign-in requires an absolute origin without a path.')
+        if parsed.scheme != 'https' and parsed.hostname.lower() not in ('localhost', '127.0.0.1', '::1'):
+            fail('Social sign-in requires HTTPS outside localhost.')
     if 'SIMPLEMAPPR_ASSET_CACHE' in values:
         cache = values['SIMPLEMAPPR_ASSET_CACHE']
         if not cache or any(char in cache for char in "'\\\n\r"):
@@ -239,6 +263,9 @@ def app_identity(context, values):
     for key in ('SIMPLEMAPPR_DB_PASSWORD', 'SIMPLEMAPPR_OWNER_USERNAME', 'SIMPLEMAPPR_OWNER_PASSWORD_HASH'):
         if app_env.get(key) != values[key]:
             fail('Supplied deployment credentials do not match the running source application.')
+    for key in (*SOCIAL_ENV_KEYS, 'SIMPLEMAPPR_URL'):
+        if app_env.get(key, '') != values.get(key, ''):
+            fail('Supplied social sign-in settings or canonical URL do not match the running source application.')
     profile = app_env.get('SIMPLEMAPPR_ASSET_PROFILE', PROFILES[0])
     if profile not in PROFILES:
         fail('Running source application has an unsupported asset profile.')
@@ -419,8 +446,14 @@ def restore(args):
     destination = new_directory(args.deployment_dir or path.parent / (project + '-deployment'))
     env_bytes = protected_file(path / 'deployment.env', 65536)
     updates = {'SIMPLEMAPPR_IMAGE': image_id, 'SIMPLEMAPPR_PORT': str(port)}
+    social_disabled = False
     if values.get('SIMPLEMAPPR_URL', '').startswith(('http://', 'https://')):
         updates['SIMPLEMAPPR_URL'] = f'http://127.0.0.1:{port}'
+        if values['SIMPLEMAPPR_URL'].rstrip('/') != updates['SIMPLEMAPPR_URL']:
+            for key in SOCIAL_ENV_KEYS:
+                if values.get(key):
+                    updates[key] = ''
+                    social_disabled = True
     cache = safe_path(values['SIMPLEMAPPR_ASSET_CACHE']) if values.get('SIMPLEMAPPR_ASSET_CACHE') else None
     if cache is not None and not cache.is_dir():
         fail('Recorded asset cache directory is missing. Preserve the verified archive cache before restore.')
@@ -460,8 +493,12 @@ def restore(args):
     if digest != manifest['members']['database.sql']['sha256']:
         fail('Restored SQL content differs from the source dump. Application was not started.')
     run_compose(context, ['up', '-d', '--no-build', '--wait'])
-    return {'operation': 'restore', 'status': 'PASS', 'project': project, 'port': port,
-            'deploymentDirectory': str(destination), 'appImageId': image_id, 'newSessions': True}
+    result = {'operation': 'restore', 'status': 'PASS', 'project': project, 'port': port,
+              'deploymentDirectory': str(destination), 'appImageId': image_id, 'newSessions': True}
+    if social_disabled:
+        result['socialLoginDisabled'] = True
+        result['note'] = 'Social sign-in was disabled for the changed origin. Use local owner login and follow docs/social-login.md to register callbacks and re-enable providers.'
+    return result
 
 
 def hash_password(password, image='simplemappr-runtime:local'):

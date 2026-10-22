@@ -4,7 +4,8 @@ Create geographic maps for publications and presentations from your location dat
 Plot points, shade regions, add drawings and labels, and choose how your map looks.
 Download the result as an image, a Word document, or a PowerPoint presentation.
 
-The original SimpleMappr online service has been retired. This version continues the project for self-hosted use, on your own computer or a server you manage. Online hosting with separate accounts and social logins are not yet supported.
+The original SimpleMappr online service has been retired. This version continues the project for self-hosted use, on your own computer or a server you manage.
+Optional Google and Microsoft sign-in lets people keep their own private maps.
 
 ## Status
 
@@ -64,8 +65,9 @@ Open **Help** in the application for coordinate examples and explanations of the
 
 ## Save and share a map
 
-To save a map for later, use **Sign In** with the owner login created during installation.
+To save a map for later, use **Sign In** with the owner login created during installation, or choose Google or Microsoft if enabled.
 Save your map from **Preview**, then reopen it from **My Maps**. Saved maps are private.
+Use the same account and sign-in method to return to your maps. Accounts are not linked automatically.
 
 In **My Maps**, click **Share** to create a link, or **Unshare** to turn that link off.
 Anyone who can access your SimpleMappr installation and has the link can view the shared map.
@@ -74,6 +76,7 @@ Sharing a map on your own computer does not make your computer accessible over t
 ## More guides
 
 See [Install and manage SimpleMappr](docs/private-deployment.md) for setup, map datasets, backups, and updates.
+To enable account registration through Google or Microsoft, follow [Set up social sign-in](docs/social-login.md).
 Developers can use the [development guide](docs/development.md) and [feature verification guide](docs/feature-verification.md).
 The [original installation instructions](docs/legacy-readme.md) are archived for historical reference.
 

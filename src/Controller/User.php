@@ -40,6 +40,7 @@ namespace SimpleMappr\Controller;
 use SimpleMappr\Database;
 use SimpleMappr\Session;
 use SimpleMappr\HttpException;
+use SimpleMappr\SocialIdentity;
 
 final class User implements RestMethods
 {
@@ -78,6 +79,23 @@ final class User implements RestMethods
         $this->db->prepare('SELECT * FROM users WHERE identifier=:identifier'); $this->db->bindParam(':identifier',$identifier); $this->results=$this->db->fetchFirstObject(); return $this;
     }
     public function create($content) { $content['uid']=$this->db->queryInsert('users',$content); return (object)$content; }
+    public function resolveSocialIdentity(SocialIdentity $identity): object
+    {
+        $connection = $this->db->connection();
+        $statement = $connection->prepare("INSERT INTO users (identifier,hash,username,displayname,email,role,created,access)
+            VALUES (:identifier,'',:username,:displayname,'',1,:created,:access)
+            ON DUPLICATE KEY UPDATE displayname=VALUES(displayname),access=VALUES(access)");
+        $statement->execute([
+            'identifier' => $identity->identifier,
+            'username' => mb_substr($identity->displayName, 0, 50),
+            'displayname' => $identity->displayName,
+            'created' => time(),
+            'access' => time(),
+        ]);
+        $statement = $connection->prepare('SELECT * FROM users WHERE identifier=?');
+        $statement->execute([$identity->identifier]);
+        return $statement->fetch(\PDO::FETCH_OBJ);
+    }
     public function update($content,$where) { $this->results=$this->db->queryUpdate('users',$content,$where); return $this; }
     public function destroy($id) { throw new HttpException(403,'User deletion is disabled for private deployments.'); }
 }
