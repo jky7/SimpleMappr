@@ -1,280 +1,52 @@
-# Run SimpleMappr with Docker
+# SimpleMappr
 
-This branch packages PHP 8.4 and MapServer 8.4 with the SWIG MapScript binding in Docker. The guest editor renders points, regions, WKT drawings, labels and graticules through the modern binding. PNG, transparent PNG, JPEG, SVG, TIFF, KML, DOCX and PPTX downloads work. Private saved maps use a deployment-owned local login and MariaDB. Sharing uses explicit revocable links.
+Create geographic maps for publications and presentations from your location data.
+Plot points, shade regions, add drawings and labels, and choose how your map looks.
+Download the result as an image, a Word document, or a PowerPoint presentation.
 
-## Start Docker
+This version continues the original SimpleMappr project for use on your own computer or a server you manage.
+The original online service has retired.
 
-```sh
-docker build -t simplemappr-runtime:local .
-scripts/configure-local-owner
-docker compose up --build -d --wait
-docker compose exec app scripts/check-runtime
-docker compose exec app Tests/smoke/check-http
-docker compose exec app vendor/bin/phpunit -c Tests/phpunit.modern.xml
-curl --fail http://127.0.0.1:8080/_runtime
-```
+## Open SimpleMappr
 
-Open `http://127.0.0.1:8080/` for the editor. Open `http://127.0.0.1:8080/_checks/native-baseline.png` for the independent native fixture. The check also creates SVG, TIFF, Lambert PNG, and `report.json` files under `/_checks/`.
+Open the address provided by the person running your SimpleMappr installation.
+If you installed it on your own computer with the default settings, open [SimpleMappr on this computer](http://127.0.0.1:8080/).
+You can make and download maps without signing in.
 
-The setup command asks for an owner username and password, then creates a mode-0600 ignored `.env` with a password hash and random database credentials. It never saves the plaintext password. Add `SIMPLEMAPPR_PORT=8081` to that file if port 8080 is occupied. Docker Compose binds to localhost; MariaDB has no published port.
+## Make your first map
 
-## Verify the bundled data
+1. Open **Point Data**.
+2. In **Layer 1**, enter a name in **Legend** and paste your coordinates into the box below it.
+   Use one location per line, with latitude first and longitude second. For example, these points mark Montréal and Toronto:
 
-```sh
-docker compose exec app scripts/bootstrap-assets --check
-docker compose run --rm assets-init
-```
+   ```text
+   45.5019,-73.5674
+   43.6532,-79.3832
+   ```
 
-`Tests/fixtures/manifest.json` defines the `minimal-vector-v1` profile. It records archive and member SHA256 hashes for the five bundled Natural Earth datasets. Initialization makes no network requests. It installs physical layers under `mapserver/maps/10m_physical` and cultural layers under `mapserver/maps/10m_cultural/10m_cultural`.
+3. Click **Preview** to see your points on the map. Adjust the marker color, map layers, and projection to suit your figure.
+4. Click **Download**, then choose the format you need. PNG works for an image; SVG is useful for further editing.
 
-Only `assets-init` writes the `map-data` volume. The app mounts that volume read-only. Native outputs use the separate `runtime-output` volume. Repeated initialization verifies existing files without rewriting them. Missing or corrupt components produce the exact filename and a failing exit code.
+You can also import a data file using **Import map data or settings** on the **Point Data** tab.
+Open **Help** in the application for coordinate examples and explanations of the map controls.
 
-The minimal profile contains land, lakes, country map units, province polygons, and province boundaries. Optional extended-vector and Gray Earth relief profiles add verified roads, rivers, oceans, labels and shaded relief. See [private deployment and recovery](docs/private-deployment.md) for installation, backup/restore, owner rotation and release checks.
+## Save and share a map
 
-## Rebuild the runtime
+To save a map for later, use **Sign In** with the owner login created during installation.
+Save your map from **Preview**, then reopen it from **My Maps**. Saved maps are private.
 
-The Dockerfile pins the Debian base image by digest and uses the Debian and Debian Security snapshots dated `20261021T134156Z`. The build requires PHP 8.4.27 or newer, which fixes [CVE-2026-109618 and CVE-2026-109619](https://www.php.net/archive/2026.php#2026-10-21-5). Apache mod_php and PHP CLI load the distribution's matching `php-mapscript-ng` package. `check-runtime` loads that binding directly. Composer installs the locked application dependencies during the image build. PHPPresentation is pinned to upstream commit `67a3b85673a7e05c7347e0c3970f9afb2338e246` because its stable release requires a vulnerable PhpSpreadsheet major. Replace that pin once a compatible stable release ships.
+In **My Maps**, click **Share** to create a link, or **Unshare** to turn that link off.
+Anyone who can access your SimpleMappr installation and has the link can view the shared map.
+Sharing a map on your own computer does not make your computer accessible over the internet.
 
-To inspect installed package versions, run:
+## Install or maintain SimpleMappr
 
-```sh
-docker compose exec app cat /usr/local/share/simplemappr-packages.tsv
-```
+See [Install and manage SimpleMappr](docs/private-deployment.md) for setup, map datasets, backups, and updates.
+Developers can use the [development guide](docs/development.md) and [feature verification guide](docs/feature-verification.md).
+The [original installation instructions](docs/legacy-readme.md) are archived for historical reference.
 
-Update the base digest and snapshot deliberately when applying runtime security updates. A rebuild needs Docker Hub and Debian snapshot access. The snapshot pins package selection, but the Docker image is not guaranteed to be byte-for-byte reproducible.
+## Credits and license
 
-The Apache document root contains only the application front controller. Public assets have a separate alias. Generated maps, uploads and asset caches use separate writable volumes. PHP execution under public assets is denied. `/_runtime` runs a small native render through Apache without loading legacy application configuration. The endpoint exposes versions, binding readiness, and the profile name. It does not expose PHP configuration. `/_checks/` serves only named native output files and the report. Source, configuration, fixtures, vendor files, and Git metadata are outside the document root.
-
-`docker compose down` retains database, session, data and output volumes. `docker compose down --volumes` deletes that stored state.
-
-## Configuration and current limits
-
-`config/defaults.php` provides guest defaults. Set `SIMPLEMAPPR_URL` for an explicit external origin or keep the default relative URLs for localhost. An optional ignored `config/conf.php` can define overrides. The checked-in minimal dataset configuration is used unless `config/shapefiles.yml` exists. Do not expose the repository root through Apache.
-
-Requests keep the original map document fields. Viewports additionally carry `origin_map` with `projection_map` and `bbox_map`, so custom Lambert origins survive repeated refreshes. Changing projections selects a valid geographic area when the current view falls outside that projection. Export dimensions are limited to 5000 pixels per side and 20 megapixels. Invalid requests return JSON errors and preserve the next valid render.
-
-The modern PHPUnit suite covers coordinate parsing, all templates, real HTTP previews and downloads, all eleven projections, custom origin refreshes, request limits and basic API points. It also runs the original coordinate conversion cases with explicit floating point tolerances. The archived database, binary comparison, router and Selenium suites remain in `Tests/`. Their old global database/bootstrap assumptions require migration with persistence and later browser work. The modern suite does not claim those suites pass.
-
-Imports, Office exports, WMS/WFS and browser workflows have modern contract checks. Specialist ecology and unverified raster datasets remain unavailable. Dependency deprecations are logged rather than inserted into JSON or binary output.
-
-## Private maps and shared links
-
-Sign in from the editor header. Save from Preview, then reopen the map from My Maps. The database keeps Unicode titles, multiline data, styles and source projection state. A second browser session cannot read a private map by its numeric identifier. An administrator role does not bypass map ownership.
-
-Use **Share** in My Maps to create a public link. **Open share** displays a read-only map without save controls. **Unshare** revokes the token immediately. Numeric map URLs remain private. Settings JSON downloads are distinct from GeoJSON exports; import a settings file from My Maps to restore the complete map configuration. Existing unversioned settings files remain readable.
-
-Authenticated preview, legend and scale images live outside the public directory and expire after one hour; fetching them requires their owner session. Guest previews use random filenames and reject reads after one hour. Expired files are cleaned during subsequent image creation. Sessions use HttpOnly, SameSite=Lax cookies and a two-hour idle timeout. Login attempts are limited per source address. Configure TLS before exposing the instance beyond localhost.
-
-`SIMPLEMAPPR_OWNER_USERNAME` and `SIMPLEMAPPR_OWNER_PASSWORD_HASH` select the one deployment login. Missing owner configuration leaves guest rendering available. Changing either value and recreating the stack invalidates previous authenticated sessions. `scripts/provision-owner` updates the stable `local:owner` identity; it does not reassign imported users' maps. After changing credentials, run:
-
-```sh
-docker compose up -d --wait
-```
-
-## Database baseline and legacy adoption
-
-The current schema version is `20261020000000`. First startup creates it and generates 4,582 region lookup rows from the pinned Natural Earth province dataset. `scripts/migrate-database` is repeatable. Historical Phinx migrations are retained under `db/legacy-migrations/` for reference and must not be replayed against an existing database.
-
-Import an old database into a separate MariaDB database first. The checked-in `Tests/fixtures/legacy-sample.sql` is the archived schema fixture, not a backup of the hosted service. Adoption checks known columns, JSON settings, duplicate rows and orphan ownership before making changes. It writes a new SQL backup and checks that original map JSON bytes remain unchanged. Existing numeric shares receive no public token. Resolve reported duplicate or orphan rows deliberately before retrying.
-
-For a database already imported into the configured Compose database, create a local `backups` directory and run the explicit adoption command before normal startup:
-
-```sh
-mkdir -p backups
-docker compose up -d db
-docker compose run --rm --no-deps --user "$(id -u):$(id -g)" -v "$PWD/backups:/backups" database-init scripts/adopt-legacy-database /backups/before-adoption.sql
-docker compose up -d --wait
-```
-
-The command refuses an existing backup filename. Keep this backup and the deployment `.env` outside version control. A source-code restore cannot recover private map records that are unavailable from the archived hosted service.
-
-## Archived upstream documentation
-
-The sections below describe the archived deployment. Use the Docker commands above for this modernization branch.
-
-:warning: **To be decommisioned and archived September 1, 2026.**
-
-### SimpleMappr installation and configuration
-
-SimpleMappr, [http://www.simplemappr.net](http://www.simplemappr.net) is a web-based application that produces publication-quality geographic maps. This source code is released under MIT license.
-
-    Developer: David P. Shorthouse
-    Email: davidpshorthouse@gmail.com
-
-[![Coverage Status](https://coveralls.io/repos/dshorthouse/SimpleMappr/badge.svg?branch=master&service=github)](https://coveralls.io/github/dshorthouse/SimpleMappr?branch=master)
-[![DOI](https://zenodo.org/badge/1777885.svg)](https://zenodo.org/badge/latestdoi/1777885)
-[![Join the chat at https://gitter.im/dshorthouse/SimpleMappr](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/dshorthouse/SimpleMappr?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
-
-Server Requirements
---------------------------
-
-The original [Travis configuration](docs/legacy-ci/travis.yml) is archived for reference. Maintained checks use [GitHub Actions](.github/workflows/release.yml) and the Docker runtime above.
-
-1. PHP5.6+ [with cli, PDO, PDO-MySQL, GD]
-2. Apache2.2.24+ [with rewrite]
-3. MySQL 5.5.27+
-4. [MapServer 7.2.0](http://www.mapserver.org/) [with PROJ, GDAL, GEOS, Cairo]
-5. [Composer](https://getcomposer.org/)
-
-Configuration Instructions
---------------------------
-
-1. Download shapefiles from Natural Earth Data, [http://www.naturalearthdata.com/](http://www.naturalearthdata.com/) and extract into mapserver/maps/. Adjust Apache read permissions as necessary.
-2. Rename and adjust:
-  - [config/conf.php.sample](config/conf.php.sample) => config/conf.php
-  - [config/phinx.yml.sample](config/phinx.yml.sample) => config/phinx.yml
-  - [config/shapefiles.yml.sample](config/shapefiles.yml.sample) => config/shapefiles.yml
-3. Adjust [config/conf.test.php](config/conf.test.php) used during execution of tests
-4. If you wish to use Janrain's OpenID authentication system, sign-up at [http://rpxnow.com](http://rpxnow.com) and replace the RPX_KEY in config/conf.php
-5. The jQuery-based front-end assumes clean URLs and operates in a RESTful fashion. Configure mod_rewrite as follows:
-
-### Apache Rewrite Configuration
-
-    <VirtualHost *:80>
-      ServerName mydomain.net
-      ServerAlias mydomain.net
-      DocumentRoot /path/to/your/root
-      <Directory "/path/to/your/root">
-       Options -Indexes +FollowSymlinks
-       AllowOverride None
-       Order allow,deny
-       Allow from all
-       DirectoryIndex index.php
-       RewriteEngine on
-       RewriteBase /
-       RewriteRule ^(public|sitemap.xml|robots.txt)($|/) - [L]
-       RewriteCond %{DOCUMENT_ROOT}%{REQUEST_FILENAME} !-f
-       RewriteCond %{DOCUMENT_ROOT}%{REQUEST_FILENAME} !-d
-       RewriteRule ^(.*)$ index.php?q=$1 [L,QSA]
-      </Directory>
-    </VirtualHost>
-
-Homebrew on Mac OSX
--------------------
-1. Install PHP5.6. See [https://github.com/homebrew/homebrew-php](https://github.com/homebrew/homebrew-php)
-2. Execute from command line:
-
-        $ brew install \
-          autoconf \
-          freetype \
-          jpeg \
-          libpng \
-          gd --with-freetype --with-png --with-jpeg --with-tiff \
-          gdal \
-          geos \
-          gettext \
-          icu4c \
-          proj \
-          cairo \
-          libsvg-cairo \
-          fribidi \
-          phpunit \
-          composer
-
-3. Download [MapServer](http://mapserver.org/download.html) 7.2.0 tarball, [http://download.osgeo.org/mapserver/mapserver-7.2.0.tar.gz](http://download.osgeo.org/mapserver/mapserver-7.2.0.tar.gz)
-4. Extract and cd into folder
-5. Execute from command line:
-
-          $ mkdir build; cd build; cmake .. \
-            -DCMAKE_PREFIX_PATH="/usr/local/opt/libiconv;/usr/local/opt/php56;/usr/local/opt/phpunit;/usr/local/opt/geos;/usr/local/opt/pkg-config;/usr/local/opt/libxml2;/usr/local/opt/zlib;/usr/local/opt/fontconfig;/usr/local/opt/cairo;/usr/local/opt/fribidi;/usr/local/opt/proj;/usr/local/opt/giflib;/usr/local/opt/freetype;/usr/local/opt/libsvg;/usr/local/opt/libsvg-cairo;/usr/local/opt/gdal2;/usr/local/opt/libpng;/usr/local/opt/libjpeg;/usr/local/opt/harfbuzz;/usr/local/opt/exempi" \
-            -DWITH_KML=1 \
-            -DWITH_PHP=1 \
-            -DWITH_EXEMPI=1 \
-            -DWITH_SVGCAIRO=1 \
-            -DWITH_FCGI=0 \
-            -DWITH_RSVG=0 \
-            -DWITH_POSTGIS=0 \
-            -DFRIBIDI_INCLUDE_DIR="/usr/local/include/glib-2.0;/usr/local/lib/glib-2.0/include;/usr/local/include" \
-            -DPHP5_INCLUDE_PATH="/usr/local/include/php"
-
-          $ make && make install
-
-6. Verify that mapserv is working
-
-          $ mapserv -v
-
-7. Add extension=php_mapscript.so to php.ini (if not already there) and restart web server
-
-Unix-based Server
-------------------
-
-See the useful guide on [MapServer](http://mapserver.org/installation/unix.html).
-
-Internationalization
---------------------
-
-The following two commands make a messages.po file (by reading the index.php file) then a binary messages.mo file from a messages.po file as input. Both need to be moved to relevant i18n directory such as i18n/fr\_FR.UTF-8/LC\_MESSAGES. You'll need to translate the strings in messages.po before making the binary of course. Whenever any string is changed in any messages.po file, the messages.mo file must be generated and Apache must be restarted because translated strings are enumerated into memory when the application first loads.
-
-    $ xgettext -n index.php
-    $ msgfmt messages.po
-
-Alternatively, you can use the ruby utility, crawler.rb from the /i18n directory to make a messages.po file and move it to i18n/fr\_FR.UTF-8/LC\_MESSAGES.
-
-    $ cd i18n
-    $ ruby crawler.rb ../views
-
-Dependencies
-------------
-
-Install all necessary application dependencies using [composer](https://getcomposer.org) and update them as required.
-
-    $ composer install
-    $ composer update
-
-Database
---------
-
-SimpleMappr uses MySQL and [phinx](http://docs.phinx.org) for migrations. A sample schema is included in /db and migrations are stored in /db/migrations.
-Create MySQL databases simplemappr, simplemappr\_development and simplemappr\_testing. Use /db/sample.db.sql to create tables.
-
-    $ ./vendor/bin/phinx migrate -c config/phinx.yml -e development
-
-Tests
------
-
-PHPUnit is used for unit tests and [Selenium](http://selenium-release.storage.googleapis.com/index.html?path=3.9/) and Facebook's [php-webdriver](https://github.com/facebook/php-webdriver) are used for integration tests. [Composer](https://getcomposer.org/) is used to include dependencies. The Firefox Gecko driver can be downloaded [here](https://github.com/mozilla/geckodriver/releases).
-
-    $ java -Dwebdriver.gecko.driver=/usr/local/bin/geckodriver -jar /usr/local/bin/selenium-server-standalone-3.9.1.jar
-    $ BROWSER=firefox ./vendor/bin/phpunit -c Tests/phpunit.xml --stderr
-
-If you wish to use Chrome instead of FireFox, the Selenium Chromedriver can be found at [http://chromedriver.storage.googleapis.com/index.html](http://chromedriver.storage.googleapis.com/index.html):
-
-    $ java -Dwebdriver.chrome.driver=/usr/local/bin/chromedriver -jar /usr/local/bin/selenium-server-standalone-3.9.1.jar
-    $ BROWSER=chrome ./vendor/bin/phpunit -c Tests/phpunit.xml --stderr
-
-Tests are split into suites entitled, "Unit", "Functional", "Binary", "Router"
-
-    $ ./vendor/bin/phpunit -c Tests/phpunit.xml --testsuite "Unit" --stderr
-
-JavaScript Minification
------------------------
-
-JavaScript files are minified using Google's [Closure Compiler](https://developers.google.com/closure/compiler/docs/gettingstarted_app) as follows:
-
-    $ java -jar compiler.jar --js simplemappr.js --js_output_file simplemappr.min.js
-
-Copyright
----------
-
-    Copyright (c) 2010-2018 David P. Shorthouse
-
-    Released under MIT License
-
-    Permission is hereby granted, free of charge, to any person obtaining
-    a copy of this software and associated documentation files (the
-    "Software"), to deal in the Software without restriction, including
-    without limitation the rights to use, copy, modify, merge, publish,
-    distribute, sublicense, and/or sell copies of the Software, and to
-    permit persons to whom the Software is furnished to do so, subject to
-    the following conditions:
-
-    The above copyright notice and this permission notice shall be
-    included in all copies or substantial portions of the Software.
-
-    THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
-    EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
-    MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
-    NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE
-    LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
-    OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
-    WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+SimpleMappr was created by David P. Shorthouse. This project continues his work.
+The software is released under the [MIT license](LICENSE).
+See [Third-party software and map data](docs/third-party.md) for data sources and their terms.
