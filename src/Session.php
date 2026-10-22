@@ -127,7 +127,7 @@ final class Session
         $locale = $_SESSION['locale'] ?? 'en_US';
         $_SESSION = ['locale'=>$locale, 'csrf'=>bin2hex(random_bytes(32))];
         session_regenerate_id(true);
-        self::redirect('/'.self::makeLocaleParam($locale));
+        self::redirect(SiteUrl::path().'/'.self::makeLocaleParam($locale));
     }
 
     public static function updateActivity(): void { self::selectLocale(); self::currentUser(); }

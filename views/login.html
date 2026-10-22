@@ -4,7 +4,7 @@
 <h1>SimpleMappr {{ "Sign In"|trans }}</h1>
 {% if login_enabled %}
 {% if login_error %}<p role="alert">{{ login_error }}</p>{% endif %}
-<form action="/session" method="post">
+<form action="{{ base }}/session" method="post">
 <input type="hidden" name="_csrf" value="{{ csrf_token }}">
 <input type="hidden" name="locale" value="{{ locale }}">
 <p><label for="username">{{ "Username"|trans }}</label><br><input id="username" name="username" autocomplete="username" required maxlength="50"></p>
@@ -12,6 +12,6 @@
 <button type="submit">{{ "Sign In"|trans }}</button>
 </form>
 {% else %}<p>{{ "Saving is available after the deployment owner is configured."|trans }}</p>{% endif %}
-<p><a href="/">{{ "Return to the map editor"|trans }}</a></p>
+<p><a href="{{ base }}/">{{ "Return to the map editor"|trans }}</a></p>
 </main>
 {% endblock %}
