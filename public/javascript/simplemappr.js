@@ -558,21 +558,20 @@ var SimpleMappr = (function($, window, document) {
 
       if(index.length > 0) {
         actionsBar.find('a.toolsRedo').addClass('toolsRedoDisabled').removeClass('toolsRedo').off('click');
-        window.SimpleMapprStorage.deleteKey(index.pop());
+        $.each(index, function(i, name) { window.SimpleMapprStorage.deleteKey(name); });
       }
     },
 
     mapUndo: function() {
-      var index          = this.storageType("do"),
+      var self           = this,
+          index          = this.storageType("do"),
           curr_key       = "",
           curr_data      = {},
           prev_key       = "",
           prev_data      = {},
           prev_data_prep = {};
 
-      if(index.length === 1) { return; }
-
-      this.destroyRedo();
+      if(index.length < 2) { return; }
 
       curr_key       = index[index.length-1];
       curr_data      = window.SimpleMapprStorage.get(curr_key);
@@ -582,51 +581,56 @@ var SimpleMappr = (function($, window, document) {
 
       this.loadInputs(prev_data_prep);
 
-      window.SimpleMapprStorage.deleteKey(curr_key);
-      window.SimpleMapprStorage.set("un" + curr_key, curr_data);
+      function commitHistory() {
+        window.SimpleMapprStorage.deleteKey(curr_key);
+        window.SimpleMapprStorage.set("un" + curr_key, curr_data);
+        window.SimpleMapprStorage.current(prev_data);
+        self.toggleRedo(true);
+        self.toggleUndo(index.length > 2);
+      }
 
       if(prev_data.width !== curr_data.width) {
+        commitHistory();
         this.mapToggleSettings();
       } else {
         this.showSpinner();
-        this.postData($.param(prev_data), null);
+        this.postData($.param(prev_data), null, commitHistory);
       }
-
-      this.toggleRedo(true);
-      if(index.length === 2) { this.toggleUndo(); }
     },
 
     mapRedo: function() {
-      var undo_index     = this.storageType("undo"),
+      var self           = this,
+          undo_index     = this.storageType("undo"),
           undo_key       = "",
           undo_data      = {},
           undo_data_prep = {},
           do_index       = this.storageType("do"),
           do_key         = "",
-          do_data        = {},
-          token          = new Date().getTime();
+          do_data        = {};
 
       if(undo_index.length === 0) { return; }
 
-      this.toggleRedo();
-      undo_key       = undo_index.pop();
+      undo_key       = undo_index.shift();
       undo_data      = window.SimpleMapprStorage.get(undo_key);
       do_key         = do_index[do_index.length-1];
       do_data        = window.SimpleMapprStorage.get(do_key);
       undo_data_prep = this.prepareInputs(undo_data);
       this.loadInputs(undo_data_prep);
 
-      window.SimpleMapprStorage.deleteKey(undo_key);
-      window.SimpleMapprStorage.set("do-" + token.toString(), undo_data);
+      function commitHistory() {
+        window.SimpleMapprStorage.deleteKey(undo_key);
+        window.SimpleMapprStorage.set(undo_key.substring(2), undo_data);
+        self.toggleUndo(true);
+        self.toggleRedo(undo_index.length > 0);
+      }
 
       if(undo_data.width !== do_data.width) {
+        commitHistory();
         this.mapToggleSettings();
       } else {
         this.showSpinner();
-        this.postData($.param(undo_data), null);
+        this.postData($.param(undo_data), null, commitHistory);
       }
-
-      this.toggleUndo(true);
     },
 
     bindHotkeys: function() {
@@ -1957,8 +1961,7 @@ var SimpleMappr = (function($, window, document) {
     showMap: function(load_data) {
       var self         = this,
           token        = new Date().getTime(),
-          formString   = "",
-          formObj      = {};
+          formString   = "";
 
       self.destroyJcrop();
 
@@ -1967,14 +1970,16 @@ var SimpleMappr = (function($, window, document) {
       $('#download_token').val(token);
 
       self.showSpinner();
+      self.setFormOptions();
       formString = $("#form-mapper").serialize();
-      formObj    = self.readDocument();
-      self.postData(formString, load_data);
-      window.SimpleMapprStorage.set("do-" + token.toString(), formObj);
-      self.toggleUndo(true);
+      self.postData(formString, load_data, function(document) {
+        self.destroyRedo();
+        window.SimpleMapprStorage.set("do-" + token.toString(), document);
+        self.toggleUndo(true);
+      });
     },
 
-    postData: function(formData, load_data) {
+    postData: function(formData, load_data, onRendered) {
       var self = this, sequence = ++self.vars.renderSequence;
       if (self.vars.renderRequest) { self.vars.renderRequest.abort(); }
       self.hideErrorMessage();
@@ -1986,8 +1991,12 @@ var SimpleMappr = (function($, window, document) {
             self.hideSpinner(); self.showErrorMessage($('#mapper-loading-error-message').text()); return;
           }
           self.resetFormValues(data);
-          window.SimpleMapprStorage.current(self.readDocument());
-          self.resetJbbox(); self.drawMap(data, load_data);
+          self.resetJbbox();
+          var renderedDocument = self.readDocument();
+          self.drawMap(data, load_data, function() {
+            window.SimpleMapprStorage.current(renderedDocument);
+            if (onRendered) { onRendered(renderedDocument); }
+          });
           self.drawLegend(); self.drawScalebar(); self.showBadPoints(); self.showBadDrawings(); self.addBadRecordsViewer();
         },
         error: function(xhr, status) {
@@ -2010,7 +2019,7 @@ var SimpleMappr = (function($, window, document) {
       $('#pan').val('');
     },
 
-    drawMap: function(data, load_data) {
+    drawMap: function(data, load_data, onRendered) {
       var self = this, sequence = self.vars.renderSequence;
       this.vars.mapOutputImage.off('.simplemapprRender')
         .attr('width', data.size[0]).attr('height', data.size[1])
@@ -2018,6 +2027,7 @@ var SimpleMappr = (function($, window, document) {
         .one('load.simplemapprRender', function() {
           if (sequence !== self.vars.renderSequence) { return; }
           self.loadCropSettings(load_data || {map: {bbox_rubberband: ''}}); self.hideSpinner();
+          if (onRendered) { onRendered(); }
         })
         .one('error.simplemapprRender', function() {
           if (sequence !== self.vars.renderSequence) { return; }
