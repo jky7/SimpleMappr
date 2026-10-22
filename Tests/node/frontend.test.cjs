@@ -223,3 +223,19 @@ test('accordion headings act as buttons with labeled regions without nested focu
 test('keyboard rotation updates canonical form rotation and announced slider value',t=>{
  const e=finish(t,editor());e.$('#form-mapper').append('<input id="rotation" name="rotation">');e.$('body').append('<div id="mapControls"><div class="thumb"></div><ul class="overview"><li></li></ul></div>');e.p.setRotation(45);assert.equal(e.$('#rotation').val(),'45');assert.equal(e.$('#mapControls .thumb').attr('aria-valuenow'),'45');
 });
+test('mouse rotation updates the announced slider value before rendering',t=>{
+ const e=finish(t,editor());e.$('#form-mapper').append('<input id="rotation" name="rotation">');e.$('body').append('<div id="mapControls"><div class="thumb" aria-valuenow="0"></div><ul class="overview"><li data-rotate="85"></li></ul></div>');
+ let rendered=0;e.p.showMap=()=>{rendered++;};e.p.performRotation(e.$('#mapControls li')[0]);
+ assert.equal(rendered,1);assert.equal(e.$('#rotation').val(),'85');assert.equal(e.$('#mapControls .thumb').attr('aria-valuenow'),'85');
+});
+test('added and renumbered groups keep unique accordion targets and field labels',t=>{
+ const e=finish(t,editor());e.$.fn.ColorPicker=function(){return this;};
+ const groups=e.$('#fieldSetsPoints').addClass('fieldSets');
+ for(let i=0;i<3;i++)groups.append(`<div class="form-item fieldset-points"><button class="removemore">Remove</button><h3><a href="#">Layer ${i+1}</a></h3><div><label data-field="title">Legend</label><input class="m-mapTitle" name="coords[${i}][title]"><label data-field="data">Map data</label><textarea name="coords[${i}][data]"></textarea><button class="clearself">Clear</button></div></div>`);
+ groups.after('<p><button class="addmore" data-type="coords">Add layer</button></p>');e.p.bindAccordions();e.p.associateGroupLabels();
+ e.p.addAccordionPanel('coords');e.p.addAccordionPanel('coords');e.p.removeAccordionPanel(groups.children().eq(3),'coords');
+ const ids=Array.from(e.w.document.querySelectorAll('[id]'),node=>node.id);assert.equal(new Set(ids).size,ids.length);
+ groups.find('h3').each(function(){const content=e.w.document.getElementById(e.$(this).attr('aria-controls'));assert.equal(content,this.nextElementSibling);assert.equal(content.getAttribute('aria-labelledby'),this.id);});
+ groups.find('label').each(function(){assert.equal(e.w.document.getElementById(this.htmlFor).closest('.form-item'),this.closest('.form-item'));});
+ assert.equal(groups.children().last().find('textarea').attr('name'),'coords[3][data]');
+});
