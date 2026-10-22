@@ -7,6 +7,36 @@ Download the result as an image, a Word document, or a PowerPoint presentation.
 This version continues the original SimpleMappr project for use on your own computer or a server you manage.
 The original online service has retired.
 
+## Requirements
+
+To run SimpleMappr on your own computer, you need:
+
+- Docker with Docker Compose v2 installed and running.
+- Git and Python 3 available in your terminal.
+- A web browser.
+- An internet connection for the first download and build.
+
+Docker includes the application, map renderer, and database.
+The commands below use a Unix-style terminal. On Windows, use WSL.
+
+## Install SimpleMappr
+
+For a new installation, open a terminal and run:
+
+```sh
+git clone https://github.com/jky7/SimpleMappr.git
+cd SimpleMappr
+docker build -t simplemappr-runtime:local .
+scripts/configure-local-owner
+docker compose up --build -d --wait
+```
+
+The setup asks you to choose an owner username and password. Use a password of at least 12 characters.
+Keep these credentials to sign in and save maps. The first build downloads the required software and can take several minutes.
+
+Once startup finishes, open [SimpleMappr on this computer](http://127.0.0.1:8080/).
+For an existing installation, keep its `.env` file and follow the [maintenance guide](docs/private-deployment.md).
+
 ## Open SimpleMappr
 
 Open the address provided by the person running your SimpleMappr installation.
@@ -39,7 +69,7 @@ In **My Maps**, click **Share** to create a link, or **Unshare** to turn that li
 Anyone who can access your SimpleMappr installation and has the link can view the shared map.
 Sharing a map on your own computer does not make your computer accessible over the internet.
 
-## Install or maintain SimpleMappr
+## More guides
 
 See [Install and manage SimpleMappr](docs/private-deployment.md) for setup, map datasets, backups, and updates.
 Developers can use the [development guide](docs/development.md) and [feature verification guide](docs/feature-verification.md).
