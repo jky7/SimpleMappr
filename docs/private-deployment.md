@@ -4,11 +4,24 @@ The supported deployment is a localhost Docker Compose instance with one local o
 
 ## Start and verify
 
-Use the commands in the [README](../README.md). Keep an existing `.env`; `configure-local-owner` refuses to replace it. The PHP runtime and SWIG MapScript extension come from one pinned Debian snapshot. No PHP installation is needed on the host. Compose defaults to `SIMPLEMAPPR_ENV=production`, localhost port 8080, relative application URLs, and `minimal-vector-v1` data. Supported environment values are `development`, `production`, and `testing`.
+Install Docker with Docker Compose, then open a terminal in the project folder.
+For a new installation, run:
+
+```sh
+docker build -t simplemappr-runtime:local .
+scripts/configure-local-owner
+docker compose up --build -d --wait
+```
+
+Open `http://127.0.0.1:8080/` for the editor. The setup command asks for an owner username and password, then creates a mode-0600 ignored `.env` with a password hash and random database credentials. It never saves the plaintext password. Add `SIMPLEMAPPR_PORT=8081` to that file if port 8080 is occupied. Docker Compose binds to localhost.
+
+Keep an existing `.env`; `configure-local-owner` refuses to replace it. The PHP runtime and SWIG MapScript extension come from one pinned Debian snapshot. No PHP installation is needed on the host. Compose defaults to `SIMPLEMAPPR_ENV=production`, localhost port 8080, relative application URLs, and `minimal-vector-v1` data. Supported environment values are `development`, `production`, and `testing`.
 
 `SIMPLEMAPPR_URL` can set a credential-free HTTP(S) base URL or a relative base path. It controls links and the map watermark. Keep its hostname consistent with the URL used in the browser, since owner cookies belong to that host. `scripts/check-config` validates deployment configuration before Apache starts. `/_runtime` independently checks PHP and native MapScript without loading Composer; it reports the selected asset profile, not an application feature or database health claim.
 
 MariaDB has no published port. The app mounts map data read-only. Only `assets-init` installs map data; `database-init` owns schema/provisioning and region lookup generation. Apache serves a restricted front controller document root. Never replace it with the checkout root.
+
+After startup, run the [runtime and application checks](development.md#check-the-runtime-and-application).
 
 ## Choose map data
 
@@ -120,7 +133,7 @@ scripts/check-browser --url http://127.0.0.1:18082 --credentials-file /private/f
 scripts/check-backup-restore --private-dir /private/new-rehearsal-directory
 ```
 
-Owner and operations checks create synthetic persistent records; run them on disposable deployments. Native and PHP commands are in the README. The GitHub release workflow checks the explicit reviewed PHPPresentation commit pin and runs ordinary Composer validation with its known pin warning visible; it does not claim strict validation passes. It also audits Composer/npm dependencies, checks PHP syntax and platform requirements, exercises the isolated import transport fixture, and rehearses backup/restore/rotation. Required remote checks must actually complete successfully before release. The obsolete Travis setup is retained under `docs/legacy-ci/` after the replacement workflow passed [its first complete run](https://github.com/jky7/SimpleMappr/actions/runs/39718169668).
+Owner and operations checks create synthetic persistent records; run them on disposable deployments. Native and PHP commands are in [Development and runtime reference](development.md#check-the-runtime-and-application). The GitHub release workflow checks the explicit reviewed PHPPresentation commit pin and runs ordinary Composer validation with its known pin warning visible; it does not claim strict validation passes. It also audits Composer/npm dependencies, checks PHP syntax and platform requirements, exercises the isolated import transport fixture, and rehearses backup/restore/rotation. Required remote checks must actually complete successfully before release. The obsolete Travis setup is retained under `docs/legacy-ci/` after the replacement workflow passed [its first complete run](https://github.com/jky7/SimpleMappr/actions/runs/39718169668).
 
 Review dependencies and image/package updates monthly, and immediately for relevant security advisories. Update the Debian base digest and snapshot together, the matching PHP/MapScript packages, MariaDB digest, Node digest, browser image digest and exact browser npm version as coherent changes. Regenerate locks deliberately; rerun native/PHP/import/HTTP/browser/recovery gates and inspect license changes. Audit retained frontend plugins separately: Jcrop, ColorPicker and Tiny Circleslider are pinned by input hashes and notices, but npm audit does not cover their vendored code. GeoPHP currently emits 11 implicit-nullable notices under PHP8.4; logs retain them while JSON and binary output stay clean.
 
