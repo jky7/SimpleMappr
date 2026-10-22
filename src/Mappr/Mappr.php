@@ -1129,7 +1129,12 @@ abstract class Mappr
                 $zoom_point->setXY($bbox_rubberband[0], $bbox_rubberband[1]);
                 $this->map_obj->zoompoint(2, $zoom_point, $this->map_obj->width, $this->map_obj->height, $this->map_obj->extent, null);
             } else {
-                $zoom_rect = new \rectObj($bbox_rubberband[0], $bbox_rubberband[3], $bbox_rubberband[2], $bbox_rubberband[1]);
+                // zoomRectangle requires inverted screen Y bounds, which the rectObj constructor rejects.
+                $zoom_rect = new \rectObj();
+                $zoom_rect->minx = $bbox_rubberband[0];
+                $zoom_rect->miny = $bbox_rubberband[3];
+                $zoom_rect->maxx = $bbox_rubberband[2];
+                $zoom_rect->maxy = $bbox_rubberband[1];
                 $this->map_obj->zoomrectangle($zoom_rect, $this->map_obj->width, $this->map_obj->height, $this->map_obj->extent, null);
             }
         }

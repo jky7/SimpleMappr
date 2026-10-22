@@ -19,6 +19,69 @@ function editor(original=false){
  return {dom,w,$,p};
 }
 function finish(t,e){t.after(()=>e.dom.window.close());return e;}
+function viewportEditor(t){
+ const e=finish(t,editor());let tick=1000;const requests=[];
+ e.w.Date.prototype.getTime=()=>++tick;
+ e.$('#origin_map,#bbox_rubberband').each(function(){e.$(this).attr('name',this.id);});
+ for(const name of ['bbox_map','projection_map','projection','origin','rotation','width','height','pan'])e.$('#form-mapper').append(`<input type="hidden" id="${name}" name="${name}">`);
+ for(const name of ['rendered_bbox','rendered_projection','rendered_rotation'])e.$('#mapOutput').append(`<input type="hidden" id="${name}">`);
+ e.$('#projection').val('epsg:4326');e.$('#width').val('900');e.$('#height').val('450');
+ e.$.fn.slider=function(){return this;};
+ e.$.ajax=options=>(requests.push(options),{abort(){}});
+ function respond(bbox,projection='epsg:4326',origin=false){
+  requests.at(-1).success({size:[900,450],mapOutputImage:'/map-'+requests.length+'.png',rendered_bbox:bbox,rendered_projection:projection,rendered_origin:origin,rendered_rotation:0});
+ }
+ function render(bbox,projection,origin){respond(bbox,projection,origin);e.$('#mapOutputImage').trigger('load');}
+ return {...e,requests,respond,render,request:()=>new URLSearchParams(requests.at(-1).data)};
+}
+test('Undo and Redo restore completed pan viewports and their projection source tuple',t=>{
+ const e=viewportEditor(t),a='-90,-60,-30,10',b='-80,-60,-20,10',c='-80,-50,-20,20';
+ e.p.showMap();e.render(a);
+ e.p.mapPan('right');e.render(b,'esri:102015',-60);
+ e.p.mapPan('up');e.render(c,'esri:102015',-55);
+ e.p.mapUndo();assert.equal(e.request().get('bbox_map'),b);assert.equal(e.request().get('projection_map'),'esri:102015');assert.equal(e.request().get('origin_map'),'-60');e.render(b,'esri:102015',-60);
+ e.p.mapRedo();assert.equal(e.request().get('bbox_map'),c);assert.equal(e.request().get('origin_map'),'-55');e.render(c,'esri:102015',-55);
+ e.p.mapUndo();assert.equal(e.request().get('bbox_map'),b);
+});
+test('failed and superseded previews do not become undo destinations',t=>{
+ const e=viewportEditor(t),a='-90,-60,-30,10',b='-80,-60,-20,10';
+ e.p.showMap();e.render(a);
+ e.p.mapPan('right');e.requests.at(-1).error({},'error');
+ e.p.mapPan('up');e.respond('failed-image');e.$('#mapOutputImage').trigger('error');
+ e.p.mapPan('left');const superseded=e.requests.at(-1);
+ e.p.mapPan('right');superseded.success({size:[900,450],mapOutputImage:'/stale.png',rendered_bbox:'stale'});e.render(b);
+ e.p.mapUndo();assert.equal(e.request().get('bbox_map'),a);
+});
+test('successive Undo and Redo traverse each viewport and a new preview discards the old future',t=>{
+ const e=viewportEditor(t),a='-90,-60,-30,10',b='-80,-60,-20,10',c='-80,-50,-20,20',d='-70,-50,-10,20';
+ e.p.showMap();e.render(a);e.p.mapPan('right');e.render(b);e.p.mapPan('up');e.render(c);
+ e.p.mapUndo();e.render(b);e.p.mapUndo();assert.equal(e.request().get('bbox_map'),a);e.render(a);
+ e.p.mapRedo();assert.equal(e.request().get('bbox_map'),b);e.render(b);
+ e.p.mapRedo();assert.equal(e.request().get('bbox_map'),c);e.render(c);
+ e.p.mapUndo();e.render(b);e.p.mapUndo();e.render(a);e.p.mapPan('right');e.render(d);
+ const count=e.requests.length;e.p.mapRedo();assert.equal(e.requests.length,count);
+ e.p.mapUndo();assert.equal(e.request().get('bbox_map'),a);
+});
+test('failed Undo and Redo previews leave their destinations available for retry',t=>{
+ const e=viewportEditor(t),a='-90,-60,-30,10',b='-80,-60,-20,10',c='-80,-50,-20,20';
+ e.p.showMap();e.render(a);e.p.mapPan('right');e.render(b);e.p.mapPan('up');e.render(c);
+ e.p.mapUndo();e.requests.at(-1).error({},'error');e.p.mapUndo();assert.equal(e.request().get('bbox_map'),b);e.render(b);
+ e.p.mapRedo();e.respond(c);e.$('#mapOutputImage').trigger('error');
+ const count=e.requests.length;e.p.mapRedo();assert.equal(e.requests.length,count+1);assert.equal(e.request().get('bbox_map'),c);e.render(c);
+});
+test('a pending preview records submitted data without losing later draft edits',t=>{
+ const e=viewportEditor(t);
+ e.$('#form-mapper').append('<textarea name="coords[0][data]">0,0</textarea>');
+ const field=e.$('[name="coords[0][data]"]');
+ e.p.showMap();assert.equal(e.request().get('coords[0][data]'),'0,0');
+ field.val('10,10');e.respond('-90,-60,-30,10');
+ field.val('20,20');e.$('#mapOutputImage').trigger('load');
+ const names=e.p.storageType('do-'),saved=e.w.SimpleMapprStorage.get(names.at(-1));
+ assert.equal(saved.coords[0].data,'0,0');
+ assert.equal(saved.bbox_map,'-90,-60,-30,10');
+ assert.equal(field.val(),'20,20');
+ assert.equal(e.w.SimpleMapprStorage.current().coords[0].data,'20,20');
+});
 test('jQuery and UI expose the required live editor widget APIs',t=>{
  const e=finish(t,editor());
  assert.equal(e.$.fn.jquery,'3.7.1');assert.equal(e.$.ui.version,'1.14.2');
