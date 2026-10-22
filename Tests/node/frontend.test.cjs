@@ -69,6 +69,19 @@ test('failed Undo and Redo previews leave their destinations available for retry
  e.p.mapRedo();e.respond(c);e.$('#mapOutputImage').trigger('error');
  const count=e.requests.length;e.p.mapRedo();assert.equal(e.requests.length,count+1);assert.equal(e.request().get('bbox_map'),c);e.render(c);
 });
+test('a pending preview records submitted data without losing later draft edits',t=>{
+ const e=viewportEditor(t);
+ e.$('#form-mapper').append('<textarea name="coords[0][data]">0,0</textarea>');
+ const field=e.$('[name="coords[0][data]"]');
+ e.p.showMap();assert.equal(e.request().get('coords[0][data]'),'0,0');
+ field.val('10,10');e.respond('-90,-60,-30,10');
+ field.val('20,20');e.$('#mapOutputImage').trigger('load');
+ const names=e.p.storageType('do-'),saved=e.w.SimpleMapprStorage.get(names.at(-1));
+ assert.equal(saved.coords[0].data,'0,0');
+ assert.equal(saved.bbox_map,'-90,-60,-30,10');
+ assert.equal(field.val(),'20,20');
+ assert.equal(e.w.SimpleMapprStorage.current().coords[0].data,'20,20');
+});
 test('jQuery and UI expose the required live editor widget APIs',t=>{
  const e=finish(t,editor());
  assert.equal(e.$.fn.jquery,'3.7.1');assert.equal(e.$.ui.version,'1.14.2');
