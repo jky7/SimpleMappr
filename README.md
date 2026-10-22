@@ -4,7 +4,7 @@ Create geographic maps for publications and presentations from your location dat
 Plot points, shade regions, add drawings and labels, and choose how your map looks.
 Download the result as an image, a Word document, or a PowerPoint presentation.
 
-The original SimpleMappr online service has been retired. This version continues the project for self-hosted use, on your own computer or a server you manage. Online hosting and social logins are not yet supported.
+The original SimpleMappr online service has been retired. This version continues the project for self-hosted use, on your own computer or a server you manage. Online hosting with separate accounts and social logins are not yet supported.
 
 ## Requirements
 
