@@ -1,0 +1,8 @@
+#!/bin/sh
+set -eu
+cd /srv/simplemappr
+if [ "${1:-}" = apache2ctl ]; then
+    scripts/check-config
+    scripts/bootstrap-assets --check
+fi
+exec "$@"

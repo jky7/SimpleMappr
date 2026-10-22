@@ -1,0 +1,18 @@
+#!/usr/bin/env php
+<?php
+$host = trim(stream_get_contents(STDIN));
+$visited = [];
+$addresses = [];
+for ($depth=0; $depth<8 && !isset($visited[$host]); $depth++) {
+    $visited[$host] = true;
+    $records = dns_get_record($host, DNS_A | DNS_AAAA | DNS_CNAME);
+    $canonical = null;
+    foreach ($records ?: [] as $record) {
+        if (isset($record['ip'])) { $addresses[] = $record['ip']; }
+        if (isset($record['ipv6'])) { $addresses[] = $record['ipv6']; }
+        if (isset($record['target'])) { $canonical = $record['target']; }
+    }
+    if (!$canonical || $addresses) { break; }
+    $host = $canonical;
+}
+echo json_encode(array_values(array_unique($addresses)));

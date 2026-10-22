@@ -1,0 +1,55 @@
+{
+  "schemaVersion": 1,
+  "profiles": {
+    "minimal-vector-v1": {
+      "configuration": "config/shapefiles.minimal.yml",
+      "manifests": [
+        {
+          "path": "Tests/fixtures/manifest.json",
+          "cache": false
+        }
+      ]
+    },
+    "extended-vector-v1": {
+      "configuration": "config/shapefiles.extended.yml",
+      "manifests": [
+        {
+          "path": "Tests/fixtures/manifest.json",
+          "cache": false
+        },
+        {
+          "path": "config/asset-profiles/natural-earth-extra-vector-v1.json",
+          "cache": true
+        }
+      ]
+    },
+    "gray-relief-v1": {
+      "configuration": "config/shapefiles.relief.yml",
+      "manifests": [
+        {
+          "path": "Tests/fixtures/manifest.json",
+          "cache": false
+        },
+        {
+          "path": "config/asset-profiles/natural-earth-extra-vector-v1.json",
+          "cache": true
+        },
+        {
+          "path": "config/asset-profiles/gray-earth-relief-v1.json",
+          "cache": true
+        }
+      ]
+    }
+  },
+  "excluded": {
+    "relief": "Full-color raster archives are not verified.",
+    "reliefalt": "Full-color raster archives are not verified.",
+    "blueMarble": "No matching georeferenced archive is verified.",
+    "conservation": "Archived hotspot data and redistribution terms are not verified.",
+    "hotspotLabels": "Archived hotspot data and redistribution terms are not verified.",
+    "ecoregions": "The archived data, field mappings and styles are not verified.",
+    "ecoregionLabels": "The archived data, field mappings and styles are not verified.",
+    "marine_ecoregions": "The archived data, field mappings and styles are not verified.",
+    "marineEcoregionLabels": "The archived data, field mappings and styles are not verified."
+  }
+}

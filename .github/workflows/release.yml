@@ -1,0 +1,81 @@
+name: Private release checks
+on:
+  pull_request:
+  push:
+    branches: [master, 'codex/**']
+  workflow_dispatch:
+    inputs:
+      optional_assets:
+        description: Run the verified optional dataset release lane
+        type: boolean
+        default: false
+permissions:
+  contents: read
+concurrency:
+  group: release-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  runtime:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 40
+    env:
+      COMPOSE_PROJECT_NAME: simplemappr-ci
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - name: Build declared runtime and frontend
+        run: docker build --label "org.opencontainers.image.revision=$GITHUB_SHA" -t simplemappr-runtime:local .
+      - name: Create disposable credentials
+        run: |
+          scripts/configure-ci --env-file "$RUNNER_TEMP/simplemappr.env" --credentials-file "$RUNNER_TEMP/simplemappr-credentials.json"
+          printf '%s\n' "SIMPLEMAPPR_CI_ENV=$RUNNER_TEMP/simplemappr.env" "SIMPLEMAPPR_TEST_CREDENTIALS=$RUNNER_TEMP/simplemappr-credentials.json" >> "$GITHUB_ENV"
+      - name: Native, HTTP and asset checks
+        run: |
+          mkdir -p build/receipts
+          docker compose --env-file "$SIMPLEMAPPR_CI_ENV" up -d --no-build --wait
+          docker compose --env-file "$SIMPLEMAPPR_CI_ENV" exec -T app scripts/check-runtime > build/receipts/native.log
+          docker compose --env-file "$SIMPLEMAPPR_CI_ENV" exec -T app Tests/smoke/check-http > build/receipts/http.log
+          docker compose --env-file "$SIMPLEMAPPR_CI_ENV" exec -T app scripts/bootstrap-assets --check > build/receipts/assets.log
+      - name: PHP dependencies and behavior
+        run: |
+          scripts/check-dependency-pins
+          docker compose --env-file "$SIMPLEMAPPR_CI_ENV" exec -T app composer validate
+          docker compose --env-file "$SIMPLEMAPPR_CI_ENV" exec -T app composer check-platform-reqs
+          docker compose --env-file "$SIMPLEMAPPR_CI_ENV" exec -T app composer audit --format=json > build/receipts/composer-audit.json
+          docker compose --env-file "$SIMPLEMAPPR_CI_ENV" exec -T app composer licenses --format=json > build/receipts/composer-licenses.json
+          docker compose --env-file "$SIMPLEMAPPR_CI_ENV" exec -T app sh -ec 'find src config Tests/modern -type f -name "*.php" -print0 | xargs -0 -n1 php -l' > build/receipts/php-lint.log
+          docker compose --env-file "$SIMPLEMAPPR_CI_ENV" exec -T app vendor/bin/phpunit -c Tests/phpunit.modern.xml > build/receipts/phpunit.log
+          Tests/smoke/check-persistence > build/receipts/persistence.log
+          Tests/smoke/check-import-boundary > build/receipts/import-boundary.log
+          python3 -B -m unittest discover -s Tests/operations -p 'test_*.py'
+          python3 -B -m unittest discover -s Tests/browser -p 'test_*.py'
+      - name: Chromium, Firefox, keyboard and accessibility
+        run: |
+          scripts/check-browser --credentials-file "$SIMPLEMAPPR_TEST_CREDENTIALS"
+          docker run --rm simplemappr-browser-contract:local npm audit --audit-level=high --json > build/receipts/browser-npm-audit.json
+          docker build --target frontend -t simplemappr-frontend:check .
+          docker run --rm simplemappr-frontend:check npm audit --audit-level=high --json > build/receipts/frontend-npm-audit.json
+      - name: Protected backup, restore and owner rotation
+        run: scripts/check-backup-restore --private-dir "$RUNNER_TEMP/operations" > build/receipts/operations.json
+      - name: Optional datasets through the editor
+        if: github.event_name == 'workflow_dispatch' && inputs.optional_assets
+        run: |
+          scripts/fetch-assets --profile gray-relief-v1
+          SIMPLEMAPPR_ASSET_PROFILE=gray-relief-v1 SIMPLEMAPPR_ASSET_CACHE="$PWD/.asset-cache" docker compose --env-file "$SIMPLEMAPPR_CI_ENV" up -d --no-build --wait
+          mkdir -p build/receipts/profiles
+          docker run --rm --network host --shm-size=1g -v "$PWD/build/receipts/profiles:/receipts" simplemappr-browser-contract:local node profiles.mjs
+      - name: Collect package inventory
+        if: always()
+        run: docker compose --env-file "$SIMPLEMAPPR_CI_ENV" exec -T app cat /usr/local/share/simplemappr-packages.tsv > build/receipts/system-packages.tsv
+      - name: Upload verification receipts
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        with:
+          name: release-checks-${{ github.sha }}
+          path: build/receipts/
+          retention-days: 14
+          if-no-files-found: error
+      - name: Remove disposable CI state
+        if: always()
+        run: docker compose --env-file "$SIMPLEMAPPR_CI_ENV" down --volumes

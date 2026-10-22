@@ -99,17 +99,16 @@ class Pptx extends Mappr
 
         // Create slide
         $currentSlide = $objPHPPowerPoint->getActiveSlide();
-        $currentSlide->setSlideLayout(Layout::TITLE_AND_CONTENT);
 
-        $width = 950;
-        $height = 720;
+        $width = $objPHPPowerPoint->getLayout()->getCX(\PhpOffice\PhpPresentation\DocumentLayout::UNIT_PIXEL);
+        $height = $objPHPPowerPoint->getLayout()->getCY(\PhpOffice\PhpPresentation\DocumentLayout::UNIT_PIXEL);
 
         $files = [];
         $images = ['image', 'scale', 'legend'];
         foreach ($images as $image) {
             if ($this->{$image}) {
-                $image_filename = basename($this->{$image}->saveWebImage());
-                $files[$image]['file'] = $this->tmp_path . $image_filename;
+                $temporary = \SimpleMappr\TemporaryImage::write($this->{$image}, $this->map_obj);
+                $files[$image]['file'] = $temporary['path'];
                 $files[$image]['size'] = getimagesize($files[$image]['file']);
             }
         }

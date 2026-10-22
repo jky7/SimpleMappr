@@ -37,181 +37,50 @@
  */
 namespace SimpleMappr\Controller;
 
+use SimpleMappr\CitationDocument;
 use SimpleMappr\Database;
+use SimpleMappr\HttpException;
 
-/**
- * Citation model for SimpleMappr
- *
- * @category  Class
- * @package   SimpleMappr
- * @author    David P. Shorthouse <davidpshorthouse@gmail.com>
- * @copyright 2010-2018 David P. Shorthouse
- * @license   MIT, https://github.com/dshorthouse/SimpleMappr/blob/master/LICENSE
- * @link      http://github.com/dshorthouse/SimpleMappr
- */
 class Citation implements RestMethods
 {
-    /**
-     * A database connection object
-     *
-     * @var object $_db
-     */
-    private $_db;
+    private Database $db;
+    public function __construct() { $this->db = Database::getInstance(); }
 
-    /**
-     * Citations object produced from queries
-     *
-     * @var object $_citations
-     */
-    private $_citations;
-
-    /**
-     * Constructor
-     */
-    public function __construct()
-    {
-        $this->_db = Database::getInstance();
-    }
-
-    /**
-     * Implemented index method
-     *
-     * @param object $params null
-     *
-     * @return array
-     */
     public function index($params = null)
     {
-        $sql = "
-            SELECT 
-                * 
-            FROM 
-                citations c 
-            ORDER BY 
-                c.first_author_surname ASC, c.year DESC";
-
-        $this->_db->prepare($sql);
-        $this->_citations = $this->_db->fetchAllObject();
-        return $this->_response();
+        $this->db->prepare('SELECT id,year,reference,doi,link,first_author_surname,created FROM citations ORDER BY first_author_surname ASC,year DESC,id ASC');
+        return ['status'=>'ok','citations'=>$this->db->fetchAllObject()];
     }
 
-    /**
-     * Implemented show method
-     *
-     * @param int $id the citation identifier
-     *
-     * @return void
-     */
     public function show($id)
     {
-        $sql = "
-            SELECT
-                id, year, reference, doi, link, first_author_surname
-            FROM 
-                citations
-            WHERE
-                id = :id";
-
-        $this->_db->prepare($sql);
-        $this->_db->bindParam(":id", $id, 'integer');
-        return $this->_db->fetchFirstObject();
+        $this->db->prepare('SELECT id,year,reference,doi,link,first_author_surname,created FROM citations WHERE id=:id');
+        $this->db->bindParam(':id',(int)$id);
+        $record = $this->db->fetchFirstObject();
+        if (!$record) { throw new HttpException(404,'Citation not found.'); }
+        return $record;
     }
 
-    /**
-     * Implemented create method
-     *
-     * @param array $content The array sent from router
-     *
-     * @return array
-     */
     public function create($content)
     {
-        $year = null;
-        $reference = null;
-        $author = null;
-        $doi = null;
-        $link = null;
-
-        if (array_key_exists('year', $content)) {
-            $year = (int)$content["year"];
-        }
-        if (array_key_exists('reference', $content)) {
-            $reference = $content["reference"];
-        }
-        if (array_key_exists('first_author_surname', $content)) {
-            $author = $content["first_author_surname"];
-        }
-        if (array_key_exists('doi', $content)) {
-            $doi = $content["doi"];
-        }
-        if (array_key_exists('link', $content)) {
-            $link = $content["link"];
-        }
-
-        if (empty($year)
-            || empty($reference)
-            || empty($author)
-        ) {
-            $this->_response('error');
-            exit();
-        }
-
-        $data = [
-            'year' => $year,
-            'reference' => $reference,
-            'doi' => $doi,
-            'link' => $link,
-            'first_author_surname' => $author,
-            'created' => time()
-        ];
-
-        $data['id'] = $this->_db->queryInsert('citations', $data);
-        $this->_citations = $data;
-        return $this->_response();
+        $values = CitationDocument::parse($content);
+        $values['created'] = time();
+        $values['id'] = $this->db->queryInsert('citations',$values);
+        return ['status'=>'ok','citations'=>$values];
     }
 
-    /**
-     * Implemented update method
-     *
-     * @param array  $content The array of content
-     * @param string $where   The where clause
-     *
-     * @return void
-     */
-    public function update($content, $where)
+    public function update($content,$where)
     {
-        $this->_db->queryUpdate('citations', $content, $where);
-        $this->_citations = "";
-        return $this->_response();
+        $id = (int)($where['id'] ?? 0);
+        $values = CitationDocument::parse($content,$id);
+        $this->show($id);
+        $this->db->queryUpdate('citations',$values,['id'=>$id]);
+        return ['status'=>'ok','citations'=>''];
     }
 
-    /**
-     * Implemented destroy method
-     *
-     * @param int $id The citation identifier
-     *
-     * @return array
-     */
     public function destroy($id)
     {
-        $this->_db->queryDelete('citations', $id);
-        $this->_citations = "";
-        return $this->_response();
-    }
-
-    /**
-     * Produce the JSON response
-     *
-     * @param string $type The type of response
-     *
-     * @return array
-     */
-    private function _response($type = null)
-    {
-        if ($type == 'error') {
-            return ["status" => "error"];
-        } else {
-            return ["status" => "ok", "citations" => $this->_citations];
-        }
+        if ($this->db->queryDelete('citations',(int)$id) === 0) { throw new HttpException(404,'Citation not found.'); }
+        return ['status'=>'ok','citations'=>''];
     }
 }

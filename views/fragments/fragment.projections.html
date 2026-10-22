@@ -1,5 +1,6 @@
 <ul>
 <li>
+<label class="visually-hidden" for="projection">{{ "Projection"|trans }}</label>
 <select id="projection" name="projection">
 {% for key,value in projections %}
   {% set selected = (value['name'] == 'Geographic') ? " selected" : "" %}
@@ -8,6 +9,6 @@
 </select>
 </li>
 <li id="origin-selector">
-<label for="origin">{% trans "longitude of natural origin" %}</label><input type="text" id="origin" name="origin" size="4" />
+<label for="origin">{{ "longitude of natural origin"|trans }}</label><input type="text" id="origin" name="origin" size="4" />
 </li>
 </ul>

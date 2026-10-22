@@ -1,0 +1,28 @@
+#!/usr/bin/env php
+<?php
+require dirname(__DIR__).'/config/defaults.php';
+require ROOT.'/vendor/autoload.php';
+try {
+    $source=ROOT.'/mapserver/maps/10m_cultural/10m_cultural/ne_10m_admin_1_states_provinces.shp';
+    $process=proc_open(['ogr2ogr','-f','GeoJSON','/vsistdout/',$source,'-select','adm0_a3,admin,name,code_hasc','-nlt','NONE'],[1=>['pipe','w'],2=>['pipe','w']],$pipes);
+    $json=stream_get_contents($pipes[1]); $errors=stream_get_contents($pipes[2]); fclose($pipes[1]); fclose($pipes[2]);
+    if (proc_close($process)!==0) { throw new RuntimeException('Natural Earth lookup extraction failed: '.$errors); }
+    $features=json_decode($json,true,512,JSON_THROW_ON_ERROR)['features'];
+    $pdo=SimpleMappr\Database::getInstance()->connection();
+    $pdo->beginTransaction();
+    $pdo->exec('DELETE FROM stateprovinces');
+    $insert=$pdo->prepare('INSERT INTO stateprovinces(country_iso,country,stateprovince,stateprovince_code) VALUES(?,?,?,?)');
+    $count=0;
+    foreach ($features as $feature) {
+        $p=$feature['properties']; $parts=explode('.',$p['code_hasc'] ?? '');
+        $code=$parts[1] ?? '';
+        if (!$p['adm0_a3'] || !$p['admin'] || !$p['name'] || $code==='') { continue; }
+        $insert->execute([$p['adm0_a3'],$p['admin'],$p['name'],$code]); $count++;
+    }
+    if ($count<4000) { throw new RuntimeException('Natural Earth lookup unexpectedly incomplete.'); }
+    $pdo->commit();
+    echo 'Generated '.$count." province lookup rows from pinned Natural Earth assets.\n";
+} catch (Throwable $error) {
+    if (isset($pdo) && $pdo->inTransaction()) { $pdo->rollBack(); }
+    fwrite(STDERR,$error->getMessage()."\n"); exit(1);
+}

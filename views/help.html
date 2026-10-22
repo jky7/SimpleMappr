@@ -23,223 +23,223 @@
 </script>
 <!-- help tab -->
 <div id="map-help">
-    
+
   <div class="panel">
-    <p>{% trans "This application makes heavy use of JavaScript. A modern browser like Internet Explorer 9, FireFox 6+, Google Chrome, or Safari 5+ is strongly recommended." %}</p>
+    <p>{{ "This application makes heavy use of JavaScript. A modern browser like Internet Explorer 9, FireFox 6+, Google Chrome, or Safari 5+ is strongly recommended."|trans }}</p>
   </div>
 
   <div class="header">
-    <h2>{% trans "Preview" %}</h2>
+    <h2>{{ "Preview"|trans }}</h2>
   </div>
 
-  <p>{% trans "Use the Preview tab to refine your eventual map export by adjusting various options, downloading the result, or saving it for later re-use (when logged in)" %}</p>
+  <p>{{ "Use the Preview tab to refine your eventual map export by adjusting various options, downloading the result, or saving it for later re-use (when logged in)"|trans }}</p>
 
-  <h3>{% trans "Toolbar buttons" %}</h3>
+  <h3>{{ "Toolbar buttons"|trans }}</h3>
   <dl class="toolbar ui-helper-clearfix">
-    <dt class="sprites-before toolsZoomIn">{% trans "Zoom in" %}:</dt>
-    <dd>{% trans "draw a zoom region on the preview" %}</dd>
+    <dt class="sprites-before toolsZoomIn">{{ "Zoom in"|trans }}:</dt>
+    <dd>{{ "draw a zoom region on the preview"|trans }}</dd>
 
-    <dt class="sprites-before toolsZoomOut">{% trans "Zoom out" %}:</dt>
-    <dd>{% trans "zoom out one step" %}</dd>
+    <dt class="sprites-before toolsZoomOut">{{ "Zoom out"|trans }}:</dt>
+    <dd>{{ "zoom out one step"|trans }}</dd>
 
-    <dt class="sprites-before toolsCrop">{% trans "Crop" %}:</dt>
-    <dd>{% trans "draw an expandable, square-shaped rubber band that precisely defines a cropped portion of the map you wish to appear in the exported map. Typing precise coordinates in the corner boxes within the crop window are not always retained after the crop window is automatically redrawn because your computer monitor has a finite number of pixels." %}</dd>
+    <dt class="sprites-before toolsCrop">{{ "Crop"|trans }}:</dt>
+    <dd>{{ "draw an expandable, square-shaped rubber band that precisely defines a cropped portion of the map you wish to appear in the exported map. Typing precise coordinates in the corner boxes within the crop window are not always retained after the crop window is automatically redrawn because your computer monitor has a finite number of pixels."|trans }}</dd>
 
-    <dt class="sprites-before toolsQuery">{% trans "Fill regions" %}:</dt>
-    <dd>{% trans "choose a color then draw an expandable, square-shaped rubber band to shade States/Provinces (if layer visible) or Countries. Selections are sequentially added in the Regions tab." %}</dd>
+    <dt class="sprites-before toolsQuery">{{ "Fill regions"|trans }}:</dt>
+    <dd>{{ "choose a color then draw an expandable, square-shaped rubber band to shade States/Provinces (if layer visible) or Countries. Selections are sequentially added in the Regions tab."|trans }}</dd>
 
-    <dt class="sprites-before toolsUndo">{% trans "Undo" %}:</dt>
-    <dd>{% trans "undo the last executed action" %}</dd>
+    <dt class="sprites-before toolsUndo">{{ "Undo"|trans }}:</dt>
+    <dd>{{ "undo the last executed action"|trans }}</dd>
 
-    <dt class="sprites-before toolsRedo">{% trans "Redo" %}:</dt>
-    <dd>{% trans "redo the last executed action" %}</dd>
+    <dt class="sprites-before toolsRedo">{{ "Redo"|trans }}:</dt>
+    <dd>{{ "redo the last executed action"|trans }}</dd>
 
-    <dt class="sprites-before toolsNew">{% trans "New" %}:</dt>
-    <dd>{% trans "create a new map image" %}</dd>
+    <dt class="sprites-before toolsNew">{{ "New"|trans }}:</dt>
+    <dd>{{ "create a new map image"|trans }}</dd>
 
-    <dt class="sprites-before toolsRefresh">{% trans "Refresh" %}:</dt>
-    <dd>{% trans "refresh the map image" %}</dd>
+    <dt class="sprites-before toolsRefresh">{{ "Refresh"|trans }}:</dt>
+    <dd>{{ "refresh the map image"|trans }}</dd>
 
-    <dt class="sprites-before toolsRebuild">{% trans "Rebuild" %}:</dt>
-    <dd>{% trans "re-render the default presentation at lowest zoom and geographic projection" %}</dd>
+    <dt class="sprites-before toolsRebuild">{{ "Rebuild"|trans }}:</dt>
+    <dd>{{ "re-render the default presentation at lowest zoom and geographic projection"|trans }}</dd>
   </dl>
 
   <dl class="toolbar ui-helper-clearfix">
-    <dt class="sprites-before toolsSave">{% trans "Save" %}:</dt>
-    <dd>{% trans "while logged in, click this icon to give your map a title and save its settings for later reuse from the My Maps tab." %}</dd>
+    <dt class="sprites-before toolsSave">{{ "Save"|trans }}:</dt>
+    <dd>{{ "while logged in, click this icon to give your map a title and save its settings for later reuse from the My Maps tab."|trans }}</dd>
 
-    <dt class="sprites-before toolsEmbed">{% trans "Embed" %}:</dt>
-    <dd>{% trans "once a map is saved, click this icon to obtain a URL for embedding on other websites." %}</dd>
+    <dt class="sprites-before toolsEmbed">{{ "Embed"|trans }}:</dt>
+    <dd>{{ "once a map is saved, click this icon to obtain a URL for embedding on other websites."|trans }}</dd>
 
-    <dt class="sprites-before toolsDownload">{% trans "Download" %}:</dt>
-    <dd>{% trans "choose from a web-friendly png, high resolution tif, pptx (PowerPoint), docx (Word), kml (Google Earth) or scalable vector graphic (svg). The latter is recommended for the preparation of figures in manuscripts because it is lossless. However, the svg download does not include a scalebar, legend, or shaded relief layer(s) because these are raster-based." %}</dd>
+    <dt class="sprites-before toolsDownload">{{ "Download"|trans }}:</dt>
+    <dd>{{ "choose from a web-friendly png, high resolution tif, pptx (PowerPoint), docx (Word), kml (Google Earth) or scalable vector graphic (svg). The latter is recommended for the preparation of figures in manuscripts because it is lossless. However, the svg download does not include a scalebar, legend, or shaded relief layer(s) because these are raster-based."|trans }}</dd>
   </dl>
 
-  <h3>{% trans "Keyboard Shortcuts" %}</h3>
+  <h3>{{ "Keyboard Shortcuts"|trans }}</h3>
   <dl>
-    <dt>{% trans "double-click" %}</dt>
-    <dd>{% trans "Zoom in at the mouse position" %}</dd>
+    <dt>{{ "double-click"|trans }}</dt>
+    <dd>{{ "Zoom in at the mouse position"|trans }}</dd>
 
     <dt>+</dt>
-    <dd>{% trans "Zoom in at the mouse position" %}</dd>
+    <dd>{{ "Zoom in at the mouse position"|trans }}</dd>
 
     <dt>-</dt>
-    <dd>{% trans "Zoom out" %}</dd>
+    <dd>{{ "Zoom out"|trans }}</dd>
 
     <dt>ctrl+x</dt>
-    <dd>{% trans "Initiate the crop tool" %}</dd>
+    <dd>{{ "Initiate the crop tool"|trans }}</dd>
 
     <dt>ctrl+z</dt>
-    <dd>{% trans "Undo last selection" %}</dd>
+    <dd>{{ "Undo last selection"|trans }}</dd>
 
     <dt>ctrl+y</dt>
-    <dd>{% trans "Redo last selection" %}</dd>
+    <dd>{{ "Redo last selection"|trans }}</dd>
 
     <dt>ctrl+n</dt>
-    <dd>{% trans "New map with base layer" %}</dd>
+    <dd>{{ "New map with base layer"|trans }}</dd>
 
     <dt>ctrl+r</dt>
-    <dd>{% trans "Refresh the map" %}</dd>
+    <dd>{{ "Refresh the map"|trans }}</dd>
 
     <dt>ctrl+b</dt>
-    <dd>{% trans "Rebuild the map under geographic projection" %}</dd>
+    <dd>{{ "Rebuild the map under geographic projection"|trans }}</dd>
 
     <dt>ctrl+s</dt>
-    <dd>{% trans "Show the Save Map dialog" %}</dd>
+    <dd>{{ "Show the Save Map dialog"|trans }}</dd>
 
     <dt>ctrl+d</dt>
-    <dd>{% trans "Show the Download Map dialog" %}</dd>
+    <dd>{{ "Show the Download Map dialog"|trans }}</dd>
 
     <dt>ctrl+e</dt>
-    <dd>{% trans "Expand the map to fill the window" %}</dd>
+    <dd>{{ "Expand the map to fill the window"|trans }}</dd>
 
     <dt>ctrl+l</dt>
-    <dd>{% trans "Show your saved maps tab (when logged in)" %}</dd>
+    <dd>{{ "Show your saved maps tab (when logged in)"|trans }}</dd>
 
-    <dt>{% trans "arrow up/down/left/right" %}</dt>
-    <dd>{% trans "Pan the map up/down/left/right" %}</dd>
+    <dt>{{ "arrow up/down/left/right"|trans }}</dt>
+    <dd>{{ "Pan the map up/down/left/right"|trans }}</dd>
   </dl>
 
-  <h3>{% trans "Layers" %}</h3>
+  <h3>{{ "Layers"|trans }}</h3>
   <dl class="ui-helper-clearfix">
-    <dt>{% trans "Countries" %}</dt>
-    <dd>{% trans "select this checkbox to draw Country borders" %}</dd>
+    <dt>{{ "Countries"|trans }}</dt>
+    <dd>{{ "select this checkbox to draw Country borders"|trans }}</dd>
 
-    <dt>{% trans "State/Provinces" %}</dt>
-    <dd>{% trans "select this checkbox to draw all State and Province borders for all countries" %}</dd>
+    <dt>{{ "State/Provinces"|trans }}</dt>
+    <dd>{{ "select this checkbox to draw all State and Province borders for all countries"|trans }}</dd>
 
-    <dt>{% trans "lakes (outline)" %}</dt>
-    <dd>{% trans "select this checkbox to overlay lakes as black outlines" %}</dd>
+    <dt>{{ "lakes (outline)"|trans }}</dt>
+    <dd>{{ "select this checkbox to overlay lakes as black outlines"|trans }}</dd>
 
-    <dt>{% trans "lakes (greyscale)" %}</dt>
-    <dd>{% trans "select this checkbox to overlay lakes as greyscale polygons" %}</dd>
+    <dt>{{ "lakes (greyscale)"|trans }}</dt>
+    <dd>{{ "select this checkbox to overlay lakes as greyscale polygons"|trans }}</dd>
 
-    <dt>{% trans "rivers" %}</dt>
-    <dd>{% trans "select this checkbox to overlay rivers as black outlines" %}</dd>
+    <dt>{{ "rivers"|trans }}</dt>
+    <dd>{{ "select this checkbox to overlay rivers as black outlines"|trans }}</dd>
 
-    <dt>{% trans "oceans (greyscale)" %}</dt>
-    <dd>{% trans "select this checkbox to overlay oceans as greyscale polygons" %}</dd>
+    <dt>{{ "oceans (greyscale)"|trans }}</dt>
+    <dd>{{ "select this checkbox to overlay oceans as greyscale polygons"|trans }}</dd>
 
-    <dt>{% trans "relief" %}</dt>
-    <dd>{% trans "select this checkbox to render a color, shaded relief layer" %}</dd>
+    <dt>{{ "relief"|trans }}</dt>
+    <dd>{{ "select this checkbox to render a color, shaded relief layer"|trans }}</dd>
 
-    <dt>{% trans "relief (alternate)" %}</dt>
-    <dd>{% trans "select this checkbox to render an alternate color, shaded relief layer" %}</dd>
+    <dt>{{ "relief (alternate)"|trans }}</dt>
+    <dd>{{ "select this checkbox to render an alternate color, shaded relief layer"|trans }}</dd>
 
-    <dt>{% trans "relief (greyscale)" %}</dt>
-    <dd>{% trans "select this checkbox to render a greyscale, shaded relief layer" %}</dd>
+    <dt>{{ "relief (greyscale)"|trans }}</dt>
+    <dd>{{ "select this checkbox to render a greyscale, shaded relief layer"|trans }}</dd>
 
-    <dt>{% trans "biodiv. hotspots" %}</dt>
-    <dd>{% trans "select this checkbox to render biodiversity hotspots known to Conservation International" %}</dd>
+    <dt>{{ "biodiv. hotspots"|trans }}</dt>
+    <dd>{{ "select this checkbox to render biodiversity hotspots known to Conservation International"|trans }}</dd>
 
-    <dt>{% trans "ecoregions" %}</dt>
-    <dd>{% trans "select this checkbox to render terrestrial ecoregions from the World Wildlife Fund" %}</dd>
+    <dt>{{ "ecoregions"|trans }}</dt>
+    <dd>{{ "select this checkbox to render terrestrial ecoregions from the World Wildlife Fund"|trans }}</dd>
 
-    <dt>{% trans "roads" %}</dt>
-    <dd>{% trans "select this checkbox to render major roadways" %}</dd>
+    <dt>{{ "roads"|trans }}</dt>
+    <dd>{{ "select this checkbox to render major roadways"|trans }}</dd>
 
-    <dt>{% trans "railroads" %}</dt>
-    <dd>{% trans "select this checkbox to render major railroad lines" %}</dd>
+    <dt>{{ "railroads"|trans }}</dt>
+    <dd>{{ "select this checkbox to render major railroad lines"|trans }}</dd>
   </dl>
 
-  <h3>{% trans "Labels" %}</h3>
+  <h3>{{ "Labels"|trans }}</h3>
   <dl class="ui-helper-clearfix">
-    <dt>{% trans "Countries" %}</dt>
-    <dd>{% trans "label countries" %}</dd>
+    <dt>{{ "Countries"|trans }}</dt>
+    <dd>{{ "label countries"|trans }}</dd>
 
-    <dt>{% trans "State/Provinces" %}</dt>
-    <dd>{% trans "label States and Provinces" %}</dd>
+    <dt>{{ "State/Provinces"|trans }}</dt>
+    <dd>{{ "label States and Provinces"|trans }}</dd>
 
-    <dt>{% trans "lakes" %}</dt>
-    <dd>{% trans "label lakes" %}</dd>
+    <dt>{{ "lakes"|trans }}</dt>
+    <dd>{{ "label lakes"|trans }}</dd>
 
-    <dt>{% trans "rivers" %}</dt>
-    <dd>{% trans "label rivers" %}</dd>
+    <dt>{{ "rivers"|trans }}</dt>
+    <dd>{{ "label rivers"|trans }}</dd>
 
-    <dt>{% trans "places" %}</dt>
-    <dd>{% trans "label city, town names" %}</dd>
+    <dt>{{ "places"|trans }}</dt>
+    <dd>{{ "label city, town names"|trans }}</dd>
 
-    <dt>{% trans "physical" %}</dt>
-    <dd>{% trans "label physical features" %}</dd>
+    <dt>{{ "physical"|trans }}</dt>
+    <dd>{{ "label physical features"|trans }}</dd>
 
-    <dt>{% trans "marine" %}</dt>
-    <dd>{% trans "label marine features" %}</dd>
+    <dt>{{ "marine"|trans }}</dt>
+    <dd>{{ "label marine features"|trans }}</dd>
 
-    <dt>{% trans "biodiv. hotspots" %}</dt>
-    <dd>{% trans "label biodiversity hotspots" %}</dd>
+    <dt>{{ "biodiv. hotspots"|trans }}</dt>
+    <dd>{{ "label biodiversity hotspots"|trans }}</dd>
 
-    <dt>{% trans "ecoregions" %}</dt>
-    <dd>{% trans "label terrestrial ecoregions" %}</dd>
+    <dt>{{ "ecoregions"|trans }}</dt>
+    <dd>{{ "label terrestrial ecoregions"|trans }}</dd>
   </dl>
 
-  <h3>{% trans "Options" %}</h3>
+  <h3>{{ "Options"|trans }}</h3>
   <dl class="ui-helper-clearfix">
-    <dt>{% trans "graticules" %}</dt>
-    <dd>{% trans "draw a graticule (grid) layer on the map using either fixed, 1, 5, or 10 degree spacing" %}</dd>
+    <dt>{{ "graticules"|trans }}</dt>
+    <dd>{{ "draw a graticule (grid) layer on the map using either fixed, 1, 5, or 10 degree spacing"|trans }}</dd>
 
-    <dt>{% trans "Line Thickness" %}</dt>
-    <dd>{% trans "use the slider to increase or decrease line thickness of the base and State/Provinces layers" %}
+    <dt>{{ "Line Thickness"|trans }}</dt>
+    <dd>{{ "use the slider to increase or decrease line thickness of the base and State/Provinces layers"|trans }}
   </dl>
 
-  <h3>{% trans "Projection" %}</h3>
+  <h3>{{ "Projection"|trans }}</h3>
   <dl class="ui-helper-clearfix">
-    <dt>{% trans "projection" %}</dt>
-    <dd>{% trans "choose among several projections. [Hint: first use zoom while on the base geographic projection for best effects]" %}</dd>
+    <dt>{{ "projection"|trans }}</dt>
+    <dd>{{ "choose among several projections. [Hint: first use zoom while on the base geographic projection for best effects]"|trans }}</dd>
 
-    <dt>{% trans "longitude of natural origin" %}</dt>
-    <dd>{% trans "type the longitude for the central meridian" %}</dd>
+    <dt>{{ "longitude of natural origin"|trans }}</dt>
+    <dd>{{ "type the longitude for the central meridian"|trans }}</dd>
   </dl>
 
     <div class="header">
-      <h2>{% trans "Point Data" %}</h2>
+      <h2>{{ "Point Data"|trans }}</h2>
     </div>
-    <p>{% trans "Use the Point Data tab to paste coordinates as latitude, longitude either in decimal degrees or as DD°MM'SS\" on separate lines and select the marker shape, size, and color." %}</p>
+    <p>{{ "Use the Point Data tab to paste coordinates as latitude, longitude either in decimal degrees or as DD°MM'SS\" on separate lines and select the marker shape, size, and color."|trans }}</p>
 
     <dl class="ui-helper-clearfix">
-      <dt>{% trans "Coordinate format" %}:</dt>
-      <dd>{% trans "in western hemisphere above equator 45.55, -120.25 (or 45° 33'N, 120° 15'W); in western hemisphere below equator -15.66, -65.10; eastern hemisphere above equator 64.82, 75.1" %}</dd>
+      <dt>{{ "Coordinate format"|trans }}:</dt>
+      <dd>{{ "in western hemisphere above equator 45.55, -120.25 (or 45° 33'N, 120° 15'W); in western hemisphere below equator -15.66, -65.10; eastern hemisphere above equator 64.82, 75.1"|trans }}</dd>
     </dl>
     <div id="example-data">
-      <img src="../public/images/help-data.png" alt="{% trans "Example Data Entry" %}" width="400" height="215" />
-      <img src="../public/images/38100.png" alt="{% trans "38,-100 (North America)" %}" width="200" height="100" />
-      <img src="../public/images/25140.png" alt="{% trans "-25,140 (Australia)" %}" width="200" height="100" />
+      <img src="../public/images/help-data.png" alt="{{ "Example Data Entry"|trans }}" width="400" height="215" />
+      <img src="../public/images/38100.png" alt="{{ "38,-100 (North America)"|trans }}" width="200" height="100" />
+      <img src="../public/images/25140.png" alt="{{ "-25,140 (Australia)"|trans }}" width="200" height="100" />
     </div>
     <dl class="ui-helper-clearfix">
-      <dt>{% trans "Pushpin color" %}:</dt>
-      <dd>{% trans "configured using the RGB color scheme and a color selector is provided. By default, \"0 0 0\" (black) is selected. Shades of gray may be configured by typing variations of identically numbered triples. For example, \"10 10 10\" is dark gray whereas \"100 100 100\" is a lighter shade of gray." %}</dd>
+      <dt>{{ "Pushpin color"|trans }}:</dt>
+      <dd>{{ "configured using the RGB color scheme and a color selector is provided. By default, \"0 0 0\" (black) is selected. Shades of gray may be configured by typing variations of identically numbered triples. For example, \"10 10 10\" is dark gray whereas \"100 100 100\" is a lighter shade of gray."|trans }}</dd>
     </dl>
 
     <div class="header">
-      <h2>{% trans "Drawings" %}</h2>
+      <h2>{{ "Drawings"|trans }}</h2>
     </div>
     {% set url_wkt = '<a href="https://rawgit.com/dshorthouse/0afc690b83ed056f6762a96702c041e7/raw/190037de4152654a2e4b1e13394b40ba67249fd4/wkt.html" target="_blank">WKT</a>' %}
-    <p>{% trans %}Use the Drawings tab to paste well-known text (WKT). You can generate these using software capable of doing so or online such as this {{ url_wkt }} generator.{% endtrans %}</p>
+    <p>{{ "Use the Drawings tab to paste well-known text (WKT). You can generate these using software capable of doing so or online such as this %url_wkt% generator."|trans({"%url_wkt%": url_wkt}) }}</p>
 
     <div class="header">
-      <h2>{% trans "Regions" %}</h2>
+      <h2>{{ "Regions"|trans }}</h2>
     </div>
 
-    <p>{% trans "Use the Regions tab to list political regions you would like shaded and select the shade color. Separate each political region by a comma or semicolon. Alternatively, you may use State/Province codes such as USA[WY|WA|MT], CAN[AB BC] that will shade Wyoming, Washington, Montana, Alberta, and British Columbia. Notice that States or Provinces are separated by a space or a pipe and these are wrapped with square brackets, prefixed with the three-letter ISO country code." %}</p>
+    <p>{{ "Use the Regions tab to list political regions you would like shaded and select the shade color. Separate each political region by a comma or semicolon. Alternatively, you may use State/Province codes such as USA[WY|WA|MT], CAN[AB BC] that will shade Wyoming, Washington, Montana, Alberta, and British Columbia. Notice that States or Provinces are separated by a space or a pipe and these are wrapped with square brackets, prefixed with the three-letter ISO country code."|trans }}</p>
 
     <div id="country-codes"></div>
 </div>

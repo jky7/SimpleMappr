@@ -1,0 +1,363 @@
+{
+  "schemaVersion": 1,
+  "profile": "natural-earth-extra-vector-v1",
+  "assets": [
+    {
+      "basename": "ne_10m_rivers_lake_centerlines",
+      "kind": "physical",
+      "url": "https://naciscdn.org/naturalearth/10m/physical/ne_10m_rivers_lake_centerlines.zip",
+      "archive": "ne_10m_rivers_lake_centerlines.zip",
+      "archiveBytes": 2079507,
+      "archiveSha256": "ded71b01870855ccfe19b51f2ec14c9bb48fae23c0e9f3c11974d426433b5c38",
+      "version": "5.0.0",
+      "extractedBytes": 6260002,
+      "components": [
+        {
+          "name": "ne_10m_rivers_lake_centerlines.README.html",
+          "bytes": 48596,
+          "sha256": "611c5c993f7fa7495f4c78046df9d97db244533ccfd2f0f80746d27c97db9891"
+        },
+        {
+          "name": "ne_10m_rivers_lake_centerlines.VERSION.txt",
+          "bytes": 7,
+          "sha256": "30d0ad7c0f48ffeaaf390112b5b95823c7efa1da3ee5abc116eb481989340b58"
+        },
+        {
+          "name": "ne_10m_rivers_lake_centerlines.cpg",
+          "bytes": 5,
+          "sha256": "3ad3031f5503a4404af825262ee8232cc04d4ea6683d42c5dd0a2f2a27ac9824"
+        },
+        {
+          "name": "ne_10m_rivers_lake_centerlines.dbf",
+          "bytes": 1991273,
+          "sha256": "68079fde5fde6167d0c7c4f03e498164badcc3b687a93c436278ade83882b564"
+        },
+        {
+          "name": "ne_10m_rivers_lake_centerlines.prj",
+          "bytes": 145,
+          "sha256": "a02a27b1d1982c8516d83398e85a3c8b1aef1713c13ef4d84d7bde17430c07c4"
+        },
+        {
+          "name": "ne_10m_rivers_lake_centerlines.shp",
+          "bytes": 4208092,
+          "sha256": "f9a1cf6d9f58c0a6f182a7f25771a03e0a48026253d4484aab782b2586354d78"
+        },
+        {
+          "name": "ne_10m_rivers_lake_centerlines.shx",
+          "bytes": 11884,
+          "sha256": "ab7b792de019d3a49ab1dd9960249c367cc94e43b8d5f577732892ec6107a3b2"
+        }
+      ],
+      "destination": "10m_physical",
+      "license": "Public domain",
+      "licenseUrl": "https://www.naturalearthdata.com/about/terms-of-use/",
+      "verifiedOn": "2026-10-20"
+    },
+    {
+      "basename": "ne_10m_ocean",
+      "kind": "physical",
+      "url": "https://naciscdn.org/naturalearth/10m/physical/ne_10m_ocean.zip",
+      "archive": "ne_10m_ocean.zip",
+      "archiveBytes": 3189765,
+      "archiveSha256": "db626fcd5d50b096b156c78a2cc95011b39f32a61b4e47d147e3f7a77b8b2719",
+      "version": "5.1.1",
+      "extractedBytes": 7213772,
+      "components": [
+        {
+          "name": "ne_10m_ocean.README.html",
+          "bytes": 37305,
+          "sha256": "4b328c8c6372023b088e16b20e0a7aa3722c54e53b1c32daf390a881d0df601b"
+        },
+        {
+          "name": "ne_10m_ocean.VERSION.txt",
+          "bytes": 7,
+          "sha256": "548358969090d629b41888f5fe664ac31b7203dfd849f7c1ef820ac055b62191"
+        },
+        {
+          "name": "ne_10m_ocean.cpg",
+          "bytes": 5,
+          "sha256": "3ad3031f5503a4404af825262ee8232cc04d4ea6683d42c5dd0a2f2a27ac9824"
+        },
+        {
+          "name": "ne_10m_ocean.dbf",
+          "bytes": 138,
+          "sha256": "4b2f302a84bcbb0fe5d744a9b40df173f562e07eb57532935fb6bc664d21fa33"
+        },
+        {
+          "name": "ne_10m_ocean.prj",
+          "bytes": 145,
+          "sha256": "a02a27b1d1982c8516d83398e85a3c8b1aef1713c13ef4d84d7bde17430c07c4"
+        },
+        {
+          "name": "ne_10m_ocean.shp",
+          "bytes": 7176064,
+          "sha256": "bb5ae1e0922b02e61e14f6d562fc2299db4bef5ca36c1008b1a8e7ddf9da6410"
+        },
+        {
+          "name": "ne_10m_ocean.shx",
+          "bytes": 108,
+          "sha256": "90ada34d9c3ff5f1f53064e01968b178b72d6eb8d3f1cbc1287b501e2805880b"
+        }
+      ],
+      "destination": "10m_physical",
+      "license": "Public domain",
+      "licenseUrl": "https://www.naturalearthdata.com/about/terms-of-use/",
+      "verifiedOn": "2026-10-20"
+    },
+    {
+      "basename": "ne_10m_roads",
+      "kind": "cultural",
+      "url": "https://naciscdn.org/naturalearth/10m/cultural/ne_10m_roads.zip",
+      "archive": "ne_10m_roads.zip",
+      "archiveBytes": 9075919,
+      "archiveSha256": "880b235383a1e1ccf33f4ea6f82b6755a2ffbce07e3974e412b43e88fe954ae9",
+      "version": "5.0.0",
+      "extractedBytes": 56949668,
+      "components": [
+        {
+          "name": "ne_10m_roads.README.html",
+          "bytes": 38449,
+          "sha256": "9fe3fc93b972a0da1b07f1df41d45cd363c805f9fe381bb90e450be2f6236301"
+        },
+        {
+          "name": "ne_10m_roads.VERSION.txt",
+          "bytes": 7,
+          "sha256": "30d0ad7c0f48ffeaaf390112b5b95823c7efa1da3ee5abc116eb481989340b58"
+        },
+        {
+          "name": "ne_10m_roads.cpg",
+          "bytes": 5,
+          "sha256": "3ad3031f5503a4404af825262ee8232cc04d4ea6683d42c5dd0a2f2a27ac9824"
+        },
+        {
+          "name": "ne_10m_roads.dbf",
+          "bytes": 41941626,
+          "sha256": "b7b8ca994d4f9edd91baa307b242e6ce6e3353d8f706e872be0138c223d70513"
+        },
+        {
+          "name": "ne_10m_roads.prj",
+          "bytes": 145,
+          "sha256": "a02a27b1d1982c8516d83398e85a3c8b1aef1713c13ef4d84d7bde17430c07c4"
+        },
+        {
+          "name": "ne_10m_roads.shp",
+          "bytes": 14516536,
+          "sha256": "b609e6b86218bd0822c0bb251749eed7ac6bc01675381a35ae3bab7a916544b2"
+        },
+        {
+          "name": "ne_10m_roads.shx",
+          "bytes": 452900,
+          "sha256": "32e9f52d6c43632a34b5a690f871fd0a6c3bd26f6402cf52beb517ab2a9c46f7"
+        }
+      ],
+      "destination": "10m_cultural/10m_cultural",
+      "license": "Public domain",
+      "licenseUrl": "https://www.naturalearthdata.com/about/terms-of-use/",
+      "verifiedOn": "2026-10-20"
+    },
+    {
+      "basename": "ne_10m_railroads",
+      "kind": "cultural",
+      "url": "https://naciscdn.org/naturalearth/10m/cultural/ne_10m_railroads.zip",
+      "archive": "ne_10m_railroads.zip",
+      "archiveBytes": 15116579,
+      "archiveSha256": "0bce64d1bb7ce1178810f0a341322b0459acb0689a61016259ef38f75abed0a4",
+      "version": "4.1.0",
+      "extractedBytes": 28669948,
+      "components": [
+        {
+          "name": "ne_10m_railroads.README.html",
+          "bytes": 23070,
+          "sha256": "22f3501e5137a3311163b68d3b6ce6e1915ce345050373aa9a5969c5d7c8bb06"
+        },
+        {
+          "name": "ne_10m_railroads.VERSION.txt",
+          "bytes": 7,
+          "sha256": "0874a8fe36effb87780f431845b5a7d85be657f2bd998ce8eeace717860d3b78"
+        },
+        {
+          "name": "ne_10m_railroads.cpg",
+          "bytes": 5,
+          "sha256": "3ad3031f5503a4404af825262ee8232cc04d4ea6683d42c5dd0a2f2a27ac9824"
+        },
+        {
+          "name": "ne_10m_railroads.dbf",
+          "bytes": 4676409,
+          "sha256": "bfe275b4ca9fffbe7f66c7cfd894518960cee835111001f090d570b130a379b3"
+        },
+        {
+          "name": "ne_10m_railroads.prj",
+          "bytes": 145,
+          "sha256": "a02a27b1d1982c8516d83398e85a3c8b1aef1713c13ef4d84d7bde17430c07c4"
+        },
+        {
+          "name": "ne_10m_railroads.shp",
+          "bytes": 23766908,
+          "sha256": "91bf879cd8d20720ebf548e31e66c7c4187b1b1821bc16b7f162b5f3df94d150"
+        },
+        {
+          "name": "ne_10m_railroads.shx",
+          "bytes": 203404,
+          "sha256": "f787617918f2a0923ecd4833fafbdfa86d5dc251f19dc7b9fdf143317ce9a313"
+        }
+      ],
+      "destination": "10m_cultural/10m_cultural",
+      "license": "Public domain",
+      "licenseUrl": "https://www.naturalearthdata.com/about/terms-of-use/",
+      "verifiedOn": "2026-10-20"
+    },
+    {
+      "basename": "ne_10m_populated_places_simple",
+      "kind": "cultural",
+      "url": "https://naciscdn.org/naturalearth/10m/cultural/ne_10m_populated_places_simple.zip",
+      "archive": "ne_10m_populated_places_simple.zip",
+      "archiveBytes": 652145,
+      "archiveSha256": "2963ee08f7743f13f37d5243acd77a2f7a510e26a36c7e04b920f1b381f2b251",
+      "version": "5.1.2",
+      "extractedBytes": 11452537,
+      "components": [
+        {
+          "name": "ne_10m_populated_places_simple.README.html",
+          "bytes": 41686,
+          "sha256": "e1c9f80bc222905893eef9303c8de8a83f371b51abc5d7351f9033d4abf811ab"
+        },
+        {
+          "name": "ne_10m_populated_places_simple.VERSION.txt",
+          "bytes": 7,
+          "sha256": "e8ef5da9b7349aba6cf129a53a5e5367e56b3b734c03e0377b8b700e97b669e1"
+        },
+        {
+          "name": "ne_10m_populated_places_simple.cpg",
+          "bytes": 5,
+          "sha256": "3ad3031f5503a4404af825262ee8232cc04d4ea6683d42c5dd0a2f2a27ac9824"
+        },
+        {
+          "name": "ne_10m_populated_places_simple.dbf",
+          "bytes": 11146182,
+          "sha256": "db147a148f529ce783d2b839f1f81e71d501a11e63c2d01af128314cd6527654"
+        },
+        {
+          "name": "ne_10m_populated_places_simple.prj",
+          "bytes": 145,
+          "sha256": "a02a27b1d1982c8516d83398e85a3c8b1aef1713c13ef4d84d7bde17430c07c4"
+        },
+        {
+          "name": "ne_10m_populated_places_simple.shp",
+          "bytes": 205676,
+          "sha256": "c613fb222b623b33abeaa2da835c05ee7c000bf0e573aeca399d4a32ba3b529b"
+        },
+        {
+          "name": "ne_10m_populated_places_simple.shx",
+          "bytes": 58836,
+          "sha256": "cdbad984f9e40948f2b77c87f73319477775d7bc95d47112455abea30ad39757"
+        }
+      ],
+      "destination": "10m_cultural/10m_cultural",
+      "license": "Public domain",
+      "licenseUrl": "https://www.naturalearthdata.com/about/terms-of-use/",
+      "verifiedOn": "2026-10-20"
+    },
+    {
+      "basename": "ne_10m_geography_regions_polys",
+      "kind": "physical",
+      "url": "https://naciscdn.org/naturalearth/10m/physical/ne_10m_geography_regions_polys.zip",
+      "archive": "ne_10m_geography_regions_polys.zip",
+      "archiveBytes": 2038519,
+      "archiveSha256": "cb7b9db200284ed1551f20eacc7f3333e9b5f311c19f7cb2670694529f688682",
+      "version": "5.0.0",
+      "extractedBytes": 10423829,
+      "components": [
+        {
+          "name": "ne_10m_geography_regions_polys.README.html",
+          "bytes": 40538,
+          "sha256": "8bd5958ede70547d4213e3a66aaffc979e7ab795e1516131e312bbf915b94c21"
+        },
+        {
+          "name": "ne_10m_geography_regions_polys.VERSION.txt",
+          "bytes": 7,
+          "sha256": "30d0ad7c0f48ffeaaf390112b5b95823c7efa1da3ee5abc116eb481989340b58"
+        },
+        {
+          "name": "ne_10m_geography_regions_polys.cpg",
+          "bytes": 5,
+          "sha256": "3ad3031f5503a4404af825262ee8232cc04d4ea6683d42c5dd0a2f2a27ac9824"
+        },
+        {
+          "name": "ne_10m_geography_regions_polys.dbf",
+          "bytes": 7233894,
+          "sha256": "142d853c15315e6c553ac9ca7665e65be80a1cbc821774688b143d4d4acf8801"
+        },
+        {
+          "name": "ne_10m_geography_regions_polys.prj",
+          "bytes": 145,
+          "sha256": "a02a27b1d1982c8516d83398e85a3c8b1aef1713c13ef4d84d7bde17430c07c4"
+        },
+        {
+          "name": "ne_10m_geography_regions_polys.shp",
+          "bytes": 3140764,
+          "sha256": "d7468f7967368ae2180a9d4cd4ed5de302ee53fb3615268a212ffeb3a33bf042"
+        },
+        {
+          "name": "ne_10m_geography_regions_polys.shx",
+          "bytes": 8476,
+          "sha256": "9235923e01fa16cff375e3c0baf0ecb6d253346c006a5ba3b1ab41f9fe52d2f0"
+        }
+      ],
+      "destination": "10m_physical",
+      "license": "Public domain",
+      "licenseUrl": "https://www.naturalearthdata.com/about/terms-of-use/",
+      "verifiedOn": "2026-10-20"
+    },
+    {
+      "basename": "ne_10m_geography_marine_polys",
+      "kind": "physical",
+      "url": "https://naciscdn.org/naturalearth/10m/physical/ne_10m_geography_marine_polys.zip",
+      "archive": "ne_10m_geography_marine_polys.zip",
+      "archiveBytes": 940563,
+      "archiveSha256": "a2d3395904c41e718e02c3ec5bc988712164c524c236fad32d95d282ca303b2a",
+      "version": "5.1.0",
+      "extractedBytes": 3100014,
+      "components": [
+        {
+          "name": "ne_10m_geography_marine_polys.README.html",
+          "bytes": 40791,
+          "sha256": "a24783f60fe468c48acff459b67eea6a3b854babaecaf8ce0325b3a4b7275e7d"
+        },
+        {
+          "name": "ne_10m_geography_marine_polys.VERSION.txt",
+          "bytes": 7,
+          "sha256": "cc9ba20cb7d5b479e0ef2386e24b08806c307df296208e283aee8f277281412b"
+        },
+        {
+          "name": "ne_10m_geography_marine_polys.cpg",
+          "bytes": 5,
+          "sha256": "3ad3031f5503a4404af825262ee8232cc04d4ea6683d42c5dd0a2f2a27ac9824"
+        },
+        {
+          "name": "ne_10m_geography_marine_polys.dbf",
+          "bytes": 2098542,
+          "sha256": "7bc656599a3ca0410479dc620e3a4202c13961efcafb797ee52145ca1c21f8f4"
+        },
+        {
+          "name": "ne_10m_geography_marine_polys.prj",
+          "bytes": 145,
+          "sha256": "a02a27b1d1982c8516d83398e85a3c8b1aef1713c13ef4d84d7bde17430c07c4"
+        },
+        {
+          "name": "ne_10m_geography_marine_polys.shp",
+          "bytes": 957976,
+          "sha256": "222bf1611ddb9d8afa0660843e37fbd8cd6a54fbf9110db5b99fd74198389af4"
+        },
+        {
+          "name": "ne_10m_geography_marine_polys.shx",
+          "bytes": 2548,
+          "sha256": "69001b6557c01a1386049420cd59714cd57b4b3d586e3cb1e9f5e7adae92d568"
+        }
+      ],
+      "destination": "10m_physical",
+      "license": "Public domain",
+      "licenseUrl": "https://www.naturalearthdata.com/about/terms-of-use/",
+      "verifiedOn": "2026-10-20"
+    }
+  ]
+}

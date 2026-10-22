@@ -45,3 +45,16 @@ Thumbs.db
 vendor/*
 
 .php_cs.cache
+
+# Local Docker overrides
+.env
+
+/backups/
+
+/node_modules/
+/public/build/
+
+/.asset-cache/
+/build/
+
+__pycache__/

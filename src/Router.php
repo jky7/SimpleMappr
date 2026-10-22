@@ -41,13 +41,14 @@ use \Phroute\Phroute\Autoloader;
 use \Phroute\Phroute\RouteCollector;
 use \Phroute\Phroute\Dispatcher;
 use \Symfony\Component\Yaml\Yaml;
-use Twig_Loader_Filesystem;
-use Twig_Environment;
-use Twig_Extensions_Extension_I18n;
+use Twig\Loader\FilesystemLoader;
+use Twig\Environment;
+use Symfony\Bridge\Twig\Extension\TranslationExtension;
+use Symfony\Component\Translation\Translator;
+use Symfony\Component\Translation\Loader\PoFileLoader;
 use SimpleMappr\Constants\AcceptedMarkers;
 use SimpleMappr\Constants\AcceptedProjections;
 use SimpleMappr\Controller\Citation;
-use SimpleMappr\Controller\OpenAPI;
 use SimpleMappr\Controller\User;
 use SimpleMappr\Mappr\Mappr;
 
@@ -69,6 +70,7 @@ class Router
      */
     public function __construct()
     {
+        Session::setSession();
         mb_internal_encoding("UTF-8");
         mb_http_output("UTF-8");
 
@@ -109,18 +111,18 @@ class Router
             'check_role_user',
             function () {
                 if (!User::checkPermission('user')) {
-                    echo $this->_renderError(403);
-                    return false;
-                };
+                    throw new HttpException(403, 'Sign in to access this resource.');
+                }
+                if (!in_array($_SERVER['REQUEST_METHOD'], ['GET', 'HEAD', 'OPTIONS'], true)) { Session::requireCsrf(); }
             }
         );
         $router->filter(
             'check_role_administrator',
             function () {
                 if (!User::checkPermission('administrator')) {
-                    echo $this->_renderError(403);
-                    return false;
-                };
+                    throw new HttpException(403, 'Sign in to access this resource.');
+                }
+                if (!in_array($_SERVER['REQUEST_METHOD'], ['GET', 'HEAD', 'OPTIONS'], true)) { Session::requireCsrf(); }
             }
         );
 
@@ -158,7 +160,7 @@ class Router
         $router->get('/apilog', function () {
             Header::setHeader('html');
             return $this->_tailLog();
-        }, ['before' => 'checkPermission']);
+        }, ['before' => 'check_role_administrator']);
 
         $router->post('/application', function () {
             //headers are set in Mappr\Application class
@@ -192,14 +194,14 @@ class Router
             ->post('/citation', function () {
                 Header::setHeader("json");
                 $klass = $this->_klass("Controller\Citation");
-                return json_encode($klass->create($_POST['citation']));
+                return json_encode($klass->create($_POST['citation'] ?? null));
             })
             ->put('/citation/{id:i}', function ($id) {
                 Header::setHeader("json");
                 $klass = $this->_klass("Controller\Citation");
                 $put = array();
                 parse_str(file_get_contents('php://input'), $put);
-                return json_encode($klass->update($put['citation'], "id=".$id));
+                return json_encode($klass->update($put['citation'] ?? null, ['id'=>(int)$id]));
             })
             ->delete('/citation/{id:i}', function ($id) {
                 Header::setHeader("json");
@@ -225,7 +227,7 @@ class Router
             return $this->_twig()->render("feedback.html", $config);
         });
 
-        $router->get('/flush_cache', function () {
+        $router->post('/flush_cache', function () {
             Assets::flushCache();
         }, ['before' => 'check_role_administrator']);
 
@@ -236,6 +238,20 @@ class Router
             return $this->_twig()->render("help.html", $config);
         });
 
+        $router->post('/geojson', function () {
+            Header::setHeader('json', Utility::cleanFilename(Utility::loadParam('file_name', 'map'), 'json'));
+            return json_encode(GeometryExport::features(array_replace($_POST, ['output'=>'json'])), JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR);
+        });
+        $router->post('/import', function () {
+            Header::setHeader('json');
+            if (!isset($_FILES['file']) || ($_FILES['file']['error'] ?? UPLOAD_ERR_NO_FILE) !== UPLOAD_ERR_OK
+                || !is_string($_FILES['file']['tmp_name'] ?? null) || !is_uploaded_file($_FILES['file']['tmp_name'])
+                || ($_FILES['file']['size'] ?? 0) > RemoteImport::MAX_BYTES
+            ) { throw new \InvalidArgumentException('Upload a file no larger than 5 MiB.'); }
+            $bytes = file_get_contents($_FILES['file']['tmp_name'], false, null, 0, RemoteImport::MAX_BYTES + 1);
+            return json_encode(ImportData::parse($bytes, (string)($_POST['input_format'] ?? 'auto'), (string)($_POST['encoding'] ?? 'UTF-8')), JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR);
+        });
+
         $router->post('/kml', function () {
             $clean_filename = Utility::cleanFilename(Utility::loadParam('file_name', time()));
             $download_token = Utility::loadParam('download_token', md5(time()));
@@ -244,20 +260,35 @@ class Router
             return $this->_klass("Controller\Kml")->create($_POST);
         });
 
-        $router->get('/logout', function () {
-            $this->_klass("Session", false);
+        $router->get('/login', function () {
+            Header::setHeader('html');
+            return $this->_twig()->render('login.html', ['login_enabled'=>Session::configured()]);
         });
+        $router->post('/logout', function () { Session::destroy(); });
 
-        $router->get('/map/{id:i}', function ($id) {
-            Header::setHeader('png');
-            $klass = $this->_klass("Mappr\Application\Map", $id, 'png');
-            return $klass->execute()->createOutput();
+        $router->get('/map/{id:i}', function ($id) { return $this->_privateMap($id, 'png'); });
+        $router->get('/map/{id:i}.{ext:(?:kml|svg|json|png|jpg)}', function ($id, $ext) { return $this->_privateMap($id, $ext); });
+        $router->get('/public/tmp/preview-{token:[0-9a-f]{32}}.{ext:(?:png|jpg|svg|tif)}', function ($token, $ext) {
+            $path = TemporaryImage::readGuest($token, $ext);
+            Header::setHeader($ext); $this->_privateHeaders();
+            return file_get_contents($path);
         });
-
-        $router->get('/map/{id:i}.{ext:[kml|svg|json|png|jpg]+}', function ($id, $ext) {
-            Header::setHeader($ext);
-            $klass = $this->_klass("Mappr\Application\Map", $id, $ext);
-            return $klass->execute()->createOutput();
+        $router->get('/_preview/{token:[0-9a-f]{32}}.{ext:(?:png|jpg|svg|tif)}', function ($token, $ext) {
+            $path = TemporaryImage::read($token, $ext);
+            Header::setHeader($ext); $this->_privateHeaders();
+            return file_get_contents($path);
+        });
+        $router->get('/shared/{token:[0-9a-f]{64}}', function ($token) {
+            $record = Controller\Share::loadToken($token);
+            if (!$record) { throw new HttpException(404, 'Share not found.'); }
+            Header::setHeader('html'); $this->_privateHeaders();
+            return $this->_twig()->render('shared.html', ['map_title'=>$record['title'], 'share_path'=>MAPPR_URL.'/shared/'.$token]);
+        });
+        $router->get('/shared/{token:[0-9a-f]{64}}.{ext:(?:kml|svg|json|png|jpg)}', function ($token, $ext) {
+            $record = Controller\Share::loadToken($token);
+            if (!$record) { throw new HttpException(404, 'Share not found.'); }
+            Header::setHeader($ext); $this->_privateHeaders();
+            return (new \SimpleMappr\Mappr\Application\Map($record, $ext))->execute()->createOutput();
         });
 
         $router->get('/openapi.json', function () {
@@ -293,7 +324,9 @@ class Router
         });
 
         $router->post('/session', function () {
-            $this->_klass("Session", true);
+            if (Session::login($_POST)) { Session::redirect('/'.Session::makeLocaleParam($_SESSION['locale'] ?? 'en_US')); }
+            http_response_code(401);
+            return $this->_twig()->render('login.html', ['login_enabled'=>Session::configured(), 'login_error'=>'The username or password was not accepted.']);
         });
 
         $router->group(['before' => 'check_role_user'], function ($router) {
@@ -353,6 +386,17 @@ class Router
                 ];
                 return $this->_twig()->render("fragments/fragment.usermap.html", $config);
             })
+            ->post('/usermap/import', function () {
+                $raw = $_POST['settings'] ?? file_get_contents('php://input');
+                if (!is_string($raw)) { throw new HttpException(422, 'Invalid map settings.'); }
+                Header::setHeader('json');
+                return json_encode($this->_klass('Controller\\Map')->create(SavedMapDocument::decode($raw)));
+            })
+            ->get('/usermap/{id:i}/settings.json', function ($id) {
+                $record = $this->_klass('Controller\\Map')->show($id);
+                Header::setHeader('json', Utility::cleanFilename($record['title']).'.simplemappr.json'); $this->_privateHeaders();
+                return SavedMapDocument::encode($record['map']);
+            })
             ->get('/usermap/{id:i}.json', function ($id) {
                 Header::setHeader('json');
                 return json_encode($this->_klass("Controller\Map")->show($id));
@@ -381,12 +425,40 @@ class Router
 
         try {
             $dispatcher = new Dispatcher($router->getData());
-            $parsed_url = parse_url(str_replace(":", "%3A", $_SERVER['REQUEST_URI']), PHP_URL_PATH);
+            $parsed_url = rtrim(parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH), '/') ?: '/';
             $response = $dispatcher->dispatch($_SERVER['REQUEST_METHOD'], $parsed_url);
             echo $response;
-        } catch (\Exception $e) {
+        } catch (\Phroute\Phroute\Exception\HttpRouteNotFoundException $e) {
             echo $this->_renderError(404);
-        }
+
+        } catch (HttpException $e) {
+            http_response_code($e->status); Header::setHeader('json'); $this->_privateHeaders();
+            echo json_encode(['status'=>'failed','error'=>$e->getMessage()]);
+        } catch (\InvalidArgumentException|\JsonException $e) {
+            http_response_code(400); Header::setHeader('json'); $this->_privateHeaders();
+            echo json_encode(['status'=>'failed','error'=>$e->getMessage()]);
+        } catch (\Throwable $e) {
+            error_log((string)$e);
+            http_response_code($e->getCode() === 503 ? 503 : 500);
+            Header::setHeader('json'); $this->_privateHeaders();
+            echo json_encode(['error' => $e->getCode() === 503 ? $e->getMessage() : 'Map rendering failed. Check the map settings and installed data.']);
+        } finally { Session::closeSession(); }
+    }
+
+    private function _privateHeaders(): void
+    {
+        header('Cache-Control: no-store, private');
+        header('Referrer-Policy: no-referrer');
+        header('X-Robots-Tag: noindex, nofollow');
+    }
+
+    private function _privateMap(int $id, string $extension)
+    {
+        $user = Session::currentUser();
+        $record = $user ? Controller\Map::loadOwned($id, (int)$user->uid) : null;
+        if (!$record) { throw new HttpException(404, 'Map not found.'); }
+        Header::setHeader($extension); $this->_privateHeaders();
+        return (new \SimpleMappr\Mappr\Application\Map($record, $extension))->execute()->createOutput();
     }
 
     /**
@@ -412,13 +484,9 @@ class Router
      */
     private function _log($type)
     {
-        $logger = new Logger(ROOT."/log/logger.log");
         $ip = $_SERVER["REMOTE_ADDR"];
-        if (defined("CLOUDFLARE_KEY") && ENVIRONMENT == "production" && array_key_exists("HTTP_CF_CONNECTING_IP", $_SERVER)) {
-            $ip = $_SERVER["HTTP_CF_CONNECTING_IP"];
-        }
         $message = implode(" - ", [date('Y-m-d H:i:s'), $ip, $type, $_SERVER['REQUEST_METHOD'], $_SERVER["REQUEST_URI"]]);
-        $logger->write($message);
+        error_log($message);
     }
 
     /**
@@ -428,23 +496,15 @@ class Router
      */
     private function _tailLog()
     {
-        $string = "";
-        $logger = new Logger(ROOT."/log/logger.log");
+        $logger = new Logger(ROOT.'/log/logger.log');
         $entries = $logger->tail(20)->parse(Logger::$capture)->entries;
+        $lines = [];
         foreach ($entries as $entry) {
-            if (isset($entry["time"]) && isset($entry["ip"]) && isset($entry["url"]) && isset($entry["method"])) {
-                $url = (strlen($entry["url"]) < 100) ? $entry["url"] : substr($entry["url"], 0, 100) . "...";
-                $string .= $entry["time"];
-                $string .= " - ";
-                $string .= "<a href=\"https://who.is/whois-ip/ip-address/${entry['ip']}\" target=\"_blank\">${entry['ip']}</a>";
-                $string .= " - ";
-                $string .= $entry["method"];
-                $string .= " - ";
-                $string .= "<a href=\"${entry['url']}\" target=\"_blank\">${url}</a>";
-                $string .= "<br>\n";
+            if (isset($entry['time'],$entry['ip'],$entry['url'],$entry['method'])) {
+                $lines[] = htmlspecialchars(implode(' - ',[$entry['time'],$entry['ip'],$entry['method'],mb_substr($entry['url'],0,250)]),ENT_QUOTES|ENT_SUBSTITUTE,'UTF-8');
             }
         }
-        return (strlen($string) > 0) ? $string : "No log entries";
+        return $lines ? implode("<br>\n",$lines) : 'Current request events are available through docker compose logs app. No archived log entries.';
     }
 
     /**
@@ -459,29 +519,23 @@ class Router
             exit();
         }
 
-        $host = explode(".", $_SERVER['HTTP_HOST']);
-        if (ENVIRONMENT == "production" && $host[0] !== "www" && !in_array("local", $host)) {
-            header('Location: '.MAPPR_URL);
-            exit();
-        } else {
-            Session::updateActivity();
-            $shapes_file = file_get_contents(Mappr::$shapefile_config);
-            $shapes = Yaml::parse($shapes_file)['environments'][ENVIRONMENT];
-            unset($shapes['layers']['base'], $shapes['layers']['stateprovinces_polygon']);
+        if (MAPPR_PERSISTENCE) { Session::updateActivity(); } else { Session::selectLocale(); }
+        $shapes_file = file_get_contents(Mappr::getShapefileConfigPath());
+        $shapes = Yaml::parse($shapes_file)['environments'][ENVIRONMENT];
+        unset($shapes['layers']['base'], $shapes['layers']['stateprovinces_polygon']);
 
-            $config = [
-                'og_url' => MAPPR_URL,
-                'og_logo' => MAPPR_URL . '/public/images/logo_og.png',
-                'layers' => array_combine(array_keys($shapes['layers']), array_column($shapes['layers'], 'name')),
-                'labels' => array_combine(array_keys($shapes['labels']), array_column($shapes['labels'], 'name')),
-                'projections' => AcceptedProjections::$projections,
-                'marker_sizes' => AcceptedMarkers::sizes(),
-                'marker_shapes' => AcceptedMarkers::$shapes,
-                'locales' => Session::$accepted_locales,
-                'num_textarea' => MAXNUMTEXTAREA
-            ];
-            return $this->_twig(true)->render("main.html", $config);
-        }
+        $config = [
+            'og_url' => MAPPR_URL,
+            'og_logo' => MAPPR_URL . '/public/images/logo_og.png',
+            'layers' => array_combine(array_keys($shapes['layers']), array_column($shapes['layers'], 'name')),
+            'labels' => array_combine(array_keys($shapes['labels']), array_column($shapes['labels'], 'name')),
+            'projections' => AcceptedProjections::$projections,
+            'marker_sizes' => AcceptedMarkers::sizes(),
+            'marker_shapes' => AcceptedMarkers::$shapes,
+            'locales' => Session::$accepted_locales,
+            'num_textarea' => MAXNUMTEXTAREA
+        ];
+        return $this->_twig(true)->render("main.html", $config);
     }
 
     /**
@@ -493,20 +547,31 @@ class Router
      */
     private function _twig($include_page_elements = false)
     {
-        $loader = new Twig_Loader_Filesystem(ROOT. "/views");
+        $loader = new FilesystemLoader(ROOT. "/views");
         $cache = (ENVIRONMENT == "development") ? false : ROOT . "/public/tmp";
         $reload = (ENVIRONMENT == "development" || ENVIRONMENT == "testing") ? true : false;
-        $twig = new Twig_Environment($loader, ['cache' => $cache, 'auto_reload' => $reload]);
-        $twig->addExtension(new Twig_Extensions_Extension_I18n());
+        $twig = new Environment($loader, ['cache' => $cache, 'auto_reload' => $reload]);
+        $locale = Session::selectLocale()['locale'];
+        if (!isset(Session::$accepted_locales[$locale])) { $locale = 'en_US'; }
+        $translator = new Translator($locale);
+        $translator->addLoader('po', new PoFileLoader());
+        $messages = ROOT.'/i18n/'.Session::$accepted_locales[$locale]['code'].'/LC_MESSAGES/messages.po';
+        if (is_file($messages)) {
+            $translator->addResource('po', $messages, $locale);
+            $catalogue = $translator->getCatalogue($locale);
+            foreach ($catalogue->all('messages') as $id => $translation) {
+                if ($translation === '') { $catalogue->set($id, $id); }
+            }
+        }
+        $twig->addExtension(new TranslationExtension($translator));
         $twig->addGlobal('environment', ENVIRONMENT);
 
-        $locale = Utility::loadParam("locale", "en_US");
         $qlocale = "?locale={$locale}";
 
-        $session = [];
-        if (isset($_SESSION['simplemappr'])) {
-            $session = (array)(new User)->showByHash($_SESSION['simplemappr']['hash'])->results;
-        }
+        $session = (array)(Session::currentUser() ?? []);
+        unset($session['hash'], $session['identifier']);
+        $twig->addGlobal('csrf_token', Session::csrfToken());
+        $twig->addGlobal('login_enabled', Session::configured());
         $twig->addGlobal('session', $session);
         $twig->addGlobal('locale', $locale);
         $twig->addGlobal('qlocale', $qlocale);
@@ -550,7 +615,6 @@ class Router
         $config = [
             'title' => $title,
             'og_url' => MAPPR_URL,
-            'google_analytics' => GOOGLE_ANALYTICS
         ];
 
         return $this->_twig(true)->render("{$code}.html", $config);

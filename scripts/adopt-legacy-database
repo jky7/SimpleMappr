@@ -1,0 +1,8 @@
+#!/usr/bin/env php
+<?php
+require dirname(__DIR__).'/config/defaults.php';
+require ROOT.'/vendor/autoload.php';
+if ($argc !== 2 || !str_starts_with($argv[1],'/')) { fwrite(STDERR,"Usage: scripts/adopt-legacy-database /absolute/new-backup.sql\n"); exit(1); }
+try {
+    echo (new SimpleMappr\DatabaseSchema(SimpleMappr\Database::getInstance()->connection()))->migrate($argv[1]),"\n";
+} catch (Throwable $error) { fwrite(STDERR,$error->getMessage()."\n"); exit(1); }

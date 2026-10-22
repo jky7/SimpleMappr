@@ -40,306 +40,72 @@ namespace SimpleMappr;
 use PDO;
 use Symfony\Component\Yaml\Yaml;
 
-/**
- * Database class for SimpleMappr
- *
- * @category  Class
- * @package   SimpleMappr
- * @author    David P. Shorthouse <davidpshorthouse@gmail.com>
- * @copyright 2010-2018 David P. Shorthouse
- * @license   MIT, https://github.com/dshorthouse/SimpleMappr/blob/master/LICENSE
- * @link      http://github.com/dshorthouse/SimpleMappr
- */
-class Database
+final class Database
 {
-    /** 
-     * Database instance of self for static retrieval
-     *
-     * @var object $_instance
-     */
-    private static $_instance;
+    private static ?self $_instance = null;
+    private PDO $_link;
+    private \PDOStatement $_handle;
 
-    /**
-     * Database connection
-     *
-     * @var object $_link
-     */
-    private $_link;
-
-    /**
-     * Handle for prepared statements
-     *
-     * @var object $_handle
-     */
-    private $_handle;
-
-    /**
-     * Constructor
-     */
     private function __construct()
     {
-        $db_array = Yaml::parse(file_get_contents(ROOT . '/config/phinx.yml'));
-        $config = [PDO::ATTR_PERSISTENT => true];
-        $cred = $this->_credentials($db_array);
-        $this->_link = new PDO($cred['conn'], $cred['user'], $cred['pass'], $config);
-        $this->_link->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+        if (getenv('SIMPLEMAPPR_DB_HOST')) {
+            $config = ['host'=>getenv('SIMPLEMAPPR_DB_HOST'), 'port'=>getenv('SIMPLEMAPPR_DB_PORT') ?: 3306, 'name'=>getenv('SIMPLEMAPPR_DB_NAME') ?: 'simplemappr', 'user'=>getenv('SIMPLEMAPPR_DB_USER') ?: 'simplemappr', 'pass'=>getenv('SIMPLEMAPPR_DB_PASSWORD') ?: '', 'charset'=>'utf8mb4'];
+        } else { $config = Yaml::parseFile(ROOT.'/config/phinx.yml')['environments'][ENVIRONMENT]; }
+        $dsn = 'mysql:host='.$config['host'].';port='.($config['port'] ?? 3306).';dbname='.$config['name'].';charset=utf8mb4';
+        $this->_link = new PDO($dsn, $config['user'], $config['pass'], [PDO::ATTR_ERRMODE=>PDO::ERRMODE_EXCEPTION, PDO::ATTR_EMULATE_PREPARES=>false, PDO::ATTR_DEFAULT_FETCH_MODE=>PDO::FETCH_ASSOC]);
     }
 
-    /**
-     * Get the database instance
-     *
-     * @return object
-     */
-    public static function getInstance()
+    public static function getInstance(): self { return self::$_instance ??= new self; }
+    public function connection(): PDO { return $this->_link; }
+    public function prepare($sql): \PDOStatement { return $this->_handle = $this->_link->prepare($sql); }
+    public function exec($sql): int|false { return $this->_link->exec($sql); }
+    public function query($sql): array { return $this->_link->query($sql)->fetchAll(PDO::FETCH_OBJ); }
+
+    public function bindParam($key, $value, $type = null): void
     {
-        if (!(self::$_instance instanceof self)) {
-            self::$_instance = new self();
-        }
-        return self::$_instance;
+        $pdoType = match (true) { $value === null => PDO::PARAM_NULL, is_bool($value) => PDO::PARAM_BOOL, $type === 'integer' || is_int($value) => PDO::PARAM_INT, default => PDO::PARAM_STR };
+        $this->_handle->bindValue($key, $value, $pdoType);
+    }
+    public function execute(): void { $this->_handle->execute(); }
+    public function rowCount(): int { return $this->_handle->rowCount(); }
+    public function fetchFirstObject(): object|false { $this->execute(); return $this->_handle->fetch(PDO::FETCH_OBJ); }
+    public function fetchAllObject(): array { $this->execute(); return $this->_handle->fetchAll(PDO::FETCH_OBJ); }
+    public function fetchFirstArray(): array|false { $this->execute(); return $this->_handle->fetch(PDO::FETCH_ASSOC); }
+    public function fetchAllArray(): array { $this->execute(); return $this->_handle->fetchAll(PDO::FETCH_ASSOC); }
+
+    private function identifier(string $name): string
+    {
+        if (!preg_match('/^[a-z_]+$/D', $name)) { throw new \InvalidArgumentException('Invalid database identifier.'); }
+        return '`'.$name.'`';
     }
 
-    /**
-     * Prepare a SQL request
-     *
-     * @param string $sql A SQL statement.
-     *
-     * @return object The connection handle.
-     */
-    public function prepare($sql)
+    public function queryInsert($table, $data = []): ?int
     {
-        $this->_handle = $this->_link->prepare($sql);
-        return $this->_handle;
-    }
-
-    /**
-     * Execute a SQL request
-     *
-     * @param string $sql A SQL statement
-     *
-     * @return object The resultset
-     */
-    public function exec($sql)
-    {
-        return $this->_link->exec($sql);
-    }
-
-    /**
-     * Query a SQL request
-     *
-     * @param string $sql A SQL statement
-     *
-     * @return object The resultset
-     */
-    public function query($sql)
-    {
-        return $this->_link->query($sql)->fetchAll(PDO::FETCH_OBJ);
-    }
-
-    /**
-     * Bind parameters from a prepared SQL connection
-     *
-     * @param string $key   The parameter to be bound.
-     * @param string $value The value to be set.
-     * @param string $type  The type of data.
-     *
-     * @return void
-     */
-    public function bindParam($key, $value, $type = 'integer')
-    {
-        $pdo_type = ($type == 'integer') ? PDO::PARAM_INT : PDO::PARAM_STR;
-        $this->_handle->bindParam($key, $value, $pdo_type);
-    }
-
-    /**
-     * Execute a prepared handle
-     *
-     * @return void
-     */
-    public function execute()
-    {
-        $this->_handle->execute();
-    }
-
-    /**
-     * Obtain a row count from executed handle.
-     *
-     * @return int The affected row count of the last executed statement.
-     */
-    public function rowCount()
-    {
-        return $this->_handle->rowCount();
-    }
-
-    /**
-     * Fetch the first record as an object.
-     *
-     * @return object The first resultset as an object.
-     */
-    public function fetchFirstObject()
-    {
-        $this->execute();
-        return $this->_handle->fetch(PDO::FETCH_OBJ);
-    }
-
-    /**
-     * Fetch all records as an array of objects.
-     *
-     * @return array The resultset as an array of objects.
-     */
-    public function fetchAllObject()
-    {
-        $this->execute();
-        return $this->_handle->fetchAll(PDO::FETCH_OBJ);
-    }
-
-    /**
-     * Fetch the first record as an array.
-     *
-     * @return array The first resultset as an array.
-     */
-    public function fetchFirstArray()
-    {
-        $this->execute();
-        return $this->_handle->fetch();
-    }
-
-    /**
-     * Fetch the all records as an array of arrays.
-     *
-     * @return array The resultset as an array of arrays.
-     */
-    public function fetchAllArray()
-    {
-        $this->execute();
-        return $this->_handle->fetchAll();
-    }
-
-    /**
-     * Insert a new record and return last inserted id.
-     *
-     * @param string $table The table name.
-     * @param array  $data  An array of all data to be inserted.
-     *
-     * @return int The last inserted id.
-     */
-    public function queryInsert($table, $data = [])
-    {
-        if (empty($data)) {
-            return;
-        }
-
-        $sql = "INSERT INTO {$table} ";
+        if (!$data) { return null; }
         $columns = array_keys($data);
-        $sql .= "(" . implode(",", $columns) . ")";
-        $sql .= " VALUES ";
-        $sql .= "(" . implode(
-            ",", array_map(
-                function ($value) {
-                    return ":{$value}";
-                }, $columns
-            )
-        ) . ")";
-
+        $sql = 'INSERT INTO '.$this->identifier($table).' ('.implode(',', array_map($this->identifier(...), $columns)).') VALUES ('.implode(',', array_map(fn($key)=>':'.$key, $columns)).')';
         $this->prepare($sql);
-        foreach ($data as $key => $value) {
-            $this->bindParam(":{$key}", $value);
-        }
+        foreach ($data as $key=>$value) { $this->bindParam(':'.$key, $value); }
         $this->execute();
-        return $this->_lastInsert();
+        return (int)$this->_link->lastInsertId();
     }
 
-    /**
-     * Update an existing record.
-     *
-     * @param string $table The table name.
-     * @param array  $data  An array of data to be updated.
-     * @param string $where A where statement.
-     *
-     * @return int number of records affected
-     */
-    public function queryUpdate($table, $data, $where)
+    public function queryUpdate($table, $data, $where): int
     {
-        if (empty($data) || !$where) {
-            return;
-        }
-
-        $sql = "UPDATE {$table} SET ";
-        $updates = "";
-        foreach ($data as $key => $val) {
-            $updates .= "$key = :{$key}, ";
-        }
-        $sql .= rtrim($updates, ', ');
-
-        $where_parts = [];
-        if ($where) {
-            $sql .= " WHERE ";
-            $where_parts = explode("=", $where);
-            $sql .= trim($where_parts[0]) . " = :{$where_parts[0]}";
-        }
-
-        $this->prepare($sql);
-        foreach ($data as $key => $val) {
-            $this->bindParam(":{$key}", $val);
-        }
-        if (count($where_parts) == 2) {
-            $this->bindParam(":{$where_parts[0]}", trim($where_parts[1]));
-        }
+        if (!$data || !is_array($where) || !$where) { throw new \InvalidArgumentException('Updates require bound predicates.'); }
+        $set = array_map(fn($key)=>$this->identifier($key).'=:set_'.$key, array_keys($data));
+        $conditions = array_map(fn($key)=>$this->identifier($key).'=:where_'.$key, array_keys($where));
+        $this->prepare('UPDATE '.$this->identifier($table).' SET '.implode(',', $set).' WHERE '.implode(' AND ', $conditions));
+        foreach ($data as $key=>$value) { $this->bindParam(':set_'.$key, $value); }
+        foreach ($where as $key=>$value) { $this->bindParam(':where_'.$key, $value); }
         $this->execute();
         return $this->rowCount();
     }
 
-    /**
-     * Destroy an existing record
-     *
-     * @param string  $table The table name.
-     * @param integer $id    The id of the record.
-     *
-     * @return int number of records affected
-     */
-    public function queryDelete($table, $id)
+    public function queryDelete($table, $id): int
     {
-        if (!$id) {
-            return;
-        }
-
-        $sql = "DELETE FROM {$table} WHERE id=:id";
-        $this->prepare($sql);
-        $this->bindParam(":id", $id, 'integer');
-        $this->execute();
+        $this->prepare('DELETE FROM '.$this->identifier($table).' WHERE id=:id');
+        $this->bindParam(':id', $id, 'integer'); $this->execute();
         return $this->rowCount();
-    }
-
-    /**
-     * Make PDO connection string and get credentials from parsed Phinx YML.
-     *
-     * @param array $config Config array from parsed YML.
-     *
-     * @return array PDO connection, username, password.
-     */
-    private function _credentials($config)
-    {
-        $adapter = $config['environments'][ENVIRONMENT]['adapter'];
-        $host = $config['environments'][ENVIRONMENT]['host'];
-        $db = $config['environments'][ENVIRONMENT]['name'];
-        $charset = $config['environments'][ENVIRONMENT]['charset'];
-        $conn  = $adapter . ':host=' . $host . ';';
-        $conn .= 'dbname=' . $db . ';';
-        $conn .= 'charset=' . $charset;
-
-        return [
-            'conn' => $conn,
-            'user' =>  $config['environments'][ENVIRONMENT]['user'],
-            'pass' => $config['environments'][ENVIRONMENT]['pass']
-        ];
-    }
-
-    /**
-     * Return last inserted id.
-     *
-     * @return int The last inserted id.
-     */
-    private function _lastInsert()
-    {
-        return $this->_link->lastInsertId();
     }
 }

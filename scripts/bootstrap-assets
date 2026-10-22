@@ -1,0 +1,13 @@
+#!/usr/bin/env php
+<?php
+require dirname(__DIR__).'/src/AssetProfiles.php';
+require dirname(__DIR__).'/src/AssetInstaller.php';
+try {
+    if (count($argv)>2 || !in_array($argv[1] ?? '',['','--check'],true)) { throw new RuntimeException('Usage: scripts/bootstrap-assets [--check]'); }
+    $root=dirname(__DIR__);$profile=SimpleMappr\AssetProfiles::selected();$count=0;
+    foreach ($profile['manifests'] as $entry) {
+        $manifest=json_decode(file_get_contents($root.'/'.$entry['path']),true,512,JSON_THROW_ON_ERROR);
+        $count+=SimpleMappr\AssetInstaller::install($manifest,$entry['cache']?'/var/cache/simplemappr-assets':$root,$root.'/mapserver/maps',($argv[1] ?? '')==='--check');
+    }
+    echo $profile['name'].' verified '.$count." components\n";
+} catch (Throwable $error) { fwrite(STDERR,$error->getMessage()."\n");exit(1); }

@@ -87,14 +87,12 @@ class Utility
     public static function loadParam($name, $default = "")
     {
         $grep_key = self::pregGrepKeys("/\b(?<!-)$name(?!-)\b/i", $_REQUEST);
-        if (!$grep_key || !array_values($grep_key)[0]) {
+        if (!$grep_key || array_values($grep_key)[0] === null || array_values($grep_key)[0] === "") {
             return $default;
         }
         $value = array_values($grep_key)[0];
         $value = Encoding::fixUTF8($value);
-        if (get_magic_quotes_gpc() != 1) {
-            $value = self::addSlashesExtended($value);
-        }
+        $value = self::addSlashesExtended($value);
         if (is_string($value) && strtolower($value) == "false") {
             $value = false;
         }
@@ -239,7 +237,7 @@ class Utility
         $loc = preg_replace(["/[\p{Z}\s]/u", "/[^\d\s,;.\-NSEWO°ºdms′‘‛'\"″“‟]/i", "/-\s+(?=\d)/"], [" ", "", "-"], $point);
         if (preg_match("/[NSEWO]/", $loc) != 0) {
             $coord = preg_split("/[,;]/", $loc);
-            if (count($coord) != 2 || empty($coord[1])) {
+            if (count($coord) != 2 || trim((string)$coord[1]) === '') {
                 return [null, null];
             }
             if (preg_match("/[EWO]/", $coord[0]) == 1) {
@@ -248,7 +246,7 @@ class Utility
             return [self::dmsToDeg(trim($coord[0])),self::dmsToDeg(trim($coord[1]))];
         } else {
             $coord = preg_split("/[\s,;]+/", trim(preg_replace("/[^0-9-\s,;.]/", "", $loc)));
-            if (count($coord) != 2 || empty($coord[1])) {
+            if (count($coord) != 2 || trim((string)$coord[1]) === '') {
                 return [null, null];
             }
             return $coord;
@@ -264,27 +262,20 @@ class Utility
      */
     public static function dmsToDeg($dms)
     {
-        $dec = null;
         $dms = stripslashes($dms);
-        $neg = (preg_match('/[SWO]/', $dms) == 0) ? 1 : -1;
-        $dms = preg_replace('/(^\s?-)|(\s?[NSEWO]\s?)/', "", $dms);
-        $pattern = "/(\\d*\\.?\\d+)(?:[°ºd: ]+)(\\d*\\.?\\d+)*(?:['m′‘‛: ])*(\\d*\\.?\\d+)*[\"s″“‟ ]?/";
-        $parts = preg_split($pattern, $dms, 0, PREG_SPLIT_NO_EMPTY | PREG_SPLIT_DELIM_CAPTURE);
-        if (!$parts) {
-            return;
+        $negative = preg_match('/[SWO]\\s*$|^\\s*-/', $dms) === 1;
+        preg_match_all('/\\d+(?:\\.\\d+)?/', $dms, $matches);
+        $parts = $matches[0];
+        if (count($parts) < 1 || count($parts) > 3) {
+            return null;
         }
-        // parts: 0 = degree, 1 = minutes, 2 = seconds
-        $deg = isset($parts[0]) ? (float)$parts[0] : 0;
-        $min = isset($parts[1]) ? (float)$parts[1] : 0;
-        if (strpos($dms, ".") > 1 && isset($parts[2])) {
-            $min = (float)($parts[1] . '.' . $parts[2]);
-            unset($parts[2]);
+        $degrees = (float)$parts[0];
+        $minutes = isset($parts[1]) ? (float)$parts[1] : 0;
+        $seconds = isset($parts[2]) ? (float)$parts[2] : 0;
+        if ($minutes >= 60 || $seconds >= 60) {
+            return null;
         }
-        $sec = isset($parts[2]) ? (float)$parts[2] : 0;
-        if ($min >= 0 && $min < 60 && $sec >= 0 && $sec < 60) {
-            $dec = ($deg + ($min/60) + ($sec/3600))*$neg;
-        }
-        return $dec;
+        return ($degrees + $minutes / 60 + $seconds / 3600) * ($negative ? -1 : 1);
     }
 
     /**
@@ -308,9 +299,7 @@ class Utility
      */
     public static function onEarth($coord)
     {
-        if ($coord->x
-            && $coord->y
-            && is_numeric($coord->x)
+        if (is_numeric($coord->x)
             && is_numeric($coord->y)
             && $coord->y <= 90
             && $coord->y >= -90

@@ -108,6 +108,7 @@ class Logger
         $input = "";
         $line_count = 0;
 
+        if (!is_file($this->_filename)) { return $this; }
         $fp = fopen($this->_filename, 'r');
         if (!$fp) {
             return $this;
@@ -116,9 +117,7 @@ class Logger
         fseek($fp, 0, SEEK_END);
         $pos = ftell($fp);
 
-        if (!$pos) {
-            return $this;
-        }
+        if (!$pos) { fclose($fp); return $this; }
 
         while ($line_count < $n + 1) {
             //read the previous block of input

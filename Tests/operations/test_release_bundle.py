@@ -1,0 +1,204 @@
+#!/usr/bin/env python3
+import argparse
+import importlib.machinery
+import importlib.util
+import json
+import os
+from pathlib import Path
+import tempfile
+import unittest
+from unittest.mock import patch
+
+ROOT = Path(__file__).resolve().parents[2]
+loader = importlib.machinery.SourceFileLoader('release_bundle', str(ROOT / 'scripts/release_bundle.py'))
+spec = importlib.util.spec_from_loader(loader.name, loader)
+bundle = importlib.util.module_from_spec(spec)
+loader.exec_module(bundle)
+import sys
+sys.modules['release_bundle'] = bundle
+loader = importlib.machinery.SourceFileLoader('rotate', str(ROOT / 'scripts/rotate-local-owner'))
+spec = importlib.util.spec_from_loader(loader.name, loader)
+rotate = importlib.util.module_from_spec(spec)
+loader.exec_module(rotate)
+ENV = ("# fixture\r\nSIMPLEMAPPR_OWNER_USERNAME='before'\r\nSIMPLEMAPPR_OWNER_PASSWORD_HASH='$2y$10$" + 'a' * 53 + "'\r\n"
+       "SIMPLEMAPPR_DB_PASSWORD='database-dollar$literal'\r\nSIMPLEMAPPR_DB_ROOT_PASSWORD='root-secret'\r\nSIMPLEMAPPR_PORT=18081").encode()
+
+
+class BundleBoundaryTest(unittest.TestCase):
+    def setUp(self):
+        self.temporary = tempfile.TemporaryDirectory()
+        self.directory = Path(self.temporary.name)
+        self.path = self.directory / 'bundle'
+        self.path.mkdir(mode=0o700)
+        for name, data in {'database.sql': b'SELECT 1;\n', 'deployment.env': ENV}.items():
+            bundle.write_new(self.path / name, data)
+        self.manifest = {'format': bundle.FORMAT, 'schema': bundle.SCHEMA, 'sourceProject': 'source',
+                         'appImageId': 'sha256:' + 'a' * 64, 'checkoutSha': 'b' * 40, 'checkoutDirty': True,
+                         'imageRevision': None, 'databaseImage': bundle.DATABASE_IMAGE,
+                         'assetProfile': 'minimal-vector-v1',
+                         'members': {name: bundle.fingerprint(self.path / name) for name in ('database.sql', 'deployment.env')}}
+        self.save_manifest()
+
+    def tearDown(self):
+        self.temporary.cleanup()
+
+    def save_manifest(self):
+        path = self.path / 'manifest.json'
+        path.unlink(missing_ok=True)
+        bundle.write_new(path, json.dumps(self.manifest).encode())
+
+    def test_valid_bundle_is_read_without_docker(self):
+        with patch.object(bundle, 'command', side_effect=AssertionError('Docker was contacted')):
+            self.assertEqual(bundle.load_bundle(self.path)[1], self.manifest)
+
+    def test_corruption_is_rejected_before_docker(self):
+        (self.path / 'database.sql').write_bytes(b'corrupt')
+        with patch.object(bundle, 'command', side_effect=AssertionError('Docker was contacted')):
+            with self.assertRaisesRegex(bundle.OperationError, 'checksum'):
+                bundle.load_bundle(self.path)
+
+    def test_manifest_cannot_select_member_paths(self):
+        self.manifest['members']['../../outside.sql'] = self.manifest['members'].pop('database.sql')
+        self.save_manifest()
+        with self.assertRaisesRegex(bundle.OperationError, 'members'):
+            bundle.load_bundle(self.path)
+
+    def test_missing_and_undeclared_files_are_rejected(self):
+        (self.path / 'database.sql').rename(self.path / 'unknown')
+        with self.assertRaisesRegex(bundle.OperationError, 'undeclared or missing'):
+            bundle.load_bundle(self.path)
+
+    def test_symlink_member_is_rejected(self):
+        (self.path / 'database.sql').rename(self.directory / 'sql')
+        (self.path / 'database.sql').symlink_to(self.directory / 'sql')
+        with self.assertRaisesRegex(bundle.OperationError, 'Symlink'):
+            bundle.load_bundle(self.path)
+
+    def test_symlink_parent_is_rejected(self):
+        link = self.directory / 'linked'
+        link.symlink_to(self.path, target_is_directory=True)
+        with self.assertRaisesRegex(bundle.OperationError, 'Symlink'):
+            bundle.load_bundle(link)
+
+    def test_public_file_mode_is_rejected(self):
+        os.chmod(self.path / 'database.sql', 0o644)
+        with self.assertRaisesRegex(bundle.OperationError, '0600'):
+            bundle.load_bundle(self.path)
+
+    def test_public_directory_mode_is_rejected(self):
+        os.chmod(self.path, 0o755)
+        with self.assertRaisesRegex(bundle.OperationError, '0700'):
+            bundle.load_bundle(self.path)
+
+    def test_unknown_schema_and_image_tag_are_rejected(self):
+        for key, value in [('schema', '1'), ('appImageId', 'mutable:tag'), ('checkoutDirty', 'false'), ('databaseImage', 'mariadb:latest')]:
+            original = self.manifest[key]
+            self.manifest[key] = value
+            self.save_manifest()
+            with self.assertRaises(bundle.OperationError):
+                bundle.load_bundle(self.path)
+            self.manifest[key] = original
+
+    def test_duplicate_manifest_keys_are_rejected(self):
+        path = self.path / 'manifest.json'
+        path.write_bytes(b'{"format":"one","format":"two"}')
+        with self.assertRaisesRegex(bundle.OperationError, 'duplicate'):
+            bundle.load_bundle(self.path)
+
+    def test_same_project_refuses_without_docker(self):
+        args = argparse.Namespace(bundle=self.path, project='source', port=18082, deployment_dir=None)
+        with patch.object(bundle, 'command', side_effect=AssertionError('Docker was contacted')):
+            with self.assertRaisesRegex(bundle.OperationError, 'different Compose'):
+                bundle.restore(args)
+
+    def test_unknown_environment_key_and_duplicate_credential_refuse(self):
+        for data in (ENV + b'\nARBITRARY_BIND=/etc\n', ENV + b'\nSIMPLEMAPPR_DB_PASSWORD=other\n'):
+            with self.assertRaises(bundle.OperationError):
+                bundle.parse_env(data)
+
+    def test_interpolated_environment_refuses(self):
+        with self.assertRaises(bundle.OperationError):
+            bundle.parse_env(ENV + b'\nSIMPLEMAPPR_IMAGE=${INJECT}\n')
+
+    def test_testing_environment_and_relative_base_url_are_preserved(self):
+        values = bundle.parse_env(ENV + b"\nSIMPLEMAPPR_ENV=testing\nSIMPLEMAPPR_URL='/maps/private'\n")
+        self.assertEqual(values['SIMPLEMAPPR_ENV'], 'testing')
+        self.assertEqual(values['SIMPLEMAPPR_URL'], '/maps/private')
+        self.assertNotIn('SIMPLEMAPPR_ASSET_CACHE', values)
+
+    def test_invalid_url_paths_and_credentials_refuse(self):
+        for url in ('//evil', '/bad path', '/bad?query', 'http://user@example.org', 'http://example.org?', 'http://example.org/#'):
+            with self.subTest(url=url), self.assertRaises(bundle.OperationError):
+                bundle.parse_env(ENV + ("\nSIMPLEMAPPR_URL='" + url + "'\n").encode())
+
+    def test_declared_override_reads_actual_running_bind_source(self):
+        actual = self.directory / 'restored-conf.php'
+        actual.write_bytes(b'<?php // actual restored override')
+        app = {'Mounts': [{'Type': 'bind', 'RW': False, 'Destination': '/srv/simplemappr/config/conf.php', 'Source': str(actual)}]}
+        self.assertEqual(bundle.runtime_override(app, 'config/conf.php'), actual.read_bytes())
+        app['Mounts'][0]['RW'] = True
+        with self.assertRaisesRegex(bundle.OperationError, 'read-only'):
+            bundle.runtime_override(app, 'config/conf.php')
+
+    def test_declared_override_refuses_checkout_only_file(self):
+        with self.assertRaisesRegex(bundle.OperationError, 'read-only'):
+            bundle.runtime_override({'Mounts': []}, 'config/conf.php')
+
+    def test_restore_client_disables_local_metacommands(self):
+        self.assertIn('--binary-mode', bundle.QUERY)
+
+    def test_rotation_preserves_all_unrelated_bytes_and_line_endings(self):
+        result = rotate.replace_owner(ENV, 'after', '$2y$10$' + 'b' * 53)
+        self.assertEqual(result, ENV.replace(b"USERNAME='before'", b"USERNAME='after'").replace(('a' * 53).encode(), ('b' * 53).encode()))
+
+    def test_rotation_duplicate_owner_refuses(self):
+        with self.assertRaises(bundle.OperationError):
+            rotate.replace_owner(ENV + b'\nSIMPLEMAPPR_OWNER_USERNAME=duplicate', 'after', 'hash')
+
+    def test_rotation_detects_edit_during_hash_and_preserves_new_file(self):
+        config = self.directory / 'owner.env'
+        bundle.write_new(config, ENV)
+        changed = ENV + b'\n# concurrent edit\n'
+        def hash_and_edit(*args):
+            config.write_bytes(changed)
+            return '$2y$10$' + 'b' * 53
+        with patch.object(rotate, 'hash_password', side_effect=hash_and_edit):
+            with self.assertRaisesRegex(bundle.OperationError, 'changed'):
+                rotate.rotate(config, 'after', 'a-long-password', 'image')
+        self.assertEqual(config.read_bytes(), changed)
+        self.assertEqual(list(self.directory.glob('.owner-*')), [])
+
+    def test_rotation_keeps_database_passwords_and_0600_mode(self):
+        config = self.directory / 'owner.env'
+        bundle.write_new(config, ENV)
+        with patch.object(rotate, 'hash_password', return_value='$2y$10$' + 'b' * 53):
+            rotate.rotate(config, 'after', 'a-long-password', 'image')
+        self.assertEqual(config.stat().st_mode & 0o777, 0o600)
+        self.assertIn(b"SIMPLEMAPPR_DB_PASSWORD='database-dollar$literal'\r\n", config.read_bytes())
+        self.assertTrue(config.read_bytes().endswith(b'SIMPLEMAPPR_PORT=18081'))
+
+    def test_minimal_named_cache_does_not_create_a_host_bind(self):
+        mounts=[{'Destination':'/var/cache/simplemappr-assets','Type':'volume','RW':False}]
+        with patch.object(bundle,'run_compose',return_value=b'a'*64), patch.object(bundle,'docker_json',return_value=[{'Mounts':mounts}]):
+            self.assertIsNone(bundle.runtime_asset_cache(None,'minimal-vector-v1',{}))
+            with self.assertRaises(bundle.OperationError):
+                bundle.runtime_asset_cache(None,'gray-relief-v1',{})
+
+    def test_optional_cache_comes_from_the_actual_readonly_bind(self):
+        mounts=[{'Destination':'/var/cache/simplemappr-assets','Type':'bind','RW':False,'Source':str(self.directory)}]
+        with patch.object(bundle,'run_compose',return_value=b'a'*64), patch.object(bundle,'docker_json',return_value=[{'Mounts':mounts}]):
+            self.assertEqual(bundle.runtime_asset_cache(None,'gray-relief-v1',{}),str(self.directory))
+            with self.assertRaises(bundle.OperationError):
+                bundle.runtime_asset_cache(None,'gray-relief-v1',{'SIMPLEMAPPR_ASSET_CACHE':str(self.directory/'different')})
+            mounts[0]['RW']=True
+            with self.assertRaises(bundle.OperationError):
+                bundle.runtime_asset_cache(None,'gray-relief-v1',{})
+
+    def test_restore_forbids_existing_project_resources(self):
+        with patch.object(bundle, 'command', return_value=b'existing-container'):
+            with self.assertRaisesRegex(bundle.OperationError, 'new Compose project'):
+                bundle.refuse_existing_project('new-target')
+
+
+if __name__ == '__main__':
+    unittest.main()

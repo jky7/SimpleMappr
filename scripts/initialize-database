@@ -1,0 +1,7 @@
+#!/bin/sh
+set -eu
+scripts/migrate-database
+scripts/seed-places
+if [ -n "${SIMPLEMAPPR_OWNER_USERNAME:-}" ] || [ -n "${SIMPLEMAPPR_OWNER_PASSWORD_HASH:-}" ]; then
+    scripts/provision-owner
+fi

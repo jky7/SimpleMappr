@@ -38,326 +38,77 @@
 namespace SimpleMappr\Controller;
 
 use SimpleMappr\Database;
-use SimpleMappr\Controller\User;
+use SimpleMappr\Session;
+use SimpleMappr\SavedMapDocument;
+use SimpleMappr\HttpException;
 
-/**
- * Map model for SimpleMappr
- *
- * @category  Class
- * @package   SimpleMappr
- * @author    David P. Shorthouse <davidpshorthouse@gmail.com>
- * @copyright 2010-2018 David P. Shorthouse
- * @license   MIT, https://github.com/dshorthouse/SimpleMappr/blob/master/LICENSE
- * @link      http://github.com/dshorthouse/SimpleMappr
- */
-class Map implements RestMethods
+final class Map implements RestMethods
 {
-    /**
-     * Total number of records
-     *
-     * @var int $total
-     */
-    public $total;
+    public $total = 0, $filter_username = '', $filter_uid = null, $sort = 'created', $dir = 'desc', $results = [], $search = '', $row_count = 0;
+    private Database $db;
+    private int $uid;
 
-    /**
-     * Filter results by username
-     *
-     * @var string $filter_username
-     */
-    public $filter_username;
-
-    /**
-     * Filter results by user identifier
-     *
-     * @var int $filter_uid
-     */
-    public $filter_uid;
-
-    /**
-     * Database column upon which to sort
-     *
-     * @var string $sort
-     */
-    public $sort;
-
-    /**
-     * Direction to sort: asc or desc
-     *
-     * @var string $dir
-     */
-    public $dir;
-
-    /**
-     * Database query results
-     *
-     * @var object $results
-     */
-    public $results;
-
-    /**
-     * Search string
-     *
-     * @var string $search
-     */
-    public $search;
-
-    /**
-     * Database query row count
-     *
-     * @var int $row_count
-     */
-    public $row_count;
-
-    /**
-     * Role for user defined in $roles
-     *
-     * @var int $_role
-     */
-    private $_user;
-
-    /**
-     * Database connection object
-     *
-     * @var object $_db
-     */
-    private $_db;
-
-    /**
-     * Class constructor
-     */
     public function __construct()
     {
-        $this->_user = (new User)->showByHash($_SESSION['simplemappr']['hash']);
-        $this->_db = Database::getInstance();
+        $user = Session::currentUser();
+        if (!$user) { throw new HttpException(403, 'Sign in to access your saved maps.'); }
+        $this->uid = (int)$user->uid;
+        $this->db = Database::getInstance();
     }
 
-    /**
-     * Implemented index method
-     *
-     * @param array $params The parameters from the router
-     *
-     * @return object $this
-     */
     public function index($params)
     {
-        $this->dir = "desc";
-        $this->sort = "";
-        $this->search = "";
-        $this->filter_uid = null;
-        $this->filter_username = "";
-
-        if (array_key_exists('dir', $params)
-            && in_array(strtolower($params['dir']), ["asc", "desc"])
-        ) {
-            $this->dir = $params['dir'];
-        }
-        if (array_key_exists('sort', $params)) {
-            $this->sort = $params['sort'];
-        }
-        if (array_key_exists('search', $params)) {
-            $this->search = $params['search'];
-        }
-        if (array_key_exists('uid', $params)) {
-            $this->filter_uid = (int)$params['uid'];
-        }
-
-        $username = "u.username, ";
-        $where['user'] = " WHERE m.uid = :uid";
-        $limit = "";
-
-        if (User::isAdministrator($this->_user)) {
-            if ($this->filter_uid) {
-                $where['user'] = " WHERE m.uid = :uid_q";
-            } else {
-                $username = "";
-                $where['user'] = "";
-                $limit = " LIMIT 100";
-            }
-        }
-
-        $sql = "SELECT
-                    {$username} COUNT(m.mid) AS total
-                FROM
-                     maps m
-                INNER JOIN
-                     users u ON (m.uid = u.uid)
-                {$where['user']}";
-
-        $this->_db->prepare($sql);
-
-        if (!User::isAdministrator($this->_user)) {
-            $this->_db->bindParam(":uid", $this->_user->results->uid);
-        }
-
-        if ($this->filter_uid) {
-            $this->_db->bindParam(":uid_q", $this->filter_uid);
-            $this->filter_username = $this->_db->fetchFirstObject()->username;
-        }
-        $this->total = $this->_db->fetchFirstObject()->total;
-
-        $order = "m.created {$this->dir}";
-
-        $b = "";
-        if (!empty($this->search)) {
-            if (User::isAdministrator($this->_user) && !$this->filter_uid) {
-                $b = " WHERE ";
-                unset($where['user']);
-            }
-            $where['where'] = $b."LOWER(m.title) LIKE :search";
-            if (User::isAdministrator($this->_user) && !$this->filter_uid) {
-                $where['where'] .= " OR LOWER(u.username) LIKE :search";
-            }
-        }
-        if (!empty($this->sort)) {
-            if ($this->sort == "title"
-                || $this->sort == "created"
-                || $this->sort == "updated"
-            ) {
-                $order = "m.".$this->sort . " {$this->dir}";
-            }
-        }
-
-        $sql = "SELECT
-                    m.mid,
-                    m.title,
-                    m.created,
-                    m.updated,
-                    u.uid,
-                    u.username,
-                    s.sid 
-                FROM 
-                    maps m 
-                INNER JOIN
-                    users u ON (m.uid = u.uid)
-                LEFT JOIN
-                    shares s ON (m.mid = s.mid)
-                " . implode(" AND ", $where) . "
-                ORDER BY " . $order . $limit;
-
-        $this->_db->prepare($sql);
-        if (!User::isAdministrator($this->_user)) {
-            $this->_db->bindParam(":uid", $this->_user->results->uid, 'integer');
-        } else {
-            if ($this->filter_uid) {
-                $this->_db->bindParam(":uid_q", $this->filter_uid, 'integer');
-            }
-        }
-        if (!empty($this->search)) {
-            $this->_db->bindParam(":search", "%{$this->search}%", 'string');
-        }
-        $this->results = $this->_db->fetchAllObject();
-        $this->row_count = $this->_db->rowCount();
-
+        $this->sort = in_array($params['sort'] ?? '', ['title','created','updated'], true) ? $params['sort'] : 'created';
+        $this->dir = strtolower($params['dir'] ?? '') === 'asc' ? 'asc' : 'desc';
+        $this->search = mb_substr((string)($params['search'] ?? ''), 0, 255);
+        $this->db->prepare('SELECT COUNT(*) AS total FROM maps WHERE uid=:uid'); $this->db->bindParam(':uid', $this->uid);
+        $this->total = (int)$this->db->fetchFirstObject()->total;
+        $sql = 'SELECT m.mid,m.uid,m.title,m.created,m.updated,s.sid,s.token FROM maps m LEFT JOIN shares s ON s.mid=m.mid WHERE m.uid=:uid';
+        if ($this->search !== '') { $sql .= ' AND m.title LIKE :search'; }
+        $sql .= ' ORDER BY m.'.$this->sort.' '.$this->dir.',m.mid '.$this->dir;
+        $this->db->prepare($sql); $this->db->bindParam(':uid', $this->uid);
+        if ($this->search !== '') { $this->db->bindParam(':search', '%'.$this->search.'%'); }
+        $this->results = $this->db->fetchAllObject();
+        $this->row_count = count($this->results);
         return $this;
     }
 
-    /**
-     * Implemented show method
-     *
-     * @param int $id The map identifier.
-     *
-     * @return array $data
-     */
+    public static function loadOwned(int $mid, int $uid): ?array
+    {
+        $db = Database::getInstance();
+        $db->prepare('SELECT m.mid,m.title,m.map,s.token FROM maps m LEFT JOIN shares s ON s.mid=m.mid WHERE m.mid=:mid AND m.uid=:uid');
+        $db->bindParam(':mid', $mid); $db->bindParam(':uid', $uid);
+        $row = $db->fetchFirstArray();
+        if (!$row) { return null; }
+        return ['mid'=>(int)$row['mid'], 'title'=>$row['title'], 'map'=>SavedMapDocument::decode($row['map']), 'share_url'=>$row['token'] ? MAPPR_URL.'/shared/'.$row['token'] : null];
+    }
+
     public function show($id)
     {
-        $sql = "
-            SELECT
-                mid, map
-            FROM 
-                maps
-            WHERE
-                mid = :mid";
-
-        $this->_db->prepare($sql);
-        $this->_db->bindParam(":mid", $id, 'integer');
-
-        $record = $this->_db->fetchFirstObject();
-        $data['mid'] = ($record) ? $record->mid : "";
-        $data['map'] = ($record) ? json_decode($record->map, true) : "";
-        $data['status'] = ($data['map']) ? 'ok' : 'failed';
-
-        return $data;
+        $record = self::loadOwned((int)$id, $this->uid);
+        if (!$record) { throw new HttpException(404, 'Map not found.'); }
+        return ['status'=>'ok'] + $record;
     }
 
-    /**
-     * Implemented create method
-     *
-     * @param array $content The parameters from the router
-     *
-     * @return array $output
-     */
     public function create($content)
     {
-        $data = [
-            'uid' => $this->_user->results->uid,
-            'title' => $content['save']['title'],
-            'map' => json_encode($content),
-            'created' => time(),
-            'updated' => time()
-        ];
-
-        //see if user's map by same title already exists
-        $sql = "SELECT
-                    mid
-                FROM
-                    maps
-                WHERE
-                    uid = :uid AND title = :title";
-        $this->_db->prepare($sql);
-        $this->_db->bindParam(":uid", $this->_user->results->uid, 'integer');
-        $this->_db->bindParam(":title", $data['title'], 'string');
-        $record = $this->_db->fetchFirstObject($sql);
-
-        $output = [];
-        $output['status'] = "ok";
-
-        if ($record) {
-            unset($data['created']);
-            $this->_db->queryUpdate('maps', $data, 'mid='.$record->mid);
-            $output['mid'] = $record->mid;
-        } else {
-            $output['mid'] = $this->_db->queryInsert('maps', $data);
-        }
-
-        return $output;
+        $document = SavedMapDocument::fromForm($content);
+        SavedMapDocument::validateForWrite($document);
+        $title = $document['save']['title'];
+        if ($title === '') { throw new HttpException(422, 'Enter a map title.'); }
+        $this->db->prepare('INSERT INTO maps(uid,title,map,created,updated) VALUES(:uid,:title,:map,:created,:updated) ON DUPLICATE KEY UPDATE mid=LAST_INSERT_ID(mid),map=VALUES(map),updated=VALUES(updated)');
+        foreach (['uid'=>$this->uid,'title'=>$title,'map'=>SavedMapDocument::encode($document),'created'=>time(),'updated'=>time()] as $key=>$value) { $this->db->bindParam(':'.$key, $value); }
+        $this->db->execute();
+        $mid = (int)$this->db->connection()->lastInsertId();
+        return ['status'=>'ok','mid'=>$mid,'share_url'=>self::loadOwned($mid, $this->uid)['share_url']];
     }
 
-    /**
-     * Implemented update method
-     *
-     * @param array  $content Any parameters
-     * @param string $where   The where clause
-     *
-     * @return void
-     */
-    public function update($content, $where)
-    {
-    }
-
-    /**
-     * Implemented destroy method
-     *
-     * @param int $id The map identifier.
-     *
-     * @return array status
-     */
+    public function update($content, $where) { throw new HttpException(405, 'Use the saved-map form.'); }
     public function destroy($id)
     {
-        $sql = "DELETE 
-                FROM
-                    maps
-                WHERE 
-                    mid = :mid";
-        if (User::isAdministrator($this->_user)) {
-            $this->_db->prepare($sql);
-            $this->_db->bindParam(":mid", $id, 'integer');
-        } else {
-            $sql .= " AND uid = :uid";
-            $this->_db->prepare($sql);
-            $this->_db->bindParam(":mid", $id, 'integer');
-            $this->_db->bindParam(":uid", $this->_user->results->uid, 'integer');
-        }
-        $this->_db->execute();
-        return ["status" => "ok"];
+        $this->show($id);
+        $this->db->prepare('DELETE FROM maps WHERE mid=:mid AND uid=:uid');
+        $this->db->bindParam(':mid', (int)$id); $this->db->bindParam(':uid', $this->uid); $this->db->execute();
+        return ['status'=>'ok'];
     }
 }

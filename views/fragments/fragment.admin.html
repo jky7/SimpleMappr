@@ -1,9 +1,11 @@
 <div id="map-admin">
+<p id="admin-status" role="status"></p>
+<span hidden id="admin-total-label">{{ "Total"|trans }}</span><span hidden id="admin-link-label">{{ "Link"|trans }}</span><span hidden id="admin-update-label">{{ "Update"|trans }}</span><span hidden id="admin-assets-label">{{ "Assets use versioned filenames. Rebuild the image to update them."|trans }}</span>
     <div class="header">
-        <h2>{% trans "Tools" %}</h2>
+        <h2>{{ "Tools"|trans }}</h2>
     </div>
     <ul class="fieldSets">
-        <li><a href="#" id="flush-caches" class="admin-tool">{% trans "Flush caches" %}</a></li>
+        <li><a href="#" id="flush-caches" class="admin-tool">{{ "Flush caches"|trans }}</a></li>
     </ul>
 
     <div class="header">
@@ -12,38 +14,38 @@
     <p id="admin-api-list"></p>
 
     <div class="header">
-    <h2 id="map-admin-citation-title">{% trans "Citations" %}</h2>
+    <h2 id="map-admin-citation-title">{{ "Citations"|trans }}</h2>
     </div>
 
     <p>
-    <label for="citation-reference">{% trans "Formatted reference" %}<span class="required">*</span></label>
+    <label for="citation-reference">{{ "Formatted reference"|trans }}<span class="required">*</span></label>
     </p>
 
     <textarea id="citation-reference" class="resizable citation" rows="5" cols="60" name="citation[reference]"></textarea>
 
     <p>
-    <label for="citation-surname">{% trans "Author surname" %}<span class="required">*</span></label>
+    <label for="citation-surname">{{ "Author surname"|trans }}<span class="required">*</span></label>
     <input type="text" id="citation-surname"  class="citation" name="citation[first_author_surname]" size="60" />
     </p>
 
     <p>
-    <label for="citation-year">{% trans "Year" %}<span class="required">*</span></label>
+    <label for="citation-year">{{ "Year"|trans }}<span class="required">*</span></label>
     <input type="text" id="citation-year" class="citation" name="citation[year]" size="10" />
     </p>
 
     <p>
-    <label for="citation-doi">{% trans "DOI" %}</label>
+    <label for="citation-doi">{{ "DOI"|trans }}</label>
     <input type="text" id="citation-doi" class="citation" name="citation[doi]" size="60" />
     </p>
 
     <p>
-    <label for="citation-link">{% trans "Link" %}</label>
+    <label for="citation-link">{{ "Link"|trans }}</label>
     <input type="text" id="citation-link" class="citation" name="citation[link]" size="60" />
     </p>
 
     <p>
-    <button class="sprites-before addmore positive">{% trans "Add citation" %}</button>
-    <button class="sprites-before update positive">{% trans "Update citation" %}</button>
+    <button class="sprites-before addmore positive">{{ "Add citation"|trans }}</button>
+    <button class="sprites-before update positive">{{ "Update citation"|trans }}</button>
 
     <input type="hidden" id="citation-id" class="citation" name="citation[id]" />
     </p>

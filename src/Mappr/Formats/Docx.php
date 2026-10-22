@@ -75,6 +75,7 @@ class Docx extends Mappr
      */
     public function createOutput()
     {
+        \PhpOffice\PhpWord\Settings::setOutputEscapingEnabled(true);
         $objPHPWord = new PhpWord();
 
         $clean_filename = Utility::cleanFilename($this->request->file_name);
@@ -97,8 +98,8 @@ class Docx extends Mappr
         $images = ['image', 'scale', 'legend'];
         foreach ($images as $image) {
             if ($this->{$image}) {
-                $image_filename = basename($this->{$image}->saveWebImage());
-                $files[$image]['file'] = $this->tmp_path . $image_filename;
+                $temporary = \SimpleMappr\TemporaryImage::write($this->{$image}, $this->map_obj);
+                $files[$image]['file'] = $temporary['path'];
                 $files[$image]['size'] = getimagesize($files[$image]['file']);
             }
         }

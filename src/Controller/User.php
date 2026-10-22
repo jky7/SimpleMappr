@@ -38,287 +38,46 @@
 namespace SimpleMappr\Controller;
 
 use SimpleMappr\Database;
+use SimpleMappr\Session;
+use SimpleMappr\HttpException;
 
-/**
- * User model for SimpleMappr
- *
- * @category  Class
- * @package   SimpleMappr
- * @author    David P. Shorthouse <davidpshorthouse@gmail.com>
- * @copyright 2010-2018 David P. Shorthouse
- * @license   MIT, https://github.com/dshorthouse/SimpleMappr/blob/master/LICENSE
- * @link      http://github.com/dshorthouse/SimpleMappr
- */
-class User implements RestMethods
+final class User implements RestMethods
 {
-    /**
-     * Database column upon which to sort
-     *
-     * @var string $sort
-     */
-    public $sort;
-
-    /**
-     * Direction to sort: asc or desc
-     *
-     * @var string $dir
-     */
-    public $dir;
-
-    /**
-     * Database query results
-     *
-     * @var object $results
-     */
-    public $results;
-
-    /**
-     * Hash stored in cookie
-     *
-     * @var string $_hash
-     */
-    private $_hash;
-
-    /**
-     * Database connection object
-     *
-     * @var object $_db
-     */
-    private $_db;
-
-    /**
-     * Defined roles to assigned to a user
-     *
-     * @var array $roles
-     */
-    public static $roles = [
-        1 => 'user',
-        2 => 'administrator'
-    ];
-
-    /**
-     * Get user count
-     *
-     * @return integer count
-     */
+    public $sort = 'access', $dir = 'desc', $results;
+    public static $roles = [1=>'user',2=>'administrator'];
+    private Database $db;
+    public function __construct() { $this->db = Database::getInstance(); }
     public static function count()
     {
-        $db = Database::getInstance();
-        $sql = "SELECT count(*) as num FROM users";
-        $db->prepare($sql);
-        $count = $db->fetchFirstObject();
-        return $count->num;
+        $db=Database::getInstance(); $db->prepare('SELECT COUNT(*) AS num FROM users'); return (int)$db->fetchFirstObject()->num;
     }
-
-    /**
-     * Check permissions, used in router
-     *
-     * @param string $role The role
-     *
-     * @return bool True/False
-     */
     public static function checkPermission($role = 'user')
     {
-        if (!isset($_SESSION)) {
-            session_start();
-        }
-
-        if (!isset($_SESSION['simplemappr'])) {
-            session_write_close();
-            return false;
-        }
-
-        $user = (new User)->showByHash($_SESSION['simplemappr']['hash'])->results;
-        if ($role == 'user'
-            && (self::$roles[$user->role] == 'user'
-            || self::$roles[$user->role] == 'administrator')
-        ) {
-            session_write_close();
-            return true;
-        } elseif ($role == 'administrator'
-            && self::$roles[$user->role] == 'administrator'
-        ) {
-            session_write_close();
-            return true;
-        } else {
-            session_write_close();
-            return false;
-        }
+        $user=Session::currentUser();
+        return $user && ($role === 'user' ? in_array((int)$user->role,[1,2],true) : (int)$user->role === 2);
     }
-
-    /**
-     * Determine if account belongs to an administrator
-     *
-     * @param object $user User object
-     *
-     * @return bool
-     */
-    public static function isAdministrator(User $user)
+    public static function isAdministrator($user)
     {
-        if (self::$roles[$user->results->role] == 'administrator') {
-            return true;
-        }
-        return false;
+        $record=$user instanceof self ? $user->results : $user;
+        return $record && (int)$record->role === 2;
     }
-
-    /**
-     * The constructor
-     */
-    public function __construct()
-    {
-        $this->_db = Database::getInstance();
-    }
-
-    /**
-     * Implemented index method
-     *
-     * @param object $params The parameters sent from the router
-     *
-     * @return object $this
-     */
     public function index($params)
     {
-        $this->sort = "";
-        $this->dir = "desc";
-
-        if (array_key_exists('sort', $params)) {
-            $this->sort = $params['sort'];
-        }
-        if (array_key_exists('dir', $params) 
-            && in_array(strtolower($params['dir']), ["asc", "desc"])
-        ) {
-            $this->dir = $params['dir'];
-        }
-        $order = "u.access {$this->dir}";
-
-        if (!empty($this->sort)) {
-            $order = "";
-            if ($this->sort == "num" 
-                || $this->sort == "access" 
-                || $this->sort == "username"
-            ) {
-                if ($this->sort == "accessed") {
-                    $order = "m.";
-                }
-                if ($this->sort == "username") {
-                    $order = "u.";
-                }
-                $order = $order.$this->sort." ".$this->dir;
-            }
-        }
-
-        $sql = "SELECT
-                    u.uid, u.username, u.email, u.access, u.role, count(m.mid) as num
-                FROM
-                    users u
-                LEFT JOIN
-                    maps m ON (u.uid = m.uid)
-                GROUP BY
-                    u.uid
-                HAVING count(m.mid) > 0
-                ORDER BY {$order} LIMIT 100";
-
-        $this->_db->prepare($sql);
-        $this->results = $this->_db->fetchAllObject();
-        return $this;
+        $sorts=['num'=>'num','access'=>'u.access','username'=>'u.username'];
+        $this->sort=isset($sorts[$params['sort'] ?? '']) ? $params['sort'] : 'access';
+        $this->dir=strtolower($params['dir'] ?? '') === 'asc' ? 'asc' : 'desc';
+        $this->db->prepare('SELECT u.uid,u.username,u.email,u.access,u.role,COUNT(m.mid) AS num FROM users u LEFT JOIN maps m ON m.uid=u.uid GROUP BY u.uid ORDER BY '.$sorts[$this->sort].' '.$this->dir.' LIMIT 100');
+        $this->results=$this->db->fetchAllObject(); return $this;
     }
-
-    /**
-     * Implemented show method
-     *
-     * @param int $id The User identifier
-     *
-     * @return object $this
-     */
     public function show($id)
     {
-        $sql = "SELECT * FROM users u WHERE u.uid=:uid";
-        $this->_db->prepare($sql);
-        $this->_db->bindParam(":uid", $id, 'integer');
-        $this->results = $this->_db->fetchAllObject();
-        return $this;
+        $this->db->prepare('SELECT * FROM users WHERE uid=:uid'); $this->db->bindParam(':uid',(int)$id); $this->results=$this->db->fetchFirstObject(); return $this;
     }
-
-    /**
-     * Show a user by their hash
-     *
-     * @param string $hash The User hash
-     *
-     * @return object $this
-     */
-    public function showByHash($hash)
-    {
-        $sql = "SELECT * FROM users u WHERE u.hash=:hash";
-        $this->_db->prepare($sql);
-        $this->_db->bindParam(":hash", $hash, 'string');
-        $this->results = $this->_db->fetchFirstObject();
-        return $this;
-    }
-
-    /**
-     * Show a user by their identifier
-     *
-     * @param string $identifier The User identifier
-     *
-     * @return object $this
-     */
     public function showByIdentifier($identifier)
     {
-        $sql = "SELECT * FROM users u WHERE u.identifier=:identifier";
-        $this->_db->prepare($sql);
-        $this->_db->bindParam(":identifier", $identifier, 'string');
-        $this->results = $this->_db->fetchFirstObject();
-        return $this;
+        $this->db->prepare('SELECT * FROM users WHERE identifier=:identifier'); $this->db->bindParam(':identifier',$identifier); $this->results=$this->db->fetchFirstObject(); return $this;
     }
-
-    /**
-     * Implemented create method
-     *
-     * @param array $content The content to create
-     *
-     * @return array $content
-     */
-    public function create($content)
-    {
-        $content["uid"] = $this->_db->queryInsert('users', $content);
-        return (object)$content;
-    }
-
-    /**
-     * Implemented update method
-     *
-     * @param array  $content The array of content
-     * @param string $where   The where clause
-     *
-     * @return object
-     */
-    public function update($content, $where)
-    {
-        $this->results = $this->_db->queryUpdate('users', $content, $where);
-        return $this;
-    }
-
-    /**
-     * Implemented destroy method
-     *
-     * @param int $id The User identifier
-     *
-     * @return array status
-     */
-    public function destroy($id)
-    {
-        $sql = "DELETE
-                    u, m
-                FROM
-                    users u
-                LEFT JOIN
-                    maps m ON u.uid = m.uid
-                WHERE 
-                    u.uid=:uid";
-        $this->_db->prepare($sql);
-        $this->_db->bindParam(":uid", $id, 'integer');
-        $this->_db->execute();
-
-        return ["status" => "ok"];
-    }
+    public function create($content) { $content['uid']=$this->db->queryInsert('users',$content); return (object)$content; }
+    public function update($content,$where) { $this->results=$this->db->queryUpdate('users',$content,$where); return $this; }
+    public function destroy($id) { throw new HttpException(403,'User deletion is disabled for private deployments.'); }
 }

@@ -47,7 +47,7 @@ namespace SimpleMappr\Constants;
  * @license   MIT, https://github.com/dshorthouse/SimpleMappr/blob/master/LICENSE
  * @link      http://github.com/dshorthouse/SimpleMappr
  */
-trait AcceptedMarkers
+final class AcceptedMarkers
 {
     /**
      * Accepted marker shapes

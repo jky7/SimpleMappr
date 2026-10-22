@@ -1,0 +1,51 @@
+CREATE TABLE users (
+ uid BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+ hash VARCHAR(255) NOT NULL,
+ identifier VARCHAR(255) NOT NULL UNIQUE,
+ username VARCHAR(50) NULL,
+ displayname VARCHAR(125) NULL,
+ email VARCHAR(50) NULL,
+ role INT NOT NULL DEFAULT 1,
+ created BIGINT NULL,
+ access BIGINT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+CREATE TABLE maps (
+ mid BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+ uid BIGINT UNSIGNED NOT NULL,
+ title VARCHAR(255) NOT NULL,
+ map LONGTEXT NULL,
+ created BIGINT NOT NULL,
+ updated BIGINT NULL,
+ UNIQUE KEY owner_title(uid,title), KEY owner_created(uid,created), KEY idx_updated(updated),
+ CONSTRAINT maps_owner FOREIGN KEY(uid) REFERENCES users(uid) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+CREATE TABLE shares (
+ sid BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+ mid BIGINT UNSIGNED NOT NULL UNIQUE,
+ token CHAR(64) CHARACTER SET ascii COLLATE ascii_bin NULL UNIQUE,
+ created BIGINT NOT NULL,
+ CONSTRAINT shares_map FOREIGN KEY(mid) REFERENCES maps(mid) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+CREATE TABLE citations (
+ id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+ year INT NOT NULL,
+ reference TEXT NOT NULL,
+ doi VARCHAR(255) NOT NULL,
+ link VARCHAR(255) NOT NULL,
+ first_author_surname VARCHAR(255) NOT NULL,
+ created BIGINT NOT NULL,
+ KEY year_author(year,first_author_surname)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+CREATE TABLE stateprovinces (
+ id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+ country_iso CHAR(3) NULL,
+ country VARCHAR(128) NULL,
+ stateprovince VARCHAR(128) NULL,
+ stateprovince_code VARCHAR(16) NOT NULL,
+ KEY index_on_country(country)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+CREATE TABLE login_attempts (
+ attempt_key CHAR(64) CHARACTER SET ascii PRIMARY KEY,
+ window_start BIGINT NOT NULL,
+ attempts INT UNSIGNED NOT NULL
+) ENGINE=InnoDB;

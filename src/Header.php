@@ -66,6 +66,7 @@ class Header
         header("Expires: 0");
         header("Cache-Control: must-revalidate, post-check=0, pre-check=0");
         header("Cache-Control: private", false);
+        if (Session::currentUser()) { header('Cache-Control: no-store, private'); }
         if ($filename) {
             header("Content-Disposition: attachment; filename=\"{$filename}\";");
         }
@@ -89,7 +90,7 @@ class Header
             break;
 
         case 'kml':
-            header("Content-Type: application/vnd.google-earth.kml+xml kml; charset=UTF-8");
+            header("Content-Type: application/vnd.google-earth.kml+xml; charset=UTF-8");
             break;
 
         case 'pptx':
@@ -116,6 +117,7 @@ class Header
             header("Content-Transfer-Encoding: binary");
             break;
 
+        case 'pnga':
         case 'png':
             header("Content-Type: image/png");
             header("Content-Transfer-Encoding: binary");

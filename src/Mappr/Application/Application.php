@@ -72,46 +72,15 @@ class Application extends Mappr
      */
     public function createOutput()
     {
-        switch ($this->request->output) {
-        case 'tif':
-            error_reporting(0);
-            $this->image_url = $this->image->saveWebImage();
-            $image_filename = basename($this->image_url);
-            $clean_filename = Utility::cleanFilename($this->request->file_name, $this->request->output);
-            $filesize = filesize($this->tmp_path.$image_filename);
-            Header::setHeader('tif', $clean_filename, $filesize);
-            ob_clean();
-            flush();
-            readfile($this->tmp_path.$image_filename);
-            break;
-
-        case 'png':
-            if ($this->request->download) {
-                error_reporting(0);
-                $this->image_url = $this->image->saveWebImage();
-                $image_filename = basename($this->image_url);
-                $clean_filename = Utility::cleanFilename($this->request->file_name, $this->request->output);
-                $filesize = filesize($this->tmp_path.$image_filename);
-                Header::setHeader('png', $clean_filename, $filesize);
-                ob_clean();
-                flush();
-                readfile($this->tmp_path.$image_filename);
-            } else {
-                Header::setHeader('json');
-                return json_encode($this->_defaultOutput());
-            }
-            break;
-
-        case 'svg':
-            $clean_filename = Utility::cleanFilename($this->request->file_name, $this->request->output);
-            Header::setHeader('svg', $clean_filename);
-            $this->image->saveImage("");
-            break;
-
-        default:
-            Header::setHeader('json');
-            return json_encode($this->_defaultOutput());
+        $format = $this->request->output;
+        if ($this->request->download || in_array($format, ['tif','svg'], true)) {
+            $extension = $format === 'pnga' ? 'png' : $format;
+            $bytes = \SimpleMappr\RenderedImage::bytes($this->image, $this->map_obj, $this->request->output);
+            Header::setHeader($extension, Utility::cleanFilename($this->request->file_name, $extension), strlen($bytes));
+            return $bytes;
         }
+        Header::setHeader('json');
+        return json_encode($this->_defaultOutput());
     }
 
     /**
@@ -121,7 +90,7 @@ class Application extends Mappr
      */
     private function _defaultOutput()
     {
-        $this->image_url = $this->image->saveWebImage();
+        $this->image_url = \SimpleMappr\TemporaryImage::write($this->image, $this->map_obj, $this->request->output === 'pnga' ? 'png' : $this->request->output)['url'];
 
         $bbox = [
           sprintf('%.10f', $this->map_obj->extent->minx + $this->ox_pad),
@@ -136,6 +105,7 @@ class Application extends Mappr
           'rendered_bbox'       => implode(",", $bbox),
           'rendered_rotation'   => $this->request->rotation,
           'rendered_projection' => $this->request->projection,
+          'rendered_origin'     => $this->request->origin,
           'legend_url'          => $this->legend_url,
           'scalebar_url'        => $this->scalebar_url,
           'bad_points'          => $this->getBadPoints(),

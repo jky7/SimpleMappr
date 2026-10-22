@@ -1,0 +1,11 @@
+#!/usr/bin/env python3
+import json
+from pathlib import Path
+root=Path(__file__).resolve().parent.parent
+reviewed='67a3b85673a7e05c7347e0c3970f9afb2338e246'
+manifest=json.loads((root/'composer.json').read_text())
+lock=json.loads((root/'composer.lock').read_text())
+package=next(item for item in lock['packages'] if item['name']=='phpoffice/phppresentation')
+if not manifest['require']['phpoffice/phppresentation'].endswith('#'+reviewed) or package['source']['reference']!=reviewed:
+    raise SystemExit('PHPPresentation differs from the reviewed commit-pin exception; review the dependency and update the explicit gate.')
+print('Reviewed PHPPresentation commit pin matches manifest and lock. Composer validation warning remains expected.')

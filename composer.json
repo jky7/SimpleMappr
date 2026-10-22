@@ -1,47 +1,64 @@
 {
-    "name"        : "SimpleMappr",
-    "description" : "A point map web application for quality publications and presentations.",
-    "keywords"    : ["publication", "presentation", "map", "georeference"],
-    "homepage"    : "https://www.simplemappr.net",
-    "time"        : "2014-04-27",
-    "license"     : "MIT",
+    "name": "simplemappr/simplemappr",
+    "description": "A point map web application for quality publications and presentations.",
+    "keywords": [
+        "publication",
+        "presentation",
+        "map",
+        "georeference"
+    ],
+    "homepage": "https://www.simplemappr.net",
+    "time": "2014-04-27",
+    "license": "MIT",
     "authors": [
         {
-          "name"  : "David P. Shorthouse",
-          "email" : "davidpshorthouse@gmail.com",
-          "role"  : "Developer"
+            "name": "David P. Shorthouse",
+            "email": "davidpshorthouse@gmail.com",
+            "role": "Developer"
         }
     ],
-    "support" : {
-      "email"  : "davidpshorthouse@gmail.com",
-      "issues" : "https://github.com/dshorthouse/SimpleMappr/issues",
-      "source" : "https://github.com/dshorthouse/SimpleMappr"
+    "support": {
+        "email": "davidpshorthouse@gmail.com",
+        "issues": "https://github.com/dshorthouse/SimpleMappr/issues",
+        "source": "https://github.com/dshorthouse/SimpleMappr"
     },
-    "autoload" : {
-      "psr-4" : {
-        "SimpleMappr\\" : "src/"
-      }
+    "autoload": {
+        "psr-4": {
+            "SimpleMappr\\": "src/"
+        }
     },
     "require": {
-      "league/csv"                : "~8.2.0",
-      "natxet/CssMin"             : "~3.0.4",
-      "neitanod/forceutf8"        : "~2.0",
-      "phpoffice/phppresentation" : "~0.6.0",
-      "phpoffice/phpword"         : "~0.12.1",
-      "phayes/geophp"             : "~1.2",
-      "phroute/phroute"           : "2.*",
-      "robmorgan/phinx"           : "~0.8.0",
-      "symfony/yaml"              : "*",
-      "twig/twig"                 : "~1.0",
-      "twig/extensions"           : "~1.1.0",
-      "suin/php-rss-writer"       : ">=1.0"
+        "php": "^8.4",
+        "ext-curl": "*",
+        "ext-dom": "*",
+        "ext-gd": "*",
+        "ext-gettext": "*",
+        "ext-mbstring": "*",
+        "ext-pdo_mysql": "*",
+        "ext-xml": "*",
+        "ext-zip": "*",
+        "league/csv": "^9.28",
+        "natxet/cssmin": "^3.0.6",
+        "neitanod/forceutf8": "^2.0.4",
+        "phpoffice/phppresentation": "dev-master#67a3b85673a7e05c7347e0c3970f9afb2338e246",
+        "phpoffice/phpword": "^1.4",
+        "wgirhad/geophp": "^3.0",
+        "phroute/phroute": "^2.2",
+        "robmorgan/phinx": "^0.16.12",
+        "symfony/yaml": "^7.4",
+        "symfony/twig-bridge": "^7.4",
+        "symfony/translation": "^7.4",
+        "twig/twig": "^3.25",
+        "phpoffice/phpspreadsheet": "^5.10"
     },
     "require-dev": {
-      "phpunit/phpunit"                 : "5.7.*",
-      "facebook/webdriver"              : "dev-master",
-      "satooshi/php-coveralls"          : "~1.0",
-      "squizlabs/php_codesniffer"       : "3.*",
-      "jakub-onderka/php-parallel-lint" : "~0.9",
-      "jakub-onderka/php-console-highlighter" : "~0.3"
+        "phpunit/phpunit": "^13.4",
+        "php-webdriver/webdriver": "^1.16",
+        "squizlabs/php_codesniffer": "^4.0",
+        "php-parallel-lint/php-parallel-lint": "^1.4",
+        "php-parallel-lint/php-console-highlighter": "^1.0"
+    },
+    "config": {
+        "sort-packages": true
     }
 }

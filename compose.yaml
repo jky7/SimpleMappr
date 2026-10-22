@@ -1,0 +1,85 @@
+name: simplemappr
+services:
+  db:
+    image: mariadb:11.8.9@sha256:f16d7a344413e519dff518f27bdb221388f84b0d274c97c4fb5f2cb0dc1b34fa
+    environment:
+      MARIADB_DATABASE: simplemappr
+      MARIADB_USER: simplemappr
+      MARIADB_PASSWORD: ${SIMPLEMAPPR_DB_PASSWORD:?Run scripts/configure-local-owner first}
+      MARIADB_ROOT_PASSWORD: ${SIMPLEMAPPR_DB_ROOT_PASSWORD:?Run scripts/configure-local-owner first}
+    volumes:
+      - database:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+    restart: unless-stopped
+  database-init:
+    image: ${SIMPLEMAPPR_IMAGE:-simplemappr-runtime:local}
+    build: .
+    depends_on:
+      db:
+        condition: service_healthy
+      assets-init:
+        condition: service_completed_successfully
+    environment: &application-environment
+      SIMPLEMAPPR_ENV: ${SIMPLEMAPPR_ENV:-production}
+      SIMPLEMAPPR_URL: ${SIMPLEMAPPR_URL:-}
+      SIMPLEMAPPR_ASSET_PROFILE: ${SIMPLEMAPPR_ASSET_PROFILE:-minimal-vector-v1}
+      SIMPLEMAPPR_DB_HOST: db
+      SIMPLEMAPPR_DB_NAME: simplemappr
+      SIMPLEMAPPR_DB_USER: simplemappr
+      SIMPLEMAPPR_DB_PASSWORD: ${SIMPLEMAPPR_DB_PASSWORD:?Run scripts/configure-local-owner first}
+      SIMPLEMAPPR_OWNER_USERNAME: ${SIMPLEMAPPR_OWNER_USERNAME:-}
+      SIMPLEMAPPR_OWNER_PASSWORD_HASH: ${SIMPLEMAPPR_OWNER_PASSWORD_HASH:-}
+    command: ["scripts/initialize-database"]
+    volumes:
+      - map-data:/srv/simplemappr/mapserver/maps:ro
+    restart: "no"
+  assets-init:
+    image: ${SIMPLEMAPPR_IMAGE:-simplemappr-runtime:local}
+    build: .
+    command: ["scripts/bootstrap-assets"]
+    environment:
+      SIMPLEMAPPR_ASSET_PROFILE: ${SIMPLEMAPPR_ASSET_PROFILE:-minimal-vector-v1}
+    volumes:
+      - map-data:/srv/simplemappr/mapserver/maps
+      - ${SIMPLEMAPPR_ASSET_CACHE:-asset-cache}:/var/cache/simplemappr-assets:ro
+    restart: "no"
+  app:
+    image: ${SIMPLEMAPPR_IMAGE:-simplemappr-runtime:local}
+    build: .
+    depends_on:
+      assets-init:
+        condition: service_completed_successfully
+      database-init:
+        condition: service_completed_successfully
+    environment: *application-environment
+    ports:
+      - "127.0.0.1:${SIMPLEMAPPR_PORT:-8080}:80"
+    volumes:
+      - map-data:/srv/simplemappr/mapserver/maps:ro
+      - runtime-output:/var/lib/simplemappr
+      - app-tmp:/srv/simplemappr/public/tmp
+      - app-uploads:/srv/simplemappr/public/uploads
+      - css-cache:/srv/simplemappr/public/stylesheets/cache
+      - js-cache:/srv/simplemappr/public/javascript/cache
+      - sessions:/var/lib/php/sessions
+    healthcheck:
+      test: ["CMD", "curl", "--fail", "--silent", "http://127.0.0.1/_runtime"]
+      interval: 15s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+    restart: unless-stopped
+volumes:
+  asset-cache:
+  map-data:
+  runtime-output:
+  app-tmp:
+  app-uploads:
+  css-cache:
+  js-cache:
+  database:
+  sessions:

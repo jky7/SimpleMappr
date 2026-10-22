@@ -2,7 +2,7 @@
   {% for key,value in labels %}
       <li>
           <input type="checkbox" id="{{ key }}" class="layeropt" name="layers[{{ key }}]" />
-          <label for="{{ key }}">{% trans value %}</label>
+          <label for="{{ key }}">{{ value|trans }}</label>
       </li>
   {% endfor %}
 </ul>
