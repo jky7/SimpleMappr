@@ -76,6 +76,7 @@ test('manual RGB entry still updates the selected color', t => {
 
 test('the template Apply button submits through the editor and enables fill selection', t => {
   const e = picker(t);
+  e.panel.remove();
   e.$('body').append('<ul id="actionsBar"><li><a class="toolsQuery">Fill</a></li></ul>' +
     '<input id="bbox_rubberband"><input id="bbox_query">' +
     '<div id="mapOutput"><img id="mapOutputImage" width="900" height="450"></div>');
