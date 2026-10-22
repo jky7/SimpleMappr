@@ -1,0 +1,52 @@
+#!/usr/bin/env python3
+import argparse
+import hashlib
+import json
+import os
+from pathlib import Path
+import tempfile
+import time
+import urllib.parse
+import urllib.request
+
+root=Path(__file__).resolve().parent.parent
+parser=argparse.ArgumentParser(description='Download the exact public archives declared by a map-data profile.')
+parser.add_argument('--profile',default=os.environ.get('SIMPLEMAPPR_ASSET_PROFILE','minimal-vector-v1'))
+parser.add_argument('--cache',type=Path,default=Path(os.environ.get('SIMPLEMAPPR_ASSET_CACHE',str(root/'.asset-cache'))))
+args=parser.parse_args()
+registry=json.loads((root/'config/asset-profiles/index.json').read_text())
+if args.profile not in registry['profiles']:raise SystemExit('Unknown asset profile.')
+if args.cache.is_symlink():raise SystemExit('Archive cache must not be a symlink.')
+args.cache.mkdir(parents=True,exist_ok=True)
+def approved(url):
+    parsed=urllib.parse.urlsplit(url)
+    if parsed.scheme!='https' or parsed.hostname!='naciscdn.org' or parsed.port not in [None,443] or parsed.username or parsed.password:raise ValueError('Only the pinned HTTPS Natural Earth CDN is allowed.')
+class Redirects(urllib.request.HTTPRedirectHandler):
+    def redirect_request(self,request,fp,code,msg,headers,newurl):
+        approved(newurl);return super().redirect_request(request,fp,code,msg,headers,newurl)
+opener=urllib.request.build_opener(Redirects())
+for entry in registry['profiles'][args.profile]['manifests']:
+    if not entry['cache']:continue
+    manifest=json.loads((root/entry['path']).read_text())
+    for asset in manifest['assets']:
+        approved(asset['url'])
+        if Path(asset['archive']).name!=asset['archive'] or not 0<asset['archiveBytes']<90_000_000:raise SystemExit('Invalid archive path or size.')
+        target=args.cache/asset['archive']
+        if target.is_symlink():raise SystemExit('Archive must not be a symlink.')
+        if target.exists():
+            with target.open('rb') as stream:actual=hashlib.file_digest(stream,'sha256').hexdigest()
+            if target.stat().st_size!=asset['archiveBytes'] or actual!=asset['archiveSha256']:raise SystemExit('Existing cached archive is corrupt: '+target.name)
+            print('Verified '+target.name);continue
+        descriptor,temporary=tempfile.mkstemp(prefix='.fetch-',dir=args.cache)
+        try:
+            started=time.monotonic();digest=hashlib.sha256();count=0
+            with os.fdopen(descriptor,'wb') as output,opener.open(asset['url'],timeout=30) as response:
+                while chunk:=response.read(1024*1024):
+                    count+=len(chunk)
+                    if count>asset['archiveBytes'] or time.monotonic()-started>300:raise ValueError('Download exceeds its byte or time budget.')
+                    digest.update(chunk);output.write(chunk)
+                output.flush();os.fsync(output.fileno())
+            if count!=asset['archiveBytes'] or digest.hexdigest()!=asset['archiveSha256']:raise ValueError('Archive checksum differs from its manifest.')
+            os.chmod(temporary,0o644);os.replace(temporary,target);print('Downloaded and verified '+target.name)
+        finally:
+            if os.path.exists(temporary):os.unlink(temporary)

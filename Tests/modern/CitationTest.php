@@ -37,6 +37,16 @@ final class CitationTest extends TestCase
         self::assertSame('https://example.org/maps',SiteUrl::base([], 'https://example.org/maps/'));
         $this->expectException(RuntimeException::class);SiteUrl::base([],'https://user@example.org');
     }
+    public function testFullLengthDoiRemainsAvailableInFeed(): void
+    {
+        $old=$_SERVER;$_SERVER['HTTP_HOST']='localhost:8080';
+        try {
+            $entry=(object)($this->fixture()+['id'=>1,'created'=>time()]);$entry->doi='10.1234/'.str_repeat('x',247);
+            CitationDocument::parse(array_intersect_key((array)$entry,$this->fixture()));
+            $xml=simplexml_load_string((new CitationFeed())->makeChannel()->addItems([$entry])->getFeed());
+            self::assertCount(1,$xml->channel->item);
+        } finally { $_SERVER=$old; }
+    }
     public function testInvalidRequestHostIsRejected(): void
     {
         $this->expectException(HttpException::class);SiteUrl::base(['HTTP_HOST'=>"evil\r\nLocation: attack"],'');

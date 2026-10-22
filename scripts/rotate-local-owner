@@ -1,0 +1,83 @@
+#!/usr/bin/env python3
+"""Rotate owner credentials in an existing protected deployment configuration."""
+import argparse
+import getpass
+import os
+from pathlib import Path
+import re
+import sys
+import tempfile
+from release_bundle import ROOT, OperationError, fail, hash_password, parse_env, protected_file, safe_path, sync_directory, valid_username
+
+
+def replace_owner(original, username, password_hash):
+    replacements = {'SIMPLEMAPPR_OWNER_USERNAME': username, 'SIMPLEMAPPR_OWNER_PASSWORD_HASH': password_hash}
+    lines = original.decode('utf-8').splitlines(keepends=True)
+    counts = dict.fromkeys(replacements, 0)
+    for index, line in enumerate(lines):
+        match = re.match(r'^(SIMPLEMAPPR_OWNER_USERNAME|SIMPLEMAPPR_OWNER_PASSWORD_HASH)=', line)
+        if match:
+            key = match[1]
+            counts[key] += 1
+            ending = '\r\n' if line.endswith('\r\n') else ('\n' if line.endswith('\n') else '')
+            lines[index] = f"{key}='{replacements[key]}'{ending}"
+    if any(count != 1 for count in counts.values()):
+        fail('Existing configuration must contain exactly one username and password hash.')
+    return ''.join(lines).encode('utf-8')
+
+
+def rotate(config, username, password, image, original=None, original_info=None):
+    config = safe_path(config)
+    if original is None:
+        original = protected_file(config, 65536)
+        original_info = config.stat()
+    parse_env(original)
+    if not valid_username(username):
+        fail('Use a username of 1 to 50 characters without quotes, backslashes, or control characters.')
+    if len(password) < 12 or len(password.encode()) > 72:
+        fail('Use at least 12 characters and at most 72 UTF-8 bytes.')
+    updated = replace_owner(original, username, hash_password(password, image))
+    descriptor, temporary = tempfile.mkstemp(prefix='.owner-', dir=config.parent)
+    try:
+        os.fchmod(descriptor, 0o600)
+        with os.fdopen(descriptor, 'wb') as handle:
+            handle.write(updated)
+            handle.flush()
+            os.fsync(handle.fileno())
+        current = protected_file(config, 65536)
+        info = config.stat()
+        if current != original or (info.st_dev, info.st_ino, info.st_mtime_ns, info.st_ctime_ns) != (original_info.st_dev, original_info.st_ino, original_info.st_mtime_ns, original_info.st_ctime_ns):
+            fail('Configuration changed while credentials were entered. No update applied.')
+        os.replace(temporary, config)
+        sync_directory(config.parent)
+    finally:
+        if os.path.exists(temporary):
+            os.unlink(temporary)
+
+
+def main():
+    os.umask(0o077)
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('--env-file', type=Path, default=ROOT / '.env')
+    parser.add_argument('--image', default='simplemappr-runtime:local')
+    args = parser.parse_args()
+    config = safe_path(args.env_file)
+    original = protected_file(config, 65536)
+    info = config.stat()
+    parse_env(original)
+    username = input('Owner username: ').strip()
+    password = getpass.getpass('New owner password: ')
+    if password != getpass.getpass('Confirm new owner password: '):
+        fail('Passwords did not match.')
+    rotate(config, username, password, args.image, original, info)
+    print('Owner credentials updated. Database credentials and unrelated configuration bytes were preserved.')
+    print('Apply to this configuration with docker compose --env-file PATH -p PROJECT up -d --no-build --force-recreate database-init app.')
+
+
+if __name__ == '__main__':
+    try:
+        main()
+    except (OperationError, OSError, UnicodeDecodeError):
+        error = sys.exc_info()[1]
+        print(str(error) if isinstance(error, OperationError) else 'Cannot update the protected deployment configuration.', file=sys.stderr)
+        sys.exit(1)

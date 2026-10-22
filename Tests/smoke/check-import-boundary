@@ -22,4 +22,4 @@ for attempt in 1 2 3 4 5; do
     if docker exec "$server" python3 -c 'import socket; socket.create_connection(("127.0.0.1",443),1).close()' >/dev/null 2>&1; then break; fi
     sleep 1
 done
-docker run --rm --network "$network" -v "$fixture/cert.pem:/fixture/cert.pem:ro" -v "$root:/srv/simplemappr:ro" -v "$assets:/srv/simplemappr/mapserver/maps:ro" --entrypoint php simplemappr-runtime:local -d curl.cainfo=/fixture/cert.pem /srv/simplemappr/Tests/fixtures/import-http/check.php
+docker run --rm --network "$network" -v "$fixture/cert.pem:/fixture/cert.pem:ro" -v "$assets:/srv/simplemappr/mapserver/maps:ro" --entrypoint php simplemappr-runtime:local -d curl.cainfo=/fixture/cert.pem /srv/simplemappr/Tests/fixtures/import-http/check.php

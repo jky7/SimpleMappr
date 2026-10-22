@@ -1,6 +1,6 @@
 # Run SimpleMappr with Docker
 
-This branch packages PHP 8.4 and MapServer 8.4 with the SWIG MapScript binding in Docker. The guest editor renders points, regions, WKT drawings, labels and graticules through the modern binding. PNG, SVG and TIFF downloads work. Private saved maps use a deployment-owned local login and MariaDB. Sharing uses explicit revocable links.
+This branch packages PHP 8.4 and MapServer 8.4 with the SWIG MapScript binding in Docker. The guest editor renders points, regions, WKT drawings, labels and graticules through the modern binding. PNG, transparent PNG, JPEG, SVG, TIFF, KML, DOCX and PPTX downloads work. Private saved maps use a deployment-owned local login and MariaDB. Sharing uses explicit revocable links.
 
 ## Start Docker
 
@@ -29,7 +29,7 @@ docker compose run --rm assets-init
 
 Only `assets-init` writes the `map-data` volume. The app mounts that volume read-only. Native outputs use the separate `runtime-output` volume. Repeated initialization verifies existing files without rewriting them. Missing or corrupt components produce the exact filename and a failing exit code.
 
-The profile contains land, lakes, country map units, province polygons, and province boundaries. Relief, roads, rivers, ecology datasets, and other optional layers are absent. This profile does not claim those layers work.
+The minimal profile contains land, lakes, country map units, province polygons, and province boundaries. Optional extended-vector and Gray Earth relief profiles add verified roads, rivers, oceans, labels and shaded relief. See [private deployment and recovery](docs/private-deployment.md) for installation, backup/restore, owner rotation and release checks.
 
 ## Rebuild the runtime
 
@@ -55,7 +55,7 @@ Requests keep the original map document fields. Viewports additionally carry `or
 
 The modern PHPUnit suite covers coordinate parsing, all templates, real HTTP previews and downloads, all eleven projections, custom origin refreshes, request limits and basic API points. It also runs the original coordinate conversion cases with explicit floating point tolerances. The archived database, binary comparison, router and Selenium suites remain in `Tests/`. Their old global database/bootstrap assumptions require migration with persistence and later browser work. The modern suite does not claim those suites pass.
 
-Old service/import endpoints and Office exports still require the next workflow verification phase. Optional raster and specialist datasets are not installed. Dependency deprecations are logged rather than inserted into JSON or binary output.
+Imports, Office exports, WMS/WFS and browser workflows have modern contract checks. Specialist ecology and unverified raster datasets remain unavailable. Dependency deprecations are logged rather than inserted into JSON or binary output.
 
 ## Private maps and shared links
 

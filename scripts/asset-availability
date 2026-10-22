@@ -1,0 +1,5 @@
+#!/usr/bin/env php
+<?php
+require dirname(__DIR__).'/src/AssetProfiles.php';
+try { echo json_encode(SimpleMappr\AssetProfiles::availability(),JSON_PRETTY_PRINT|JSON_UNESCAPED_SLASHES|JSON_THROW_ON_ERROR)."\n"; }
+catch(Throwable $error){fwrite(STDERR,$error->getMessage()."\n");exit(1);}

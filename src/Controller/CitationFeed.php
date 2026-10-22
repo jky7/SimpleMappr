@@ -60,7 +60,7 @@ final class CitationFeed
             if ($citation->created < time()-604800 || $citation->created > time()) { continue; }
             $url = $citation->link;
             if ($citation->doi !== '' && preg_match('~^10\.[0-9]{4,9}/[^\s<>]+$~D',$citation->doi)) { $url = 'https://doi.org/'.str_replace('%2F','/',rawurlencode($citation->doi)); }
-            if (!CitationDocument::validLink($url)) { continue; }
+            if (!CitationDocument::validLink($url,1024)) { continue; }
             $this->items[] = ['id'=>(int)$citation->id,'text'=>$citation->reference,'url'=>$url,'created'=>(int)$citation->created];
         }
         return $this;

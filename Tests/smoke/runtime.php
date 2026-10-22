@@ -18,7 +18,7 @@ function nativeRuntimeReport(): array
         'sapi' => PHP_SAPI,
         'mapserver' => msGetVersion(),
         'binding' => 'SWIG MapScript',
-        'assetProfile' => 'minimal-vector-v1',
+        'assetProfile' => getenv('SIMPLEMAPPR_ASSET_PROFILE') ?: 'minimal-vector-v1',
         'nativePng' => true,
     ];
 }

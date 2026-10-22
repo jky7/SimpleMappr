@@ -17,3 +17,8 @@ backups
 
 /node_modules/
 /public/build/
+
+/.asset-cache/
+/build/
+
+**/__pycache__/

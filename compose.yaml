@@ -16,7 +16,7 @@ services:
       retries: 20
     restart: unless-stopped
   database-init:
-    image: simplemappr-runtime:local
+    image: ${SIMPLEMAPPR_IMAGE:-simplemappr-runtime:local}
     build: .
     depends_on:
       db:
@@ -24,6 +24,9 @@ services:
       assets-init:
         condition: service_completed_successfully
     environment: &application-environment
+      SIMPLEMAPPR_ENV: ${SIMPLEMAPPR_ENV:-production}
+      SIMPLEMAPPR_URL: ${SIMPLEMAPPR_URL:-}
+      SIMPLEMAPPR_ASSET_PROFILE: ${SIMPLEMAPPR_ASSET_PROFILE:-minimal-vector-v1}
       SIMPLEMAPPR_DB_HOST: db
       SIMPLEMAPPR_DB_NAME: simplemappr
       SIMPLEMAPPR_DB_USER: simplemappr
@@ -35,14 +38,17 @@ services:
       - map-data:/srv/simplemappr/mapserver/maps:ro
     restart: "no"
   assets-init:
-    image: simplemappr-runtime:local
+    image: ${SIMPLEMAPPR_IMAGE:-simplemappr-runtime:local}
     build: .
     command: ["scripts/bootstrap-assets"]
+    environment:
+      SIMPLEMAPPR_ASSET_PROFILE: ${SIMPLEMAPPR_ASSET_PROFILE:-minimal-vector-v1}
     volumes:
       - map-data:/srv/simplemappr/mapserver/maps
+      - ${SIMPLEMAPPR_ASSET_CACHE:-asset-cache}:/var/cache/simplemappr-assets:ro
     restart: "no"
   app:
-    image: simplemappr-runtime:local
+    image: ${SIMPLEMAPPR_IMAGE:-simplemappr-runtime:local}
     build: .
     depends_on:
       assets-init:
@@ -68,6 +74,7 @@ services:
       start_period: 10s
     restart: unless-stopped
 volumes:
+  asset-cache:
   map-data:
   runtime-output:
   app-tmp:

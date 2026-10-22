@@ -224,7 +224,7 @@ abstract class Mappr
 
     public static function getShapefileConfigPath()
     {
-        return is_file(ROOT.'/config/shapefiles.yml') ? ROOT.'/config/shapefiles.yml' : self::$shapefile_config;
+        return is_file(ROOT.'/config/shapefiles.yml') ? ROOT.'/config/shapefiles.yml' : \SimpleMappr\AssetProfiles::configuration();
     }
 
     /**
@@ -1283,14 +1283,14 @@ abstract class Mappr
                 $layer->metadata->set("wfs_typename", $name);
                 $layer->metadata->set("wfs_srs", $srs_projections);
                 $layer->metadata->set("wfs_extent", "-180 -90 180 90");
-                $layer->metadata->set("wfs_encoding", $this->shapes[$name]['encoding']);
+                if (isset($this->shapes[$name]['encoding'])) { $layer->metadata->set("wfs_encoding", $this->shapes[$name]['encoding']); }
                 $layer->metadata->set("wms_title", $name);
                 $layer->metadata->set("wms_srs", $srs_projections);
                 $layer->metadata->set("gml_include_items", "all");
                 $layer->metadata->set("gml_geometries", "geometry");
                 $layer->type = $this->shapes[$name]['type'];
                 $layer->status = MS_ON;
-                $layer->setConnectionType(MS_SHAPEFILE, '');
+                if ($layer->type !== MS_LAYER_RASTER) { $layer->setConnectionType(MS_SHAPEFILE, ''); }
                 $layer->data = $this->shapes[$name]['path'];
                 $layer->setProjection(self::getProjection($this->default_projection));
                 $layer->template = "template.html";

@@ -1,0 +1,45 @@
+#!/usr/bin/env python3
+"""Create new private configuration and credential files for disposable tests."""
+import argparse
+import json
+import os
+from pathlib import Path
+import secrets
+import sys
+from release_bundle import ROOT, PROFILES, OperationError, fail, hash_password, safe_path, write_new, valid_username
+
+
+def main():
+    os.umask(0o077)
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('credentials', type=Path, nargs='?')
+    parser.add_argument('--credentials-file', type=Path)
+    parser.add_argument('--env-file', type=Path, required=True)
+    parser.add_argument('--image', default='simplemappr-runtime:local')
+    parser.add_argument('--username', default='release-fixture')
+    parser.add_argument('--asset-profile', choices=PROFILES, default=PROFILES[0])
+    args = parser.parse_args()
+    if bool(args.credentials) == bool(args.credentials_file):
+        fail('Specify one new private credential file.')
+    config = safe_path(args.env_file)
+    credentials = safe_path(args.credentials or args.credentials_file)
+    if config == ROOT / '.env' or config == credentials or config.exists() or credentials.exists():
+        fail('CI setup requires distinct new files outside the active .env.')
+    if not valid_username(args.username):
+        fail('Invalid fixture username.')
+    password = secrets.token_urlsafe(32)
+    values = {'SIMPLEMAPPR_OWNER_USERNAME': args.username, 'SIMPLEMAPPR_OWNER_PASSWORD_HASH': hash_password(password, args.image),
+              'SIMPLEMAPPR_DB_PASSWORD': secrets.token_urlsafe(32), 'SIMPLEMAPPR_DB_ROOT_PASSWORD': secrets.token_urlsafe(32),
+              'SIMPLEMAPPR_IMAGE': args.image, 'SIMPLEMAPPR_ASSET_PROFILE': args.asset_profile}
+    write_new(config, ''.join(f"{key}='{value}'\n" for key, value in values.items()).encode())
+    write_new(credentials, (json.dumps({'username': args.username, 'password': password}) + '\n').encode())
+    print('Disposable private test configuration created.')
+
+
+if __name__ == '__main__':
+    try:
+        main()
+    except (OperationError, OSError):
+        error = sys.exc_info()[1]
+        print(str(error) if isinstance(error, OperationError) else 'Cannot create the private test files.', file=sys.stderr)
+        sys.exit(1)

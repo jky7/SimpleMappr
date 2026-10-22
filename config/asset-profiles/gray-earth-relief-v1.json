@@ -1,0 +1,47 @@
+{
+  "schemaVersion": 1,
+  "profile": "gray-earth-relief-v1",
+  "assets": [
+    {
+      "basename": "GRAY_LR_SR_OB_DR",
+      "kind": "raster",
+      "url": "https://naciscdn.org/naturalearth/10m/raster/GRAY_LR_SR_OB_DR.zip",
+      "archive": "GRAY_LR_SR_OB_DR.zip",
+      "archiveBytes": 55890282,
+      "archiveSha256": "58e063b8fa04101c6df743cde60a395785a7658b1d5318d3c7f71c9ed2d5b021",
+      "version": "2.0.0",
+      "extractedBytes": 131359549,
+      "components": [
+        {
+          "name": "GRAY_LR_SR_OB_DR.README.html",
+          "bytes": 30768,
+          "sha256": "d04a9d4677fa9dacd8376f35a0bfd640c993ac41be4280a76bd18d276e6c4986"
+        },
+        {
+          "name": "GRAY_LR_SR_OB_DR.VERSION.txt",
+          "bytes": 5,
+          "sha256": "f22abd6773ab232869321ad4b1e47ac0c908febf4f3a2bd10c8066140f741261"
+        },
+        {
+          "name": "GRAY_LR_SR_OB_DR.prj",
+          "bytes": 147,
+          "sha256": "3259f0e55290a82b1350646f604e8a7ee1e2136c0320a40fad838ab40819fff8"
+        },
+        {
+          "name": "GRAY_LR_SR_OB_DR.tfw",
+          "bytes": 167,
+          "sha256": "8831aca96d1841e26aac6b198a975d50c5bc3989d09a462b3d361fd0bbc28643"
+        },
+        {
+          "name": "GRAY_LR_SR_OB_DR.tif",
+          "bytes": 131328462,
+          "sha256": "a370e146ffb312514a676e47b80b88c0a13f74017864c44e60f011e32a635817"
+        }
+      ],
+      "destination": "GRAY_LR_SR_OB_DR",
+      "license": "Public domain",
+      "licenseUrl": "https://www.naturalearthdata.com/about/terms-of-use/",
+      "verifiedOn": "2026-10-20"
+    }
+  ]
+}

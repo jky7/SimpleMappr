@@ -39,10 +39,10 @@ final class CitationDocument
         return $values;
     }
 
-    public static function validLink(string $value): bool
+    public static function validLink(string $value,int $limit = 255): bool
     {
         $url = parse_url($value);
-        return mb_strlen($value) <= 255 && !preg_match('/[\s\\\\]/', $value) && filter_var($value, FILTER_VALIDATE_URL) !== false
+        return mb_strlen($value) <= $limit && !preg_match('/[\s\\\\]/', $value) && filter_var($value, FILTER_VALIDATE_URL) !== false
             && is_array($url) && in_array(strtolower($url['scheme'] ?? ''), ['http','https'], true)
             && !isset($url['user']) && !isset($url['pass']) && isset($url['host']);
     }
