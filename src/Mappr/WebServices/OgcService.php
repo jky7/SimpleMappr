@@ -16,6 +16,8 @@ abstract class OgcService extends Mappr
     private string $postXml = '';
     private ?string $inputError = null;
     private int $errorStatus = 400;
+    private ?string $detailedServiceLayers = null;
+    private string $detailedServiceStyles = '';
 
     public function __construct(array $layers = [])
     {
@@ -171,6 +173,7 @@ abstract class OgcService extends Mappr
     private function prepareDetailedServiceRelief(): void
     {
         if (str_contains(strtolower($this->parameters['FORMAT'] ?? ''),'svg')) { return; }
+        foreach ($this->responseLayers() as $name) { if (!isset($this->selectedLayers[$name])) { return; } }
         $modern=version_compare($this->parameters['VERSION'],'1.3.0','>=');
         $crs=strtoupper($this->parameters[$modern?'CRS':'SRS'] ?? '');
         if (!in_array($crs,explode(' ',self::SERVICE_SRS),true)) { return; }
@@ -184,6 +187,25 @@ abstract class OgcService extends Mappr
         $viewport->setExtent(...$bounds);$extent=$viewport->extent;
         $bounds=[$extent->minx,$extent->miny,$extent->maxx,$extent->maxy];
         $this->addDetailedRelief($this->responseLayers(),$bounds,$crs,(int)$this->parameters['WIDTH'],(int)$this->parameters['HEIGHT']);
+        if (!$this->detailedReliefUsed) { return; }
+        $this->map_obj->getLayerByName('internal_detailed_relief')->status=MS_ON;
+        foreach (['internal_detailed_relief','internal_detailed_relief_land'] as $name) { $this->map_obj->getLayerByName($name)->metadata->set('ows_enable_request','GetMap'); }
+        $layers=[];$styles=[];$requestedStyles=explode(',',$this->parameters['STYLES']);
+        foreach (explode(',',$this->parameters['LAYERS']) as $index=>$requested) {
+            $requested=trim($requested);$style=$requestedStyles[$index] ?? '';$names=[$requested];
+            if (strcasecmp($requested,$this->map_obj->name)===0) {
+                $names=[];
+                for ($i=0;$i<$this->map_obj->numlayers;$i++) {
+                    $name=$this->map_obj->getLayer($i)->name;
+                    if (isset($this->selectedLayers[$name])) { $names[]=$name; }
+                }
+            }
+            foreach ($names as $name) {
+                $layers[]=$name;$styles[]=$style;
+                if (strcasecmp($name,'reliefgrey')===0) { $layers[]='internal_detailed_relief';$styles[]=''; }
+            }
+        }
+        $this->detailedServiceLayers=implode(',',$layers);$this->detailedServiceStyles=implode(',',$styles);
     }
 
     public function createOutput()
@@ -191,6 +213,7 @@ abstract class OgcService extends Mappr
         if ($this->inputError !== null) { return $this->exception($this->inputError); }
         $request = new \OWSRequest();
         foreach ($this->parameters as $name=>$value) { $request->setParameter($name, $value); }
+        if ($this->detailedServiceLayers!==null) { $request->setParameter('LAYERS',$this->detailedServiceLayers);$request->setParameter('STYLES',$this->detailedServiceStyles); }
         if ($this->postXml !== '') {
             $request->type = MS_POST_REQUEST;
             $request->contenttype = 'text/xml';

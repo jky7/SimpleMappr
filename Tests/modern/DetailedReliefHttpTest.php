@@ -83,6 +83,8 @@ final class DetailedReliefHttpTest extends TestCase
         }
         [$status,$body]=$this->request('/wms?REQUEST=GetMap&SERVICE=WMS&VERSION=1.1.1&LAYERS=internal_detailed_relief&SRS=EPSG:4326&BBOX=6.5,45.8,6.9,46&WIDTH=600&HEIGHT=300&FORMAT=image/png');
         self::assertSame(400,$status);self::assertStringContainsString('LayerNotDefined',$body);
+        [$status,$body]=$this->request('/wms?REQUEST=GetMap&SERVICE=WMS&VERSION=1.1.1&LAYERS=internal_detailed_relief,reliefgrey&SRS=EPSG:4326&BBOX=6.5,45.8,6.9,46&WIDTH=600&HEIGHT=300&FORMAT=image/png');
+        self::assertSame(400,$status);self::assertStringContainsString('LayerNotDefined',$body);
     }
 
     private function assertDetailedPixels(string $bytes,int $width,int $height): void
