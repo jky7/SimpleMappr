@@ -286,3 +286,18 @@ test('fill queries the rendered viewport when form projection or rotation has ch
  e.$('#rendered_origin').val('0');e.$.ajax=options=>(request=options,{});e.p.aQuery({data:e.p});
  assert.equal(request.data.projection,'epsg:4326');assert.equal(request.data.projection_map,'epsg:4326');assert.equal(request.data.origin,'0');assert.equal(request.data.origin_map,'0');assert.equal(request.data.rotation,'90');
 });
+
+test('failed new branches and ocean clicks retain the available Redo destination',t=>{
+ const e=viewportEditor(t),a='-90,-60,-30,10',b='-80,-60,-20,10';
+ e.p.showMap();e.render(a);e.p.mapPan('right');e.render(b);e.p.mapUndo();e.render(a);
+ e.p.mapPan('up');e.requests.at(-1).error({},'error');
+ let count=e.requests.length;e.p.mapRedo();assert.equal(e.requests.length,count+1);assert.equal(e.request().get('bbox_map'),b);e.render(b);
+ e.p.mapUndo();e.render(a);e.p.mapPan('up');e.respond('-90,-50,-30,20');e.$('#mapOutputImage').trigger('error');
+ count=e.requests.length;e.p.mapRedo();assert.equal(e.requests.length,count+1);e.render(b);
+ e.p.mapUndo();e.render(a);e.p.vars.fillColor={r:150,g:150,b:150};e.p.aQuery({data:e.p});e.requests.at(-1).success([]);
+ count=e.requests.length;e.p.mapRedo();assert.equal(e.requests.length,count+1);assert.equal(e.request().get('bbox_map'),b);
+});
+test('Ctrl+X activates crop when the keyboard event reaches the preview',t=>{
+ const e=finish(t,editor());let cropped=0;e.p.mapCrop=()=>{cropped++;};e.p.bindHotkeys();
+ e.$('#mapOutput').trigger(e.$.Event('keydown',{key:'x',ctrlKey:true}));assert.equal(cropped,1);
+});

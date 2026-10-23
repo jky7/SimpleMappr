@@ -418,7 +418,6 @@ var SimpleMappr = (function($, window, document) {
 
     resetAndBuild: function() {
       this.resetJbbox();
-      this.destroyRedo();
       this.showMap();
     },
 
@@ -455,7 +454,6 @@ var SimpleMappr = (function($, window, document) {
       });
       this.setRotation();
       $('#projection')[0].selectedIndex = 0;
-      this.destroyRedo();
       this.showMap();
     },
 
@@ -493,7 +491,6 @@ var SimpleMappr = (function($, window, document) {
           zoom = $('#zoom_in');
           this.resetJbbox();
           zoom.val(1);
-          this.destroyRedo();
           this.showMap();
           zoom.val('');
         break;
@@ -502,7 +499,6 @@ var SimpleMappr = (function($, window, document) {
           zoom = $('#zoom_out');
           this.resetJbbox();
           zoom.val(1);
-          this.destroyRedo();
           this.showMap();
           zoom.val('');
         break;
@@ -654,7 +650,6 @@ var SimpleMappr = (function($, window, document) {
         e.stopPropagation();
       } else {
         this.resetJbbox();
-        this.destroyRedo();
         this.showMap();
 
       }
@@ -712,7 +707,6 @@ var SimpleMappr = (function($, window, document) {
           self.unusedVariables(e);
           if(!self.missingFieldSetTitle()) {
             $('#border_thickness').val(ui.value);
-            self.destroyRedo();
             self.showMap();
 
           } else {
@@ -946,7 +940,6 @@ var SimpleMappr = (function($, window, document) {
 
     aZoom: function(event) {
       var self = event.data;
-      self.destroyRedo();
       self.showMap();
       $(document).unbind("mouseup", self.aZoom);
     },
@@ -959,7 +952,6 @@ var SimpleMappr = (function($, window, document) {
       y   = (e.pageY - pos.top);
 
       $('#bbox_rubberband').val(x+','+y+','+x+','+y);
-      this.destroyRedo();
       this.showMap();
     },
 
@@ -982,7 +974,6 @@ var SimpleMappr = (function($, window, document) {
       $(document).unbind("mouseup", self.aQuery);
 
       self.destroyJcrop();
-      self.destroyRedo();
       self.hideErrorMessage();
       self.showSpinner();
 
@@ -1832,7 +1823,6 @@ var SimpleMappr = (function($, window, document) {
       $('#map-points, #map-regions, #map-wkt').find('button.submitForm').on('click', function(e) {
         e.preventDefault();
         if(!self.missingFieldSetTitle()) {
-          self.destroyRedo();
           self.showMap();
           self.tabSelector(0);
         }
@@ -2264,7 +2254,6 @@ var SimpleMappr = (function($, window, document) {
     performRotation: function(element) {
       this.setRotation($(element).attr("data-rotate"));
       this.resetJbbox();
-      this.destroyRedo();
       this.showMap();
 
     },
@@ -2426,7 +2415,7 @@ var SimpleMappr = (function($, window, document) {
             try {
               var document = response.document || Object.assign(self.readDocument(), {coords: response.coords || [], wkt: response.wkt || [], regions: response.regions || []});
               document = window.SimpleMapprDocument.normalize(document, self.settings.maxTextareaCount);
-              self.loadInputs({map: document}); self.destroyRedo(); self.showMap({map: document}); self.tabSelector(0);
+              self.loadInputs({map: document}); self.showMap({map: document}); self.tabSelector(0);
               $('#import-status').text(response.bad_drawings && response.bad_drawings.length ? $('#mapper-import-warning').text() + ' ' + response.bad_drawings.length : $('#mapper-import-success').text());
             } catch (error) { self.hideSpinner(); self.showUnsupportedFile(); }
           })
@@ -2547,7 +2536,7 @@ var SimpleMappr = (function($, window, document) {
       var self = this;
       $('#form-mapper').on('submit.simplemappr', function(event) {
         event.preventDefault();
-        if (!self.missingFieldSetTitle()) { self.destroyRedo(); self.showMap(); self.tabSelector(0); }
+        if (!self.missingFieldSetTitle()) { self.showMap(); self.tabSelector(0); }
       });
     },
 
