@@ -35,16 +35,18 @@ This pass exercised the editor in Chromium against an isolated Docker deployment
 | Keyboard / narrow layout | Tab to textarea, Enter newline, tab arrows/Home; map shortcuts; actual 375×812 viewport and export dialog | Input and navigation checks pass; no page-wide overflow in checked editor state |
 | Sign out / draft ownership | Owner draft, sign out, guest view, sign in again | Guest excludes owner draft; owner draft returns |
 
-## Remaining finding
+## Review follow-up — 2026-10-23
 
-An independent source review identified a P2 error-recovery issue: if Undo or Redo rendering fails, the inputs and panel width can stay at the requested destination while the visible image stays at the previous view. Retryability tests pass, but do not cover this mismatch. Restoring the previous form on failure remains follow-up work; this audit does not claim that path is fixed.
+The failed-history P2 is fixed. Undo and Redo apply destination inputs and panel width only after the destination image loads. Request, image and malformed-response failures retain the prior draft, viewport, preview and history; retries remain available. A superseded image cannot become the rollback destination. Live proxy fault checks confirmed failed Undo request recovery and failed Redo image recovery.
+
+The fill request also reads its origin from the existing `origin_map` field; `rendered_origin` is response metadata and has no corresponding page input.
 
 ## Verification and limits
 
-`npm test` passes 53 tests. The image build also runs the deterministic asset check. The modern PHP suite passes 126 tests and 1,335 assertions, with 12 existing dependency deprecations (11 GeoPHP implicit-nullable notices and one ForceUTF8 `utf8_decode()` notice). Native MapScript and restricted HTTP smoke checks pass.
+`npm test` passes 60 tests. The image build also runs the deterministic asset check. The modern PHP suite passes 126 tests and 1,335 assertions, with 12 existing dependency deprecations (11 GeoPHP implicit-nullable notices and one ForceUTF8 `utf8_decode()` notice). Native MapScript and restricted HTTP smoke checks pass.
 
 Ctrl+D and Ctrl+S open their dialogs. Arrows, Ctrl+Z/Y/R/B/E/N/L, zoom selection and zoom out were exercised. **Live Ctrl+X remains unverified:** the browser automation does not deliver it even to a minimal keyboard-event page. The application handler passes its Node event test and the crop toolbar works.
 
-This is not an exhaustive combination test. Optional dataset profiles, Safari, real touch devices, external feedback delivery and social-provider login were not exercised in this pass. Native selection tests cover province clicks; the direct browser click receipt is for a country. Failed-response scenarios use the Node harness rather than an injected failure in the live browser.
+This is not an exhaustive combination test. Optional dataset profiles, Safari, real touch devices, external feedback delivery and social-provider login were not exercised in this pass. Native selection tests cover province clicks; the direct browser click receipt is for a country. Six Node failure scenarios check draft, source viewport, width, image and history retention. The live browser pass additionally injected a failed Undo request and a failed Redo preview image.
 
 The local receipts and screenshots are under `/home/jky/.codex/docs/simplemappr-controls/`; credentials and disposable Compose configuration stay in its protected `private/` folder. The audit did not change the operator deployment or publish user maps.

@@ -55,6 +55,7 @@ var SimpleMappr = (function($, window, document) {
       zoom               : true,
       renderRequest      : null,
       renderSequence     : 0,
+      renderedMap        : null,
       fillColor          : "",
       jCropType          : "zoom",
       cropUpdated        : false,
@@ -564,8 +565,7 @@ var SimpleMappr = (function($, window, document) {
           curr_key       = "",
           curr_data      = {},
           prev_key       = "",
-          prev_data      = {},
-          prev_data_prep = {};
+          prev_data      = {};
 
       if(index.length < 2) { return; }
 
@@ -573,9 +573,6 @@ var SimpleMappr = (function($, window, document) {
       curr_data      = window.SimpleMapprStorage.get(curr_key);
       prev_key       = index[index.length-2];
       prev_data      = window.SimpleMapprStorage.get(prev_key);
-      prev_data_prep = this.prepareInputs(prev_data);
-
-      this.loadInputs(prev_data_prep);
 
       function commitHistory() {
         window.SimpleMapprStorage.deleteKey(curr_key);
@@ -585,31 +582,19 @@ var SimpleMappr = (function($, window, document) {
         self.toggleUndo(index.length > 2);
       }
 
-      if(prev_data.width !== curr_data.width) {
-        this.restorePreviewWidth(prev_data.width);
-      }
-      this.showSpinner();
-      this.postData($.param(prev_data), null, commitHistory);
+      this.renderHistory(prev_data, commitHistory);
     },
 
     mapRedo: function() {
       var self           = this,
           undo_index     = this.storageType("undo"),
           undo_key       = "",
-          undo_data      = {},
-          undo_data_prep = {},
-          do_index       = this.storageType("do"),
-          do_key         = "",
-          do_data        = {};
+          undo_data      = {};
 
       if(undo_index.length === 0) { return; }
 
       undo_key       = undo_index.shift();
       undo_data      = window.SimpleMapprStorage.get(undo_key);
-      do_key         = do_index[do_index.length-1];
-      do_data        = window.SimpleMapprStorage.get(do_key);
-      undo_data_prep = this.prepareInputs(undo_data);
-      this.loadInputs(undo_data_prep);
 
       function commitHistory() {
         window.SimpleMapprStorage.deleteKey(undo_key);
@@ -618,11 +603,28 @@ var SimpleMappr = (function($, window, document) {
         self.toggleRedo(undo_index.length > 0);
       }
 
-      if(undo_data.width !== do_data.width) {
-        this.restorePreviewWidth(undo_data.width);
+      this.renderHistory(undo_data, commitHistory);
+    },
+
+    renderHistory: function(document, commitHistory) {
+      var self = this, image = self.vars.mapOutputImage, previousDocument = self.readDocument(),
+          previousView = self.vars.renderedMap;
+      if (!previousView) {
+        previousView = {size: [image.width(), image.height()], mapOutputImage: image.attr('src'), rendered_origin: previousDocument.origin_map};
+        ['rendered_bbox', 'rendered_rotation', 'rendered_projection', 'legend_url', 'scalebar_url', 'bad_points', 'bad_drawings'].forEach(function(name) {
+          previousView[name] = $('#' + name).val();
+        });
       }
-      this.showSpinner();
-      this.postData($.param(undo_data), null, commitHistory);
+      self.showSpinner();
+      self.postData($.param(document), {map: document}, function(renderedDocument) {
+        self.loadInputs(self.prepareInputs(renderedDocument));
+        self.restorePreviewWidth(renderedDocument.width);
+        commitHistory();
+      }, function() {
+        self.resetFormValues(previousView);
+        self.drawMap(previousView, {map: previousDocument});
+        self.drawLegend(); self.drawScalebar(); self.showBadPoints(); self.showBadDrawings();
+      });
     },
 
     bindHotkeys: function() {
@@ -963,8 +965,8 @@ var SimpleMappr = (function($, window, document) {
             bbox_query     : $('#bbox_query').val(),
             projection     : $('#rendered_projection').val(),
             projection_map : $('#rendered_projection').val(),
-            origin         : $('#rendered_origin').val(),
-            origin_map     : $('#rendered_origin').val(),
+            origin         : $('#origin_map').val(),
+            origin_map     : $('#origin_map').val(),
             rotation       : $('#rendered_rotation').val(),
             qlayer         : ($('#stateprovinces').prop('checked')) ? 'stateprovinces_polygon' : 'countries',
             width          : self.vars.mapOutputImage.width(),
@@ -1977,7 +1979,7 @@ var SimpleMappr = (function($, window, document) {
       });
     },
 
-    postData: function(formData, load_data, onRendered) {
+    postData: function(formData, load_data, onRendered, onFailed) {
       var self = this, sequence = ++self.vars.renderSequence;
       var submittedDocument = window.SimpleMapprDocument.fromEntries(
         Array.from(new window.URLSearchParams(formData), function(entry) { return {name: entry[0], value: entry[1]}; }),
@@ -1990,6 +1992,7 @@ var SimpleMappr = (function($, window, document) {
         success: function(data) {
           if (sequence !== self.vars.renderSequence) { return; }
           if (!data || !Array.isArray(data.size) || !data.mapOutputImage) {
+            if (onFailed) { onFailed(); }
             self.hideSpinner(); self.showErrorMessage($('#mapper-loading-error-message').text()); return;
           }
           self.resetFormValues(data);
@@ -2002,13 +2005,15 @@ var SimpleMappr = (function($, window, document) {
             bbox_rubberband: ''
           });
           self.drawMap(data, load_data, function() {
+            self.vars.renderedMap = data;
             if (onRendered) { onRendered(renderedDocument); }
             window.SimpleMapprStorage.current(self.readDocument());
-          });
+          }, onFailed);
           self.drawLegend(); self.drawScalebar(); self.showBadPoints(); self.showBadDrawings(); self.addBadRecordsViewer();
         },
         error: function(xhr, status) {
           if (status === 'abort' || sequence !== self.vars.renderSequence) { return; }
+          if (onFailed) { onFailed(); }
           self.hideSpinner();
           self.showErrorMessage((xhr.responseJSON && xhr.responseJSON.error) || $('#mapper-loading-error-message').text());
         }
@@ -2027,7 +2032,7 @@ var SimpleMappr = (function($, window, document) {
       $('#pan').val('');
     },
 
-    drawMap: function(data, load_data, onRendered) {
+    drawMap: function(data, load_data, onRendered, onFailed) {
       var self = this, sequence = self.vars.renderSequence;
       this.vars.mapOutputImage.off('.simplemapprRender')
         .attr('width', data.size[0]).attr('height', data.size[1])
@@ -2039,6 +2044,7 @@ var SimpleMappr = (function($, window, document) {
         })
         .one('error.simplemapprRender', function() {
           if (sequence !== self.vars.renderSequence) { return; }
+          if (onFailed) { onFailed(); }
           self.hideSpinner(); self.showErrorMessage($('#mapper-loading-error-message').text());
         }).attr('src', data.mapOutputImage);
     },

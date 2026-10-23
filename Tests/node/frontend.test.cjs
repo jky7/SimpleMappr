@@ -74,7 +74,7 @@ test('Undo and Redo restore expanded preview width without losing their destinat
  Object.defineProperty(e.w.document.documentElement,'clientWidth',{value:1400});
  e.$('body').append('<div id="mapToolsCollapse"><a href="#">Toggle settings</a></div><div id="mapTools"></div><div id="map"></div>');e.p.bindPanelToggle();
  e.p.showMap();e.render(bbox);e.$('#mapToolsCollapse a').trigger('click');assert.equal(e.request().get('width'),'1372');e.render(bbox);
- e.p.mapUndo();assert.equal(e.request().get('width'),'900');e.render(bbox);
+ e.p.mapUndo();assert.equal(e.request().get('width'),'900');assert.equal(e.$('#mapToolsCollapse').hasClass('mapTools-collapsed'),true);e.render(bbox);assert.equal(e.$('#mapToolsCollapse').hasClass('mapTools-collapsed'),false);
  const count=e.requests.length;e.p.mapRedo();assert.equal(e.requests.length,count+1);assert.equal(e.request().get('width'),'1372');e.render(bbox);
  e.p.mapUndo();assert.equal(e.request().get('width'),'900');
 });
@@ -283,7 +283,7 @@ test('Help loads its country-code table without an obsolete waypoint plugin',t=>
 test('fill queries the rendered viewport when form projection or rotation has changed',t=>{
  const e=finish(t,editor());let request;e.p.vars.fillColor={r:150,g:150,b:150};
  e.$('#form-mapper').append('<input id="rendered_bbox" value="-180,-90,180,90"><input id="rendered_projection" value="epsg:4326"><input id="rendered_rotation" value="90"><input id="projection" value="esri:102009"><input id="projection_map" value="esri:102009"><input id="origin" value="-96"><input id="rotation" value="0">');
- e.$('#rendered_origin').val('0');e.$.ajax=options=>(request=options,{});e.p.aQuery({data:e.p});
+ e.$('#origin_map').val('0');e.$('#rendered_origin').remove();e.$.ajax=options=>(request=options,{});e.p.aQuery({data:e.p});
  assert.equal(request.data.projection,'epsg:4326');assert.equal(request.data.projection_map,'epsg:4326');assert.equal(request.data.origin,'0');assert.equal(request.data.origin_map,'0');assert.equal(request.data.rotation,'90');
 });
 
@@ -300,4 +300,26 @@ test('failed new branches and ocean clicks retain the available Redo destination
 test('Ctrl+X activates crop when the keyboard event reaches the preview',t=>{
  const e=finish(t,editor());let cropped=0;e.p.mapCrop=()=>{cropped++;};e.p.bindHotkeys();
  e.$('#mapOutput').trigger(e.$.Event('keydown',{key:'x',ctrlKey:true}));assert.equal(cropped,1);
+});
+for(const action of ['mapUndo','mapRedo'])for(const failure of ['request','image','malformed'])test(`${action} ${failure} failure retains the displayed map, draft and panel width`,t=>{
+ const e=viewportEditor(t),a='-90,-60,-30,10',b='-80,-60,-20,10';
+ e.$('body').append('<div id="mapToolsCollapse"><a href="#">Toggle settings</a></div><div id="mapTools"></div><div id="map"></div>');
+ e.$('#form-mapper').append('<textarea name="coords[0][data]">0,0</textarea>');
+ e.p.showMap();e.render(a);e.$('#width').val('1372');e.p.restorePreviewWidth(1372);e.p.mapPan('right');e.render(b,'esri:102015',-55);
+ if(action==='mapRedo'){e.p.mapUndo();e.render(a);}
+ e.$('[name="coords[0][data]"]').val('draft kept');
+ const doc=JSON.stringify(e.p.readDocument()),image=e.$('#mapOutputImage').attr('src'),width=e.$('#map').width(),history=JSON.stringify(e.w.SimpleMapprStorage.index());
+ e.p[action]();
+ if(failure==='request')e.requests.at(-1).error({},'error');
+ else if(failure==='malformed')e.requests.at(-1).success({});
+ else {e.respond('failed viewport','epsg:4326',false);e.$('#mapOutputImage').trigger('error');}
+ assert.equal(JSON.stringify(e.p.readDocument()),doc);assert.equal(e.$('#map').width(),width);assert.equal(e.$('#mapOutputImage').attr('src'),image);assert.equal(JSON.stringify(e.w.SimpleMapprStorage.index()),history);
+ e.p.mapPan('left');assert.equal(e.request().get('bbox_map'),action==='mapUndo'?b:a);
+});
+
+test('a superseded history image cannot replace the rollback view',t=>{
+ const e=viewportEditor(t),a='-90,-60,-30,10',b='-80,-60,-20,10';
+ e.p.showMap();e.render(a);e.p.mapPan('right');e.render(b);const image=e.$('#mapOutputImage').attr('src');
+ e.p.mapUndo();e.respond(a);e.p.mapUndo();e.requests.at(-1).error({},'error');
+ assert.equal(e.$('#mapOutputImage').attr('src'),image);assert.equal(e.$('#bbox_map').val(),b);
 });
