@@ -27,7 +27,7 @@ try {
       stage = 'click-provider';
       await page.getByRole('button', {name: `Continue with ${provider}`, exact: true}).click();
       stage = 'return-to-editor';
-      await page.waitForURL(origin + '/');
+      await page.waitForURL(url => url.origin === origin && url.pathname === '/');
       stage = 'signed-in-control';
       await expect(page.getByRole('button', {name: 'Sign Out', exact: true})).toBeVisible();
       stage = 'open-my-maps';
