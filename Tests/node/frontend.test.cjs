@@ -271,3 +271,11 @@ test('Tab accepts the active country autocomplete suggestion without an error',t
  field.trigger(e.$.Event('keydown',{key:'Tab',keyCode:9,which:9}));
  assert.equal(field.val(),'Canada, ');
 });
+test('Help loads its country-code table without an obsolete waypoint plugin',t=>{
+ const e=finish(t,editor()),loaded=[];
+ e.$('body').append('<div id="map-help"><h3>Tools</h3><h3>Countries</h3><div id="country-codes"></div></div>');
+ e.w.SimpleMappr.loadCodes=element=>loaded.push(element.attr('id'));
+ const help=fs.readFileSync(path.join(root,'views/help.html'),'utf8');
+ e.w.eval(help.match(/<script>([\s\S]*?)<\/script>/)[1]);
+ assert.deepEqual(loaded,['country-codes']);
+});
