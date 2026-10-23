@@ -1493,7 +1493,7 @@ abstract class Mappr
         $embeddedScalebar=$this->request->download && ($this->request->options['scalebar'] ?? false) && $this->request->output!=='svg';
         $reservedBottom=($embeddedScalebar?36:($this->request->watermark?12:0))*$scale;
         $requiredHeight=(count($lines)*13+24)*$scale+$reservedBottom;
-        if ($width<160*$scale || $height<$requiredHeight) { throw new \InvalidArgumentException('Required ecological data credits need at least '.(160*$scale).' pixels of width and '.$requiredHeight.' pixels of height.'); }
+        if ($width<160*$scale || $height<$requiredHeight) { throw new \InvalidArgumentException('Required map data credits need at least '.(160*$scale).' pixels of width and '.$requiredHeight.' pixels of height.'); }
         foreach ($lines as $index=>$text) {
             $layer=new \layerObj($this->map_obj);
             $layer->name='dataset_credit_'.$index;
