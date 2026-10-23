@@ -39,7 +39,8 @@ try {
       stage = 'sign-out';
       await page.getByRole('button', {name: 'Sign Out', exact: true}).click();
       stage = 'signed-out-control';
-      await expect(page.getByRole('link', {name: 'Sign In', exact: true})).toBeVisible();
+      await expect(page.locator('#site-session').getByRole('link', {name: 'Sign In', exact: true})).toBeVisible();
+      expect((await context.request.get(origin + '/usermap')).status()).toBe(403);
     } finally {
       await context.close();
     }
