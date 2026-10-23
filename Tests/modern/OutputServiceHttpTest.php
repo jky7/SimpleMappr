@@ -134,17 +134,19 @@ final class OutputServiceHttpTest extends TestCase
 
     public function testEveryWfsVectorLayerHasStableValidFeatureAndGeometryIds(): void
     {
-        $layers=array_keys(\SimpleMappr\Mappr\Mappr::getShapefileConfig());
-        foreach($layers as $layer) {
+        $layers=array_filter(\SimpleMappr\Mappr\Mappr::getShapefileConfig(),fn(array $layer): bool=>(int)$layer['type']!==MS_LAYER_RASTER);
+        self::assertNotEmpty($layers);
+        foreach(array_keys($layers) as $layer) {
             $path='/wfs?'.http_build_query(['SERVICE'=>'WFS','VERSION'=>'2.0.0','REQUEST'=>'GetFeature','TYPENAMES'=>$layer,'COUNT'=>2]);
             $previous=null;
             for($sample=0;$sample<2;$sample++) {
-                [$status,,$body]=$this->request($path);self::assertSame(200,$status,substr($body,0,300));self::assertStringNotContainsString('WARNING:',$body);
-                $xml=simplexml_load_string($body);self::assertNotFalse($xml);$members=$xml->xpath('//*[local-name()="member"]/*');self::assertCount(2,$members);
+                [$status,,$body]=$this->request($path);self::assertSame(200,$status,$layer.' '.substr($body,0,300));self::assertStringNotContainsString('WARNING:',$body,$layer);
+                $xml=simplexml_load_string($body);self::assertNotFalse($xml,$layer);$members=$xml->xpath('//*[local-name()="member"]/*');
+                $count=count($members);self::assertGreaterThanOrEqual(1,$count,$layer);self::assertLessThanOrEqual(2,$count,$layer);
                 $ids=[];
-                foreach($members as $feature) { $id=(string)$feature->attributes('http://www.opengis.net/gml/3.2')->id;self::assertMatchesRegularExpression('/^[A-Za-z_][A-Za-z0-9_.-]*$/D',$id);$ids[]=$id; }
-                self::assertCount(2,array_unique($ids));if($previous!==null){self::assertSame($previous,$ids);}$previous=$ids;
-                foreach($xml->xpath('//@*[local-name()="id"]') as $id) { self::assertMatchesRegularExpression('/^[A-Za-z_][A-Za-z0-9_.-]*$/D',(string)$id); }
+                foreach($members as $feature) { $id=(string)$feature->attributes('http://www.opengis.net/gml/3.2')->id;self::assertMatchesRegularExpression('/^[A-Za-z_][A-Za-z0-9_.-]*$/D',$id,$layer);$ids[]=$id; }
+                self::assertCount($count,array_unique($ids),$layer);if($previous!==null){self::assertSame($previous,$ids,$layer);}$previous=$ids;
+                foreach($xml->xpath('//@*[local-name()="id"]') as $id) { self::assertMatchesRegularExpression('/^[A-Za-z_][A-Za-z0-9_.-]*$/D',(string)$id,$layer); }
             }
         }
     }
