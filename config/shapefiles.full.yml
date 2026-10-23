@@ -74,7 +74,7 @@ environments:
                 sort: 9
                 color: '100,100,100'
             conservation:
-                name: 'Biodiversity hotspots (2016.1, CC BY-SA)'
+                name: 'Biodiversity hotspots'
                 path: '%%ROOT%%/mapserver/maps/hotspots_2016_1/hotspots_2016_1'
                 type: '%%MS_LAYER_POLYGON%%'
                 encoding: UTF-8
@@ -87,7 +87,7 @@ environments:
                     equals: 'hotspot area'
                     view: '%%ROOT%%/config/hotspots-2016.vrt'
             ecoregions:
-                name: 'RESOLVE ecoregions (2017, CC BY)'
+                name: 'RESOLVE ecoregions'
                 path: '%%ROOT%%/mapserver/maps/Ecoregions2017/Ecoregions2017'
                 type: '%%MS_LAYER_POLYGON%%'
                 encoding: CP1252
@@ -130,7 +130,7 @@ environments:
                     size: 8
                     position: '%%MS_UR%%'
             hotspotLabels:
-                name: 'Biodiversity hotspots (2016.1, CC BY-SA)'
+                name: 'Biodiversity hotspots'
                 path: '%%ROOT%%/mapserver/maps/hotspots_2016_1/hotspots_2016_1'
                 type: '%%MS_LAYER_POLYGON%%'
                 encoding: UTF-8
@@ -146,7 +146,7 @@ environments:
                     size: 8
                     position: '%%MS_UR%%'
             ecoregionLabels:
-                name: 'RESOLVE ecoregions (2017, CC BY)'
+                name: 'RESOLVE ecoregions'
                 path: '%%ROOT%%/mapserver/maps/Ecoregions2017/Ecoregions2017'
                 type: '%%MS_LAYER_POLYGON%%'
                 encoding: CP1252
@@ -306,7 +306,7 @@ environments:
                 sort: 9
                 color: '100,100,100'
             conservation:
-                name: 'Biodiversity hotspots (2016.1, CC BY-SA)'
+                name: 'Biodiversity hotspots'
                 path: '%%ROOT%%/mapserver/maps/hotspots_2016_1/hotspots_2016_1'
                 type: '%%MS_LAYER_POLYGON%%'
                 encoding: UTF-8
@@ -319,7 +319,7 @@ environments:
                     equals: 'hotspot area'
                     view: '%%ROOT%%/config/hotspots-2016.vrt'
             ecoregions:
-                name: 'RESOLVE ecoregions (2017, CC BY)'
+                name: 'RESOLVE ecoregions'
                 path: '%%ROOT%%/mapserver/maps/Ecoregions2017/Ecoregions2017'
                 type: '%%MS_LAYER_POLYGON%%'
                 encoding: CP1252
@@ -362,7 +362,7 @@ environments:
                     size: 8
                     position: '%%MS_UR%%'
             hotspotLabels:
-                name: 'Biodiversity hotspots (2016.1, CC BY-SA)'
+                name: 'Biodiversity hotspots'
                 path: '%%ROOT%%/mapserver/maps/hotspots_2016_1/hotspots_2016_1'
                 type: '%%MS_LAYER_POLYGON%%'
                 encoding: UTF-8
@@ -378,7 +378,7 @@ environments:
                     size: 8
                     position: '%%MS_UR%%'
             ecoregionLabels:
-                name: 'RESOLVE ecoregions (2017, CC BY)'
+                name: 'RESOLVE ecoregions'
                 path: '%%ROOT%%/mapserver/maps/Ecoregions2017/Ecoregions2017'
                 type: '%%MS_LAYER_POLYGON%%'
                 encoding: CP1252
@@ -538,7 +538,7 @@ environments:
                 sort: 9
                 color: '100,100,100'
             conservation:
-                name: 'Biodiversity hotspots (2016.1, CC BY-SA)'
+                name: 'Biodiversity hotspots'
                 path: '%%ROOT%%/mapserver/maps/hotspots_2016_1/hotspots_2016_1'
                 type: '%%MS_LAYER_POLYGON%%'
                 encoding: UTF-8
@@ -551,7 +551,7 @@ environments:
                     equals: 'hotspot area'
                     view: '%%ROOT%%/config/hotspots-2016.vrt'
             ecoregions:
-                name: 'RESOLVE ecoregions (2017, CC BY)'
+                name: 'RESOLVE ecoregions'
                 path: '%%ROOT%%/mapserver/maps/Ecoregions2017/Ecoregions2017'
                 type: '%%MS_LAYER_POLYGON%%'
                 encoding: CP1252
@@ -594,7 +594,7 @@ environments:
                     size: 8
                     position: '%%MS_UR%%'
             hotspotLabels:
-                name: 'Biodiversity hotspots (2016.1, CC BY-SA)'
+                name: 'Biodiversity hotspots'
                 path: '%%ROOT%%/mapserver/maps/hotspots_2016_1/hotspots_2016_1'
                 type: '%%MS_LAYER_POLYGON%%'
                 encoding: UTF-8
@@ -610,7 +610,7 @@ environments:
                     size: 8
                     position: '%%MS_UR%%'
             ecoregionLabels:
-                name: 'RESOLVE ecoregions (2017, CC BY)'
+                name: 'RESOLVE ecoregions'
                 path: '%%ROOT%%/mapserver/maps/Ecoregions2017/Ecoregions2017'
                 type: '%%MS_LAYER_POLYGON%%'
                 encoding: CP1252

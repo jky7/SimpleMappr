@@ -166,6 +166,9 @@
     <h2>{{ "Projection"|trans }}*</h2>
     {% include "fragments/fragment.projections.html" %}
     <p>*{{ "zoom prior to setting projection"|trans }}</p>
+    {% if layers.ecoregions is defined or layers.conservation is defined %}
+    <p class="map-data-credits">RESOLVE 2017: CC BY 4.0. Biodiversity hotspots 2016.1: CC BY-SA 4.0. <a href="{{ base }}/data-credits">{{ "Data credits and licenses"|trans }}</a>.</p>
+    {% endif %}
 
     </div>
     </div>
