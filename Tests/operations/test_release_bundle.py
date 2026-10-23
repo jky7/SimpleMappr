@@ -22,6 +22,9 @@ rotate = importlib.util.module_from_spec(spec)
 loader.exec_module(rotate)
 ENV = ("# fixture\r\nSIMPLEMAPPR_OWNER_USERNAME='before'\r\nSIMPLEMAPPR_OWNER_PASSWORD_HASH='$2y$10$" + 'a' * 53 + "'\r\n"
        "SIMPLEMAPPR_DB_PASSWORD='database-dollar$literal'\r\nSIMPLEMAPPR_DB_ROOT_PASSWORD='root-secret'\r\nSIMPLEMAPPR_PORT=18081").encode()
+SOCIAL = {'SIMPLEMAPPR_URL': 'https://maps.example.org',
+          'SIMPLEMAPPR_GOOGLE_CLIENT_ID': 'google-client', 'SIMPLEMAPPR_GOOGLE_CLIENT_SECRET': 'google-secret',
+          'SIMPLEMAPPR_GITHUB_CLIENT_ID': 'github-client', 'SIMPLEMAPPR_GITHUB_CLIENT_SECRET': 'github-secret'}
 
 
 class BundleBoundaryTest(unittest.TestCase):
@@ -130,6 +133,116 @@ class BundleBoundaryTest(unittest.TestCase):
         for url in ('//evil', '/bad path', '/bad?query', 'http://user@example.org', 'http://example.org?', 'http://example.org/#'):
             with self.subTest(url=url), self.assertRaises(bundle.OperationError):
                 bundle.parse_env(ENV + ("\nSIMPLEMAPPR_URL='" + url + "'\n").encode())
+
+    def test_social_credentials_are_optional_complete_literal_pairs(self):
+        self.assertFalse(set(bundle.SOCIAL_ENV_KEYS) & bundle.parse_env(ENV).keys())
+        self.assertEqual(bundle.parse_env(bundle.replace_values(ENV, SOCIAL)),
+                         bundle.parse_env(ENV) | SOCIAL)
+        disabled = dict.fromkeys(bundle.SOCIAL_ENV_KEYS, '')
+        self.assertEqual(bundle.parse_env(bundle.replace_values(ENV, disabled)), bundle.parse_env(ENV) | disabled)
+        for key in bundle.SOCIAL_ENV_KEYS:
+            incomplete = SOCIAL | {key: ''}
+            with self.subTest(key=key), self.assertRaisesRegex(bundle.OperationError, 'complete client ID'):
+                bundle.parse_env(bundle.replace_values(ENV, incomplete))
+
+    def test_social_credentials_bound_bytes_and_reject_spaces_without_disclosing_values(self):
+        for suffix, limit in (('_CLIENT_ID', 512), ('_CLIENT_SECRET', 4096)):
+            key = 'SIMPLEMAPPR_GOOGLE' + suffix
+            valid = SOCIAL | {key: 'é' * (limit // 2)}
+            self.assertEqual(bundle.parse_env(bundle.replace_values(ENV, valid))[key], valid[key])
+            for value in ('é' * (limit // 2) + 'a', 'credential with-space'):
+                with self.subTest(key=key, length=len(value)), self.assertRaises(bundle.OperationError) as error:
+                    bundle.parse_env(bundle.replace_values(ENV, SOCIAL | {key: value}))
+                self.assertNotIn(value, str(error.exception))
+
+    def test_social_sign_in_accepts_safe_prefix_and_requires_https_or_literal_loopback(self):
+        for url in ('https://maps.example.org', 'https://maps.example.org/',
+                    'https://jky.io/simplemappr', 'https://jky.io/simplemappr/',
+                    'http://localhost:8080', 'http://127.0.0.1:8080', 'http://[::1]:8080'):
+            with self.subTest(url=url):
+                self.assertEqual(bundle.parse_env(bundle.replace_values(ENV, SOCIAL | {'SIMPLEMAPPR_URL': url}))['SIMPLEMAPPR_URL'], url)
+        for url in ('', '/maps', 'https://maps.example.org/a/../maps', 'https://maps.example.org/%2f/maps',
+                    'https://maps.example.org//maps', 'http://maps.example.org',
+                    'http://localhost.example.org', 'http://127.0.0.2:8080', 'http://localhost:0', 'http://localhost:65536',
+                    'HTTP://localhost:8080'):
+            with self.subTest(url=url), self.assertRaises(bundle.OperationError):
+                bundle.parse_env(bundle.replace_values(ENV, SOCIAL | {'SIMPLEMAPPR_URL': url}))
+
+    def inspect_source(self, supplied, running):
+        app_image = 'sha256:' + 'a' * 64
+        database_image = 'sha256:' + 'b' * 64
+        app = {'State': {'Running': True}, 'Config': {'Env': [key + '=' + value for key, value in running.items()]},
+               'Image': app_image}
+        database = {'Config': {'Env': ['MARIADB_ROOT_PASSWORD=' + supplied['SIMPLEMAPPR_DB_ROOT_PASSWORD']]},
+                    'Image': database_image}
+        def inspect(*arguments):
+            return [{('inspect', 'a' * 64): app,
+                     ('image', 'inspect', app_image): {'Config': {'Labels': {}}},
+                     ('inspect', 'b' * 64): database,
+                     ('image', 'inspect', bundle.DATABASE_IMAGE): {'Id': database_image}}[arguments]]
+        with patch.object(bundle, 'run_compose', side_effect=[b'a' * 64, b'b' * 64]), patch.object(bundle, 'docker_json', side_effect=inspect):
+            return bundle.app_identity(None, supplied)
+
+    def test_backup_requires_running_social_credentials_and_canonical_url(self):
+        supplied = bundle.parse_env(bundle.replace_values(ENV, SOCIAL))
+        self.assertEqual(self.inspect_source(supplied, supplied)[0], 'sha256:' + 'a' * 64)
+        for key in (*bundle.SOCIAL_ENV_KEYS, 'SIMPLEMAPPR_URL'):
+            for value in ('different-private-value', ''):
+                with self.subTest(key=key, missing=not value), self.assertRaisesRegex(bundle.OperationError, 'do not match') as error:
+                    self.inspect_source(supplied, supplied | {key: value})
+                self.assertNotIn('different-private-value', str(error.exception))
+        with self.assertRaisesRegex(bundle.OperationError, 'do not match'):
+            self.inspect_source(bundle.parse_env(ENV), supplied)
+
+    def test_backup_accepts_old_deployments_with_missing_or_empty_optional_keys(self):
+        supplied = bundle.parse_env(ENV)
+        self.inspect_source(supplied, supplied)
+        self.inspect_source(supplied, supplied | dict.fromkeys((*bundle.SOCIAL_ENV_KEYS, 'SIMPLEMAPPR_URL'), ''))
+
+    def restore_fixture(self, settings):
+        original = bundle.replace_values(ENV, settings | {'SIMPLEMAPPR_IMAGE': self.manifest['appImageId']})
+        (self.path / 'deployment.env').write_bytes(original)
+        self.manifest['members']['deployment.env'] = bundle.fingerprint(self.path / 'deployment.env')
+        self.save_manifest()
+        destination = self.directory / 'restored'
+        args = argparse.Namespace(bundle=self.path, project='restored', port=18082, deployment_dir=destination)
+        config = {'services': {name: {'image': self.manifest['appImageId']} for name in ('app', 'assets-init', 'database-init')}}
+        config['services']['db'] = {'image': bundle.DATABASE_IMAGE}
+        def run(context, arguments, **kwargs):
+            if arguments == ['config', '--format', 'json']:
+                return json.dumps(config).encode()
+            if 'output' in kwargs:
+                kwargs['output'].write((self.path / 'database.sql').read_bytes())
+            return b''
+        image = {'Id': self.manifest['appImageId'], 'Config': {'Labels': {}}}
+        with patch.object(bundle, 'docker_json', return_value=[image]), patch.object(bundle, 'refuse_existing_project'), \
+             patch.object(bundle, 'run_compose', side_effect=run), patch.object(bundle, 'query', side_effect=[b'', bundle.SCHEMA.encode()]):
+            result = bundle.restore(args)
+        self.assertEqual((self.path / 'deployment.env').read_bytes(), original)
+        self.assertEqual(bundle.load_bundle(self.path)[1], self.manifest)
+        return result, bundle.parse_env((destination / 'deployment.env').read_bytes())
+
+    def test_restore_changed_origin_disables_pairs_and_preserves_protected_source_secrets(self):
+        result, active = self.restore_fixture(SOCIAL | {'SIMPLEMAPPR_URL': 'https://jky.io/simplemappr'})
+        self.assertTrue(result['socialLoginDisabled'])
+        self.assertIn('local owner login', result['note'])
+        self.assertEqual(active['SIMPLEMAPPR_URL'], 'http://127.0.0.1:18082')
+        for key in bundle.SOCIAL_ENV_KEYS:
+            self.assertEqual(active[key], '')
+            self.assertIn(SOCIAL[key].encode(), (self.path / 'deployment.env').read_bytes())
+            self.assertNotIn(SOCIAL[key], json.dumps(result))
+
+    def test_restore_same_origin_keeps_credentials(self):
+        settings = SOCIAL | {'SIMPLEMAPPR_URL': 'http://127.0.0.1:18082/'}
+        result, active = self.restore_fixture(settings)
+        self.assertNotIn('socialLoginDisabled', result)
+        for key in bundle.SOCIAL_ENV_KEYS:
+            self.assertEqual(active[key], SOCIAL[key])
+
+    def test_restore_old_deployment_does_not_add_provider_credentials(self):
+        result, active = self.restore_fixture({})
+        self.assertNotIn('socialLoginDisabled', result)
+        self.assertFalse(set(bundle.SOCIAL_ENV_KEYS) & active.keys())
 
     def test_declared_override_reads_actual_running_bind_source(self):
         actual = self.directory / 'restored-conf.php'

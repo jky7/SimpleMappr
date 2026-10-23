@@ -8,7 +8,7 @@ SimpleMappr retains its upstream MIT license and copyright notices. The release 
 
 The GitHub release workflow saves Composer license output, npm security audits and the installed package inventory with its sanitized receipts. License declarations do not replace reviewing a dependency's actual license when updating or redistributing it. Node and Playwright are build/test dependencies; the deployed Apache/PHP image does not install a host Node runtime.
 
-The PHP stack includes GeoPHP, Twig, Phroute, GD/image support, PHPWord, PHPPresentation and PHPUnit for verification. PHPPresentation remains pinned to the reviewed upstream revision recorded in `composer.lock`; a compatible maintained stable release should replace that pin when available. The software inventory includes test dependencies because the current runtime image also supports the documented verification commands.
+The PHP stack includes Firebase PHP-JWT for social sign-in token verification, GeoPHP, Twig, Phroute, GD/image support, PHPWord, PHPPresentation and PHPUnit for verification. PHPPresentation remains pinned to the reviewed upstream revision recorded in `composer.lock`; a compatible maintained stable release should replace that pin when available. The software inventory includes test dependencies because the current runtime image also supports the documented verification commands.
 
 The editor uses pinned jQuery and jQueryUI. Jcrop, ColorPicker and Tiny Circleslider are retained vendored plugins with preserved notices and build-input hashes. They are outside npm audit's package coverage. Do not remove their notices when regenerating the frontend.
 

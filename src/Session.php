@@ -54,7 +54,8 @@ final class Session
         ini_set('session.use_only_cookies', '1');
         ini_set('session.gc_maxlifetime', '7200');
         session_name('simplemappr_session');
-        session_set_cookie_params(['lifetime'=>0,'path'=>'/','secure'=>!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off','httponly'=>true,'samesite'=>'Lax']);
+        $secure = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') || str_starts_with(getenv('SIMPLEMAPPR_URL') ?: '', 'https://');
+        session_set_cookie_params(['lifetime'=>0,'path'=>'/','secure'=>$secure,'httponly'=>true,'samesite'=>'Lax']);
         session_start();
         $_SESSION['csrf'] ??= bin2hex(random_bytes(32));
     }
@@ -70,6 +71,11 @@ final class Session
 
     public static function configured(): bool
     {
+        return self::localConfigured() || (MAPPR_PERSISTENCE && SocialLoginConfig::providers() !== []);
+    }
+
+    public static function localConfigured(): bool
+    {
         $hash = getenv('SIMPLEMAPPR_OWNER_PASSWORD_HASH') ?: '';
         return MAPPR_PERSISTENCE && (getenv('SIMPLEMAPPR_OWNER_USERNAME') ?: '') !== '' && password_get_info($hash)['algo'] !== null;
     }
@@ -83,20 +89,29 @@ final class Session
     {
         self::setSession();
         if (!MAPPR_PERSISTENCE || !isset($_SESSION['uid'])) { return null; }
-        if (!self::configured() || !hash_equals(self::fingerprint(), $_SESSION['credential_fingerprint'] ?? '') || ($_SESSION['activity'] ?? 0) < time()-7200) {
-            unset($_SESSION['uid'], $_SESSION['credential_fingerprint'], $_SESSION['activity']);
+        $method = $_SESSION['authentication_method'] ?? 'local';
+        $fingerprint = match ($method) {
+            'local' => self::localConfigured() ? self::fingerprint() : null,
+            default => SocialLoginConfig::fingerprint($method),
+        };
+        if ($fingerprint === null || !hash_equals($fingerprint, $_SESSION['credential_fingerprint'] ?? '') || ($_SESSION['activity'] ?? 0) < time()-7200) {
+            unset($_SESSION['uid'], $_SESSION['credential_fingerprint'], $_SESSION['activity'], $_SESSION['authentication_method']);
             return null;
         }
         $user = (new User)->show((int)$_SESSION['uid'])->results;
         if (!$user) { unset($_SESSION['uid']); return null; }
+        if ($method !== 'local' && !str_starts_with($user->identifier, SocialLoginConfig::provider($method)['identity_prefix'])) {
+            unset($_SESSION['uid']);
+            return null;
+        }
         $_SESSION['activity'] = time();
         return $user;
     }
 
-    public static function login(array $input): bool
+    public static function login(#[\SensitiveParameter] array $input): bool
     {
         self::requireCsrf();
-        if (!self::configured()) { return false; }
+        if (!self::localConfigured()) { return false; }
         $db = Database::getInstance();
         $key = hash('sha256', $_SERVER['REMOTE_ADDR'] ?? 'local');
         $now = time();
@@ -112,13 +127,30 @@ final class Session
         if (!password_verify($password, $hash) || !hash_equals(getenv('SIMPLEMAPPR_OWNER_USERNAME'), $username)) { return false; }
         $user = (new User)->showByIdentifier('local:owner')->results;
         if (!$user || !hash_equals($hash, $user->hash)) { return false; }
-        session_regenerate_id(true);
-        $_SESSION['uid'] = (int)$user->uid;
-        $_SESSION['credential_fingerprint'] = self::fingerprint();
-        $_SESSION['activity'] = $now;
-        $_SESSION['csrf'] = bin2hex(random_bytes(32));
+        self::establish($user, 'local', self::fingerprint());
         $db->prepare('DELETE FROM login_attempts WHERE attempt_key=:key'); $db->bindParam(':key', $key); $db->execute();
         return true;
+    }
+
+    public static function loginSocial(string $provider, #[\SensitiveParameter] array $callback): void
+    {
+        $identity = (new SocialLogin())->complete($provider, $callback);
+        $user = (new User)->resolveSocialIdentity($identity);
+        self::establish($user, $provider, SocialLoginConfig::fingerprint($provider));
+    }
+
+    private static function establish(object $user, string $method, string $fingerprint): void
+    {
+        $locale = $_SESSION['locale'] ?? 'en_US';
+        session_regenerate_id(true);
+        $_SESSION = [
+            'locale' => $locale,
+            'uid' => (int)$user->uid,
+            'authentication_method' => $method,
+            'credential_fingerprint' => $fingerprint,
+            'activity' => time(),
+            'csrf' => bin2hex(random_bytes(32)),
+        ];
     }
 
     public static function destroy(): void

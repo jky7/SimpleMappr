@@ -64,7 +64,7 @@ Use **Share** in My Maps to create a public link. **Open share** displays a read
 
 Authenticated preview, legend and scale images live outside the public directory and expire after one hour; fetching them requires their owner session. Guest previews use random filenames and reject reads after one hour. Expired files are cleaned during subsequent image creation. Sessions use HttpOnly, SameSite=Lax cookies and a two-hour idle timeout. Login attempts are limited per source address. Configure TLS before exposing the instance beyond localhost.
 
-`SIMPLEMAPPR_OWNER_USERNAME` and `SIMPLEMAPPR_OWNER_PASSWORD_HASH` select the one deployment login. Missing owner configuration leaves guest rendering available. Changing either value and recreating the stack invalidates previous authenticated sessions. `scripts/provision-owner` updates the stable `local:owner` identity; it does not reassign imported users' maps. For password changes, use the [owner password rotation procedure](private-deployment.md#rotate-the-local-owner-password).
+`SIMPLEMAPPR_OWNER_USERNAME` and `SIMPLEMAPPR_OWNER_PASSWORD_HASH` select the one deployment login. Missing owner configuration leaves guest rendering available. Changing either value and recreating the stack invalidates previous local-owner sessions. Google and GitHub sessions use their own provider configuration fingerprints. See [social sign-in](social-login.md) for setup and account separation. `scripts/provision-owner` updates the stable `local:owner` identity; it does not reassign imported users' maps. For password changes, use the [owner password rotation procedure](private-deployment.md#rotate-the-local-owner-password).
 
 ## Database baseline and legacy adoption
 

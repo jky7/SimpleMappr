@@ -7,6 +7,7 @@ The Docker runtime uses PHP 8.4, MapServer 8.4 and SWIG MapScript. The old PHP e
 | Native PNG/SVG/TIFF, projections, accents and bundled feature counts | `scripts/check-runtime`; restricted HTTP smoke check |
 | Point groups, WKT, shaded regions, labels, crop/rotation/source viewport, explicit false options | Modern PHP request/document tests; Node document tests; Chromium/Firefox mixed/reload contract |
 | Owner login, CSRF, private maps, settings import/export, revocable sharing | `Tests/smoke/check-persistence`; owner browser contract; protected operations rehearsal |
+| Google signed claims, GitHub authenticated public profile, provider sessions, private account ownership | Modern social-login tests; `Tests/smoke/check-social-login` isolated HTTPS provider fixture |
 | CSV/TSV/TXT/WKT/GeoJSON/JSON/KML/XML/RSS, explicit encoding and row errors | Modern import suite; browser MIME-empty upload; isolated HTTPS import transport fixture |
 | Remote import DNS/redirect/TLS/decoded-byte/deadline limits | `Tests/smoke/check-import-boundary`; modern RemoteImport tests |
 | PNG/transparent PNG/JPEG/SVG/TIFF/KML/DOCX/PPTX downloads | Both browser engines; signatures, Office ZIP CRC/XML/embedded map dimensions, SVG/KML namespaces, PNG alpha |
@@ -28,3 +29,5 @@ General legacy Selenium/database/bootstrap tests remain archived under `Tests/`;
 The private release record includes real fresh-install, empty-target restore, minimal/relief, recreation, earlier-image rollback, private-port, expiry, administrator and offline lanes. Browser screenshots/traces are acceptance evidence; sanitization removes credentials and live capability URLs. Internal Office media basenames are inert ZIP members, not reusable private preview URLs. Real output files stay valid for format verification.
 
 Remote CI is authoritative only after an actual successful run linked from the release PR. Optional dataset downloads are a manually requested release lane. Keep its evidence separate from minimal-only PR checks.
+
+Social sign-in uses generated Google signed tokens and isolated GitHub token/profile HTTPS fixtures for repeatable checks. Real Google and GitHub consent requires operator-created app registrations and credentials; complete the acceptance steps in [social sign-in setup](social-login.md) before enabling a public installation.
