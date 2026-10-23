@@ -65,6 +65,17 @@ final class DetailedReliefTest extends TestCase
         }
     }
 
+    public function testCachePrunesOldTilesBeforePublishingWithinItsByteBudget(): void
+    {
+        $directory=sys_get_temp_dir().'/relief-prune-'.bin2hex(random_bytes(8));mkdir($directory);
+        try {
+            $old=$directory.'/0-0-0.jpeg';$file=fopen($old,'w');ftruncate($file,ReliefTileCache::BUDGET);fclose($file);
+            (new ReliefTileCache())->publish($directory,'1-0-0.jpeg',$this->jpeg(),[]);
+            self::assertFileDoesNotExist($old);
+            self::assertSame(strlen($this->jpeg()),filesize($directory.'/1-0-0.jpeg'));
+        } finally { foreach (glob($directory.'/*') as $path) { unlink($path); }rmdir($directory); }
+    }
+
     private function jpeg(): string
     {
         $image=imagecreatetruecolor(256,256);imagefill($image,0,0,imagecolorallocate($image,88,88,88));

@@ -170,12 +170,13 @@ abstract class OgcService extends Mappr
 
     private function prepareDetailedServiceRelief(): void
     {
-        $crs=strtoupper($this->parameters['CRS'] ?? $this->parameters['SRS'] ?? '');
+        $modern=version_compare($this->parameters['VERSION'],'1.3.0','>=');
+        $crs=strtoupper($this->parameters[$modern?'CRS':'SRS'] ?? '');
         if (!in_array($crs,explode(' ',self::SERVICE_SRS),true)) { return; }
         $values=explode(',',$this->parameters['BBOX'] ?? '');
         if (count($values)!==4 || count(array_filter($values,'is_numeric'))!==4) { return; }
         $bounds=array_map('floatval',$values);
-        if ($crs==='EPSG:4326' && version_compare($this->parameters['VERSION'],'1.3.0','>=')) { $bounds=[$bounds[1],$bounds[0],$bounds[3],$bounds[2]]; }
+        if ($crs==='EPSG:4326' && $modern) { $bounds=[$bounds[1],$bounds[0],$bounds[3],$bounds[2]]; }
         if ($bounds[2]<=$bounds[0] || $bounds[3]<=$bounds[1]) { return; }
         $viewport=msLoadMapFromString('MAP MAXSIZE 5000 END',ROOT,null);
         $viewport->setSize((int)$this->parameters['WIDTH'],(int)$this->parameters['HEIGHT']);$viewport->setProjection($crs);
