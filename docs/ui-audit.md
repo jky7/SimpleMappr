@@ -7,6 +7,7 @@ This pass exercised the editor in Chromium against an isolated Docker deployment
 | Controls | Interaction checked | Result |
 | --- | --- | --- |
 | Zoom | Draw a box, click a point, double-click, zoom out, keyboard selection mode | Fixed native rectangle initialization; zoom changes the visible area |
+| Picker layout | Open bucket fill panel and inspect Apply bounds | Reset inherited button padding; 62×24 button fits with 12px bottom clearance |
 | Fill | Choose color, Apply, single country click, ocean click, box selection | Fixed picker click/Apply handling and zero-size click queries; ocean selects nothing |
 | Rotated fill | Click Brazil in a 90° preview; native point and box queries | Fixed selection to use the rendered viewport and native pixel conversion |
 | Pan | All four toolbar arrows; keyboard arrows | Visible directional changes |
@@ -33,6 +34,10 @@ This pass exercised the editor in Chromium against an isolated Docker deployment
 | Help / information | Country table/filter, codes dialog/filter, About, Feedback, API | Fixed removed waypoint dependency; tables and tabs load |
 | Keyboard / narrow layout | Tab to textarea, Enter newline, tab arrows/Home; map shortcuts; actual 375×812 viewport and export dialog | Input and navigation checks pass; no page-wide overflow in checked editor state |
 | Sign out / draft ownership | Owner draft, sign out, guest view, sign in again | Guest excludes owner draft; owner draft returns |
+
+## Remaining finding
+
+An independent source review identified a P2 error-recovery issue: if Undo or Redo rendering fails, the inputs and panel width can stay at the requested destination while the visible image stays at the previous view. Retryability tests pass, but do not cover this mismatch. Restoring the previous form on failure remains follow-up work; this audit does not claim that path is fixed.
 
 ## Verification and limits
 
