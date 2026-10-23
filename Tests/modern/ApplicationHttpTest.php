@@ -149,7 +149,7 @@ final class ApplicationHttpTest extends TestCase
 
     public function testUnavailableLayerReturnsUsefulError(): void
     {
-        [$status, , $body] = $this->request('/application.json', array_replace($this->document(), ['layers' => ['relief' => 'on']]));
+        [$status, , $body] = $this->request('/application.json', array_replace($this->document(), ['layers' => ['marine_ecoregions' => 'on']]));
         self::assertSame(400, $status);
         self::assertStringContainsString('not installed', json_decode($body, true, 512, JSON_THROW_ON_ERROR)['error']);
     }
