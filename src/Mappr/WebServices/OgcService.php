@@ -4,6 +4,7 @@ namespace SimpleMappr\Mappr\WebServices;
 use SimpleMappr\Header;
 use SimpleMappr\ImportData;
 use SimpleMappr\Request;
+use SimpleMappr\DatasetCredits;
 use SimpleMappr\Mappr\Mappr;
 
 abstract class OgcService extends Mappr
@@ -18,7 +19,7 @@ abstract class OgcService extends Mappr
     public function __construct(array $layers = [])
     {
         $shapes = self::getShapefileConfig();
-        $this->selectedLayers = array_fill_keys(array_keys(array_filter($shapes, fn($shape, $name) => (!$layers || in_array($name, $layers, true)) && ($this->service !== 'WFS' || $shape['type'] !== MS_LAYER_RASTER), ARRAY_FILTER_USE_BOTH)), 'on');
+        $this->selectedLayers = array_fill_keys(array_keys(array_filter($shapes, fn($shape, $name) => (!$layers || in_array($name, $layers, true)) && ($this->service !== 'WFS' || (int)$shape['type'] !== MS_LAYER_RASTER), ARRAY_FILTER_USE_BOTH)), 'on');
         try { $this->readParameters(); }
         catch (\InvalidArgumentException $e) { $this->inputError = $e->getMessage(); }
         parent::__construct();
@@ -141,10 +142,20 @@ abstract class OgcService extends Mappr
                     $layer = $this->map_obj->getLayer($i);
                     $path = $layer->data;
                     $layer->setConnectionType(MS_OGR, '');
-                    $layer->connection = is_file($path) ? $path : $path.'.shp';
-                    $layer->data = 'SELECT FID AS mappr_id, * FROM "'.str_replace('"', '""', pathinfo($path, PATHINFO_FILENAME)).'"';
+                    $filter=$this->shapes[$layer->name]['filter'] ?? null;
+                    $layer->connection = $filter['view'] ?? (is_file($path) ? $path : $path.'.shp');
+                    $fields='FID AS mappr_id, *';
+                    foreach (DatasetCredits::selected([$layer->name]) as $dataset) {
+                        $fields.=", '".str_replace("'","''",$dataset['licenseUrl'])."' AS mappr_license, '".str_replace("'","''",$dataset['source'])."' AS mappr_source";
+                    }
+                    $layer->data = 'SELECT '.$fields.' FROM "'.str_replace('"', '""', pathinfo($path, PATHINFO_FILENAME)).'"';
+                    if ($filter) { $layer->setFilter(''); }
                     $metadata->set('gml_featureid', 'mappr_id');
                 }
+            }
+            if ($this->service==='WMS' && strtolower($this->parameters['REQUEST'])==='getmap') {
+                try { $this->addDataCredits($this->responseLayers(),(int)$this->parameters['WIDTH'],(int)$this->parameters['HEIGHT']); }
+                catch (\InvalidArgumentException $error) { $this->inputError=$error->getMessage(); }
             }
         }
         return $this;
@@ -167,6 +178,7 @@ abstract class OgcService extends Mappr
             if (msIO_getStdoutBufferString() === '') { return $this->exception('The service request is invalid or unsupported.'); }
             $type = msIO_stripStdoutBufferContentType();
             Header::setHeader();
+            DatasetCredits::headers(DatasetCredits::selected($this->responseLayers()));
             header('Content-Type: '.($type ?: 'application/xml'));
             if ($result !== MS_SUCCESS) { http_response_code(400); }
             ob_start();
@@ -174,6 +186,17 @@ abstract class OgcService extends Mappr
             $printed = ob_get_clean();
             return is_string($bytes) ? $bytes : $printed;
         } finally { msIO_resetHandlers(); }
+    }
+
+    private function responseLayers(): array
+    {
+        if (strtolower($this->parameters['REQUEST'])==='getcapabilities') { return array_keys($this->selectedLayers); }
+        $names=$this->parameters['LAYERS'] ?? $this->parameters['TYPENAMES'] ?? $this->parameters['TYPENAME'] ?? '';
+        if ($this->postXml!=='') {
+            $xml=ImportData::xml($this->postXml);
+            foreach ($xml->getElementsByTagNameNS('*','Query') as $query) { $names.=' '.$query->getAttribute('typeNames').' '.$query->getAttribute('typeName'); }
+        }
+        return array_map(fn(string $name): string=>preg_replace('/^.*:/','',$name),preg_split('/[\s,]+/',trim($names)));
     }
 
     private function exception(string $message): string

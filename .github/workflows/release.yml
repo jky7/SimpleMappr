@@ -66,6 +66,7 @@ jobs:
         if: github.event_name == 'workflow_dispatch' && inputs.optional_assets
         run: |
           scripts/fetch-assets --profile full-map-v1
+          scripts/generate-ecoregion-style --check
           SIMPLEMAPPR_ASSET_PROFILE=full-map-v1 SIMPLEMAPPR_ASSET_CACHE="$PWD/.asset-cache" docker compose --env-file "$SIMPLEMAPPR_CI_ENV" up -d --no-build --wait
           mkdir -p build/receipts/profiles
           docker run --rm --network host --shm-size=1g -e SIMPLEMAPPR_TEST_PROFILE=full-map-v1 -v "$PWD/build/receipts/profiles:/receipts" simplemappr-browser-contract:local node profiles.mjs

@@ -62,15 +62,15 @@
         {
           "path": "config/asset-profiles/blue-marble-v1.json",
           "cache": true
+        },
+        {
+          "path": "config/asset-profiles/ecology-v1.json",
+          "cache": true
         }
       ]
     }
   },
   "excluded": {
-    "conservation": "The available 2016.1 hotspots use CC BY-SA 4.0. Share-alike output attribution is not implemented.",
-    "hotspotLabels": "The available 2016.1 hotspots use CC BY-SA 4.0. Share-alike output attribution is not implemented.",
-    "ecoregions": "The available RESOLVE 2017 data use CC BY 4.0. Output attribution is not implemented.",
-    "ecoregionLabels": "The available RESOLVE 2017 data use CC BY 4.0. Output attribution is not implemented.",
     "marine_ecoregions": "Source terms restrict redistribution and commercial use; not installed.",
     "marineEcoregionLabels": "Source terms restrict redistribution and commercial use; not installed."
   }

@@ -42,6 +42,7 @@ use SimpleMappr\Constants\AcceptedMarkers;
 use SimpleMappr\Constants\AcceptedOutputs;
 use SimpleMappr\Constants\AcceptedProjections;
 use SimpleMappr\Utility;
+use SimpleMappr\DatasetCredits;
 
 /**
  * Main Mappr class for SimpleMappr
@@ -304,6 +305,7 @@ abstract class Mappr
         $this->addGraticules();
         $this->addCoordinates();
         $this->_addWatermark();
+        $this->addDataCredits(array_keys($this->request->layers));
         $this->_prepareOutput();
 
         return $this;
@@ -1299,7 +1301,18 @@ abstract class Mappr
                 $layer->data = $this->shapes[$name]['path'];
                 $layer->setProjection(self::getProjection($this->default_projection));
                 $layer->template = "template.html";
-
+                if (isset($this->shapes[$name]['filter'])) {
+                    $filter=$this->shapes[$name]['filter'];
+                    $layer->setFilter('("['.$filter['item'].']" = "'.$filter['equals'].'")');
+                }
+                foreach (DatasetCredits::selected([$name]) as $dataset) {
+                    foreach (['wms','wfs'] as $service) {
+                        $layer->metadata->set($service.'_abstract',DatasetCredits::notice($dataset));
+                        $layer->metadata->set($service.'_metadataurl_href',DatasetCredits::url());
+                        $layer->metadata->set($service.'_metadataurl_type','TC211');
+                        $layer->metadata->set($service.'_metadataurl_format','text/html');
+                    }
+                }
 
                 if (isset($this->shapes[$name]['opacity'])) {
                     $layer->setOpacity((int)$this->shapes[$name]['opacity']);
@@ -1423,6 +1436,29 @@ abstract class Mappr
             $shape->add($line);
             $layer->addFeature($shape);
         }
+    }
+
+    protected function addDataCredits(array $layers,?int $width=null,?int $height=null): void
+    {
+        $datasets=DatasetCredits::selected($layers);
+        if (!$datasets) { return; }
+        $scale=$width===null && $this->_isResize()?max(1,(int)$this->request->download_factor):1;
+        $width ??= $this->map_obj->width;$height ??= $this->map_obj->height;
+        $lines=DatasetCredits::lines($datasets,(int)floor($width/$scale));
+        $requiredHeight=(count($lines)*13+24)*$scale;
+        if ($width<160*$scale || $height<$requiredHeight) { throw new \InvalidArgumentException('Required ecological data credits need at least '.(160*$scale).' pixels of width and '.$requiredHeight.' pixels of height.'); }
+        foreach ($lines as $index=>$text) {
+            $layer=new \layerObj($this->map_obj);
+            $layer->name='dataset_credit_'.$index;
+            $layer->type=MS_LAYER_POINT;$layer->status=MS_DEFAULT;$layer->transform=MS_FALSE;$layer->sizeunits=MS_PIXELS;
+            $class=new \classObj($layer);$class->setText($text);
+            $label=new \labelObj();$label->font='arial';$label->encoding='UTF-8';$label->size=7*$scale;$label->position=MS_XY;
+            $label->color->setRGB(0,0,0);$label->outlinecolor->setRGB(255,255,255);$label->outlinewidth=2*$scale;$label->force=MS_TRUE;$label->partials=MS_TRUE;
+            $class->addLabel($label);
+            $point=new \pointObj();$point->setXY(8*$scale,$height-(10+(count($lines)-1-$index)*13)*$scale);
+            $line=new \lineObj();$line->add($point);$shape=new \shapeObj(MS_SHAPE_POINT);$shape->add($line);$layer->addFeature($shape);
+        }
+        DatasetCredits::headers($datasets);
     }
 
     /**

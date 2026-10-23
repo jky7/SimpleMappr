@@ -73,6 +73,29 @@ environments:
                 encoding: UTF-8
                 sort: 9
                 color: '100,100,100'
+            conservation:
+                name: 'Biodiversity hotspots (2016.1, CC BY-SA)'
+                path: '%%ROOT%%/mapserver/maps/hotspots_2016_1/hotspots_2016_1'
+                type: '%%MS_LAYER_POLYGON%%'
+                encoding: UTF-8
+                sort: 3
+                opacity: 75
+                color: '200,200,200'
+                outline_color: '30,30,30'
+                filter:
+                    item: Type
+                    equals: 'hotspot area'
+                    view: '%%ROOT%%/config/hotspots-2016.vrt'
+            ecoregions:
+                name: 'RESOLVE ecoregions (2017, CC BY)'
+                path: '%%ROOT%%/mapserver/maps/Ecoregions2017/Ecoregions2017'
+                type: '%%MS_LAYER_POLYGON%%'
+                encoding: CP1252
+                sort: 3
+                opacity: 75
+                class:
+                    sld: '%%ROOT%%/config/ecoregions-2017.sld'
+                    item: ECO_ID
             relief:
                 name: 'Color shaded relief'
                 path: '%%ROOT%%/mapserver/maps/HYP_LR_SR_OB_DR/HYP_LR_SR_OB_DR.tif'
@@ -94,6 +117,46 @@ environments:
                 type: '%%MS_LAYER_RASTER%%'
                 sort: 1
         labels:
+            lakenames:
+                name: lakes
+                path: '%%ROOT%%/mapserver/maps/10m_physical/ne_10m_lakes'
+                type: '%%MS_LAYER_POLYGON%%'
+                encoding: UTF-8
+                sort: 7
+                tolerance: 5
+                tolerance_units: '%%MS_PIXELS%%'
+                label:
+                    item: name
+                    size: 8
+                    position: '%%MS_UR%%'
+            hotspotLabels:
+                name: 'Biodiversity hotspots (2016.1, CC BY-SA)'
+                path: '%%ROOT%%/mapserver/maps/hotspots_2016_1/hotspots_2016_1'
+                type: '%%MS_LAYER_POLYGON%%'
+                encoding: UTF-8
+                sort: 14
+                tolerance: 5
+                tolerance_units: '%%MS_PIXELS%%'
+                filter:
+                    item: Type
+                    equals: 'hotspot area'
+                    view: '%%ROOT%%/config/hotspots-2016.vrt'
+                label:
+                    item: NAME
+                    size: 8
+                    position: '%%MS_UR%%'
+            ecoregionLabels:
+                name: 'RESOLVE ecoregions (2017, CC BY)'
+                path: '%%ROOT%%/mapserver/maps/Ecoregions2017/Ecoregions2017'
+                type: '%%MS_LAYER_POLYGON%%'
+                encoding: CP1252
+                sort: 14
+                tolerance: 5
+                tolerance_units: '%%MS_PIXELS%%'
+                label:
+                    item: ECO_NAME
+                    size: 8
+                    position: '%%MS_UR%%'
             countrynames:
                 name: Countries
                 path: '%%ROOT%%/mapserver/maps/10m_cultural/10m_cultural/ne_10m_admin_0_map_units'
@@ -242,6 +305,29 @@ environments:
                 encoding: UTF-8
                 sort: 9
                 color: '100,100,100'
+            conservation:
+                name: 'Biodiversity hotspots (2016.1, CC BY-SA)'
+                path: '%%ROOT%%/mapserver/maps/hotspots_2016_1/hotspots_2016_1'
+                type: '%%MS_LAYER_POLYGON%%'
+                encoding: UTF-8
+                sort: 3
+                opacity: 75
+                color: '200,200,200'
+                outline_color: '30,30,30'
+                filter:
+                    item: Type
+                    equals: 'hotspot area'
+                    view: '%%ROOT%%/config/hotspots-2016.vrt'
+            ecoregions:
+                name: 'RESOLVE ecoregions (2017, CC BY)'
+                path: '%%ROOT%%/mapserver/maps/Ecoregions2017/Ecoregions2017'
+                type: '%%MS_LAYER_POLYGON%%'
+                encoding: CP1252
+                sort: 3
+                opacity: 75
+                class:
+                    sld: '%%ROOT%%/config/ecoregions-2017.sld'
+                    item: ECO_ID
             relief:
                 name: 'Color shaded relief'
                 path: '%%ROOT%%/mapserver/maps/HYP_LR_SR_OB_DR/HYP_LR_SR_OB_DR.tif'
@@ -263,6 +349,46 @@ environments:
                 type: '%%MS_LAYER_RASTER%%'
                 sort: 1
         labels:
+            lakenames:
+                name: lakes
+                path: '%%ROOT%%/mapserver/maps/10m_physical/ne_10m_lakes'
+                type: '%%MS_LAYER_POLYGON%%'
+                encoding: UTF-8
+                sort: 7
+                tolerance: 5
+                tolerance_units: '%%MS_PIXELS%%'
+                label:
+                    item: name
+                    size: 8
+                    position: '%%MS_UR%%'
+            hotspotLabels:
+                name: 'Biodiversity hotspots (2016.1, CC BY-SA)'
+                path: '%%ROOT%%/mapserver/maps/hotspots_2016_1/hotspots_2016_1'
+                type: '%%MS_LAYER_POLYGON%%'
+                encoding: UTF-8
+                sort: 14
+                tolerance: 5
+                tolerance_units: '%%MS_PIXELS%%'
+                filter:
+                    item: Type
+                    equals: 'hotspot area'
+                    view: '%%ROOT%%/config/hotspots-2016.vrt'
+                label:
+                    item: NAME
+                    size: 8
+                    position: '%%MS_UR%%'
+            ecoregionLabels:
+                name: 'RESOLVE ecoregions (2017, CC BY)'
+                path: '%%ROOT%%/mapserver/maps/Ecoregions2017/Ecoregions2017'
+                type: '%%MS_LAYER_POLYGON%%'
+                encoding: CP1252
+                sort: 14
+                tolerance: 5
+                tolerance_units: '%%MS_PIXELS%%'
+                label:
+                    item: ECO_NAME
+                    size: 8
+                    position: '%%MS_UR%%'
             countrynames:
                 name: Countries
                 path: '%%ROOT%%/mapserver/maps/10m_cultural/10m_cultural/ne_10m_admin_0_map_units'
@@ -411,6 +537,29 @@ environments:
                 encoding: UTF-8
                 sort: 9
                 color: '100,100,100'
+            conservation:
+                name: 'Biodiversity hotspots (2016.1, CC BY-SA)'
+                path: '%%ROOT%%/mapserver/maps/hotspots_2016_1/hotspots_2016_1'
+                type: '%%MS_LAYER_POLYGON%%'
+                encoding: UTF-8
+                sort: 3
+                opacity: 75
+                color: '200,200,200'
+                outline_color: '30,30,30'
+                filter:
+                    item: Type
+                    equals: 'hotspot area'
+                    view: '%%ROOT%%/config/hotspots-2016.vrt'
+            ecoregions:
+                name: 'RESOLVE ecoregions (2017, CC BY)'
+                path: '%%ROOT%%/mapserver/maps/Ecoregions2017/Ecoregions2017'
+                type: '%%MS_LAYER_POLYGON%%'
+                encoding: CP1252
+                sort: 3
+                opacity: 75
+                class:
+                    sld: '%%ROOT%%/config/ecoregions-2017.sld'
+                    item: ECO_ID
             relief:
                 name: 'Color shaded relief'
                 path: '%%ROOT%%/mapserver/maps/HYP_LR_SR_OB_DR/HYP_LR_SR_OB_DR.tif'
@@ -432,6 +581,46 @@ environments:
                 type: '%%MS_LAYER_RASTER%%'
                 sort: 1
         labels:
+            lakenames:
+                name: lakes
+                path: '%%ROOT%%/mapserver/maps/10m_physical/ne_10m_lakes'
+                type: '%%MS_LAYER_POLYGON%%'
+                encoding: UTF-8
+                sort: 7
+                tolerance: 5
+                tolerance_units: '%%MS_PIXELS%%'
+                label:
+                    item: name
+                    size: 8
+                    position: '%%MS_UR%%'
+            hotspotLabels:
+                name: 'Biodiversity hotspots (2016.1, CC BY-SA)'
+                path: '%%ROOT%%/mapserver/maps/hotspots_2016_1/hotspots_2016_1'
+                type: '%%MS_LAYER_POLYGON%%'
+                encoding: UTF-8
+                sort: 14
+                tolerance: 5
+                tolerance_units: '%%MS_PIXELS%%'
+                filter:
+                    item: Type
+                    equals: 'hotspot area'
+                    view: '%%ROOT%%/config/hotspots-2016.vrt'
+                label:
+                    item: NAME
+                    size: 8
+                    position: '%%MS_UR%%'
+            ecoregionLabels:
+                name: 'RESOLVE ecoregions (2017, CC BY)'
+                path: '%%ROOT%%/mapserver/maps/Ecoregions2017/Ecoregions2017'
+                type: '%%MS_LAYER_POLYGON%%'
+                encoding: CP1252
+                sort: 14
+                tolerance: 5
+                tolerance_units: '%%MS_PIXELS%%'
+                label:
+                    item: ECO_NAME
+                    size: 8
+                    position: '%%MS_UR%%'
             countrynames:
                 name: Countries
                 path: '%%ROOT%%/mapserver/maps/10m_cultural/10m_cultural/ne_10m_admin_0_map_units'

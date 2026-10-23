@@ -20,7 +20,8 @@ if args.cache.is_symlink():raise SystemExit('Archive cache must not be a symlink
 args.cache.mkdir(parents=True,exist_ok=True)
 def approved(url):
     parsed=urllib.parse.urlsplit(url)
-    if parsed.scheme!='https' or parsed.hostname not in ['naciscdn.org','eoimages.gsfc.nasa.gov'] or parsed.port not in [None,443] or parsed.username or parsed.password:raise ValueError('Only the pinned HTTPS Natural Earth and NASA sources are allowed.')
+    allowed=parsed.hostname in ['naciscdn.org','eoimages.gsfc.nasa.gov'] or (parsed.hostname=='storage.googleapis.com' and parsed.path=='/teow2016/Ecoregions2017.zip') or (parsed.hostname=='zenodo.org' and parsed.path=='/records/3261807/files/hotspots_2016_1.zip')
+    if parsed.scheme!='https' or not allowed or parsed.port not in [None,443] or parsed.username or parsed.password:raise ValueError('Only the pinned HTTPS dataset sources are allowed.')
 class Redirects(urllib.request.HTTPRedirectHandler):
     def redirect_request(self,request,fp,code,msg,headers,newurl):
         approved(newurl);return super().redirect_request(request,fp,code,msg,headers,newurl)

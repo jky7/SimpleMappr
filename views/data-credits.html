@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+{% block content %}
+<main style="max-width:48rem;margin:3rem auto;font-family:sans-serif;line-height:1.5">
+<h1>Map data credits and licenses</h1>
+<p>Natural Earth vector data and relief are public domain. Blue Marble imagery is credited to <a href="https://science.nasa.gov/earth/faq/">NASA Visible Earth</a>.</p>
+{% for dataset in datasets %}
+<h2>{{ dataset.name }}</h2>
+<p>{{ dataset.credit }}. <a href="{{ dataset.citation }}">Publication and citation</a>. <a href="{{ dataset.source }}">Source dataset</a>.</p>
+<p>Licensed under <a href="{{ dataset.licenseUrl }}">{{ dataset.license }}</a>. {{ dataset.changes }}</p>
+{% if dataset.copyright %}
+<p>{{ dataset.copyright }}. The supplied shapefile XML metadata retains older terms from 2012. The installed 2016.1 README and the authors' publication record explicitly declare CC BY-SA 4.0, which this deployment applies. Both the original XML and README remain unchanged in the installed source files. Data credits do not imply endorsement by Conservation International.</p>
+<p>The supplied source disclaimer states: Files, data and metadata materials, are distributed and provided "AS IS" and CI makes no warranties or representations, express or implied, regarding the use of this shapefile with regard to the correctness, reliability, accuracy of the shapefile, data or metadata materials. Neither CI, nor its affiliated or related entities, or its content providers shall be responsible or liable to any person, firm, or corporation for any loss, damage, injury, claim, or liability of any kind or character based on or resulting from any information contained in this shapefile.</p>
+{% endif %}
+{% endfor %}
+<p>Maps that display these ecological datasets retain their credits even when the optional legend is disabled. When publishing a map, retain the credits and identify any further changes.</p>
+<p>The hotspot dataset and adaptations of that material use CC BY-SA 4.0. Retain that license when redistributing adapted hotspot material. The license does not automatically apply to your independent coordinates, drawings or other separate data. GeoJSON and KML downloads contain your geometry only; they do not contain these background datasets.</p>
+<p><a href="{{ base }}/">Return to the map editor</a></p>
+</main>
+{% endblock %}

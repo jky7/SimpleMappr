@@ -38,7 +38,7 @@ final class AssetInstaller
             try {
                 foreach ($asset['components'] as $component) {
                     $name=$component['name'];
-                    if (basename($name)!==$name || !str_starts_with($name,$asset['basename'].'.') || !preg_match('/^[0-9a-f]{64}$/D',$component['sha256'])) { throw new \RuntimeException('Unsafe asset member.'); }
+                    if (basename($name)!==$name || !preg_match('~^[A-Za-z0-9_][A-Za-z0-9_. -]*$~D',$name) || (!str_starts_with($name,$asset['basename'].'.') && !in_array($name,$asset['sidecars'] ?? [],true)) || !preg_match('/^[0-9a-f]{64}$/D',$component['sha256'])) { throw new \RuntimeException('Unsafe asset member.'); }
                     $target=$destination.'/'.$name;
                     if (is_link($target)) { throw new \RuntimeException('Asset cannot be a symlink.'); }
                     if (is_file($target)) {

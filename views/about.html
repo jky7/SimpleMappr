@@ -15,7 +15,8 @@
 <p>{{ "Create free point maps suitable for reproduction on print media by copying and pasting geographic coordinates in layers, choosing pushpin styles, then downloading the result."|trans }}</p>
 </div>
 <div class="header"><h2>{{ "Citing"|trans }}</h2></div>
-<p><a href="http://creativecommons.org/publicdomain/zero/1.0/"><img class="map-license" src="{{ base }}/public/images/cc0.png" alt="CC0" /></a>{{ "All versions of SimpleMappr map data found on this website are in the Public Domain. You may use the maps in any manner, including modifying the content and design, electronic dissemination, and offset printing. The primary author, David P. Shorthouse has waived all copyright, related or neighboring rights, and financial claim to the maps and invites you to use them for personal, educational, and commercial purposes. No permission is needed to use SimpleMappr. Crediting the author is unnecessary. However, if you wish to cite the application, simply use the following."|trans }}</p>
+<p>Natural Earth layers are public domain. Blue Marble imagery is credited to NASA Visible Earth. RESOLVE ecoregions and biodiversity hotspots have separate attribution and licensing requirements. <a href="{{ base }}/data-credits">Read the map data credits and licenses</a> before publishing maps that use ecological layers.</p>
+<p>David P. Shorthouse created the original SimpleMappr application. You can cite it as follows.</p>
 <p>Shorthouse, David P. 2010. SimpleMappr, an online tool to produce publication-quality point maps. [Retrieved from https://www.simplemappr.net. Accessed {{ "now"|date("F d, Y") }}].</p>
 <div class="ui-helper-clearfix">
 <div id="recent-updates">
@@ -46,11 +47,7 @@
 <div class="header"><h2>{{ "Acknowledgments"|trans }}</h2></div>
 {% set urls_naturalearth = '<a href="http://www.naturalearthdata.com/" target="_blank">http://www.naturalearthdata.com/</a>' %}
 {% set urls_mapserver = '<a href="http://mapserver.org" target="_blank">http://mapserver.org</a>' %}
-{% set urls_conservation = '<a href="http://www.conservation.org/where/priority_areas/hotspots/Pages/hotspots_main.aspx" target="_blank">Conservation International</a>' %}
-{% set urls_wwf = '<a href="http://www.worldwildlife.org/pages/conservation-science-data-and-tools">World Wildlife Fund</a>' %}
-{% set urls_nasa = '<a href="https://science.nasa.gov/earth/faq/">NASA Visible Earth</a>' %}
-{% set urls_us_census = '<a href="https://www.census.gov/geo/maps-data/data/cbf/cbf_counties.html">US Census Bureau</a>' %}
-<p>{{ "Underlying ArcView shapefiles were obtained from Natural Earth, %urls_naturalearth% and the mapping software used is MapServer, %urls_mapserver% via PHP MapScript. Biodiversity Hotspot data were obtained from %urls_conservation% and ecoregions from the %urls_wwf%. Blue Marble from %urls_nasa% and US Counties from the %urls_us_census%."|trans({"%urls_naturalearth%": urls_naturalearth, "%urls_mapserver%": urls_mapserver, "%urls_conservation%": urls_conservation, "%urls_wwf%": urls_wwf, "%urls_nasa%": urls_nasa, "%urls_us_census%": urls_us_census})|raw }}</p>
+<p>Underlying shapefiles and relief are from <a href="https://www.naturalearthdata.com/">Natural Earth</a>. Rendering uses <a href="https://mapserver.org/">MapServer</a> through PHP MapScript. Blue Marble is from <a href="https://science.nasa.gov/earth/faq/">NASA Visible Earth</a>. The optional ecological layers use RESOLVE Ecoregions 2017 and Biodiversity Hotspots 2016.1. Their creators, source links, licenses and display changes are listed in <a href="{{ base }}/data-credits">map data credits</a>.</p>
 
 <div class="header"><h2>{{ "History"|trans }}</h2></div>
 <p>{{ "The first version of this application was developed by David P. Shorthouse to help participants in two Planetary Biodiversity Inventory (National Science Foundation) projects create publication-quality maps. Funding for that work was coordinated by Dr. Norman Platnick, American Museum of Natural History."|trans }}</p>

@@ -13,7 +13,7 @@ try{
  await page.goto(base,{waitUntil:'networkidle'});await page.waitForFunction(()=>window.SimpleMappr&&window.jQuery);
  const profile=await(await page.request.get(base+'/_runtime')).json();
  expect(profile.assetProfile).toBe(expectedProfile);
- const keys=['rivers','oceans','roads','railroads','rivernames','placenames','physicalLabels','marineLabels','reliefgrey',...(expectedProfile==='full-map-v1'?['relief','reliefalt','blueMarble']:[])];
+ const keys=['rivers','oceans','roads','railroads','rivernames','placenames','physicalLabels','marineLabels','reliefgrey',...(expectedProfile==='full-map-v1'?['relief','reliefalt','blueMarble','ecoregions','ecoregionLabels','conservation','hotspotLabels','lakenames']:[])];
  async function render(label){
   const old=await page.locator('#mapOutputImage').getAttribute('src');
   const response=page.waitForResponse(response=>new URL(response.url()).pathname===basePath+'/application.json');

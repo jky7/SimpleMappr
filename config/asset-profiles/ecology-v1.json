@@ -1,0 +1,110 @@
+{
+  "schemaVersion": 1,
+  "profile": "ecology-v1",
+  "assets": [
+    {
+      "basename": "Ecoregions2017",
+      "kind": "vector",
+      "format": "zip",
+      "url": "https://storage.googleapis.com/teow2016/Ecoregions2017.zip",
+      "archive": "Ecoregions2017.zip",
+      "archiveBytes": 149248653,
+      "archiveSha256": "be36d6209e443038d02e309f0447c6e7f2a62f5fe60c605ffe90d064952f2a60",
+      "version": "2017",
+      "extractedBytes": 244076359,
+      "components": [
+        {
+          "name": "Ecoregions2017.dbf",
+          "bytes": 1027078,
+          "sha256": "036987c540eef2dfd6e8a0678f3b85193649b3f63f545463dfcb2fed4f973ab5"
+        },
+        {
+          "name": "Ecoregions2017.prj",
+          "bytes": 257,
+          "sha256": "db2f4b2a30c81a88981162acd3ff4629b86350834194efed1a6650446ccaecf4"
+        },
+        {
+          "name": "Ecoregions2017.shp",
+          "bytes": 243042148,
+          "sha256": "d564235263d7a2f118cbb4fcb6e7593ef5f8c2f3600604d46047aa2712a83574"
+        },
+        {
+          "name": "Ecoregions2017.shx",
+          "bytes": 6876,
+          "sha256": "140342bc19d04a6f1ee11d1099a6c115f8c076f1396c6f2a5a55182471ff4c42"
+        }
+      ],
+      "destination": "Ecoregions2017",
+      "license": "CC-BY-4.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by/4.0/",
+      "attribution": "Dinerstein et al. (2017), RESOLVE Ecoregions 2017. doi:10.1093/biosci/bix014. Source: https://ecoregions.world/. CC BY 4.0: https://creativecommons.org/licenses/by/4.0/.",
+      "verifiedOn": "2026-10-23"
+    },
+    {
+      "basename": "hotspots_2016_1",
+      "kind": "vector",
+      "format": "zip",
+      "url": "https://zenodo.org/records/3261807/files/hotspots_2016_1.zip",
+      "archive": "hotspots_2016_1.zip",
+      "archiveBytes": 14215303,
+      "archiveSha256": "90f7f19b47650b93872448605d6928e42c06f05bfc579d77f200015d1cd4d5c4",
+      "version": "2016.1",
+      "extractedBytes": 19482429,
+      "components": [
+        {
+          "name": "hotspots_2016_1.CPG",
+          "bytes": 5,
+          "sha256": "3ad3031f5503a4404af825262ee8232cc04d4ea6683d42c5dd0a2f2a27ac9824"
+        },
+        {
+          "name": "hotspots_2016_1.dbf",
+          "bytes": 3861,
+          "sha256": "48c53f6a621cdb84eb51ac942bfde78548b816041085ed8450388ae317044e94"
+        },
+        {
+          "name": "hotspots_2016_1.prj",
+          "bytes": 145,
+          "sha256": "a02a27b1d1982c8516d83398e85a3c8b1aef1713c13ef4d84d7bde17430c07c4"
+        },
+        {
+          "name": "hotspots_2016_1.sbn",
+          "bytes": 644,
+          "sha256": "e73fa3ef4c258d264fc7ec230f5c8d2118809f23884426fe592ae7560451004e"
+        },
+        {
+          "name": "hotspots_2016_1.sbx",
+          "bytes": 164,
+          "sha256": "f14a90295663403105c5017ad0a76d7038ecadf445e76fb52c88150b5c468263"
+        },
+        {
+          "name": "hotspots_2016_1.shp",
+          "bytes": 19302720,
+          "sha256": "b74cfc8f14cf08b46a902dcd74ad81fe4b2e3a1a4170a969f6c5ea64b888d75a"
+        },
+        {
+          "name": "hotspots_2016_1.shp.xml",
+          "bytes": 172481,
+          "sha256": "207f54a397ade4711ffcd367dc2684b9f91913f9843b554458f2ebcdb884b7f2"
+        },
+        {
+          "name": "hotspots_2016_1.shx",
+          "bytes": 524,
+          "sha256": "9752b35a1a48f274845ade960b3c2cdedb24dc5985b162d6de2fc4c29a116469"
+        },
+        {
+          "name": "README hotspot 2016.1.txt",
+          "bytes": 1885,
+          "sha256": "172fff755621231647c2a1970a7a3146272c45d26b15c087835e25393e819b3e"
+        }
+      ],
+      "destination": "hotspots_2016_1",
+      "license": "CC-BY-SA-4.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0/",
+      "attribution": "Michael Hoffman, Kellee Koenig, Gill Bunting, Jennifer Costanza and Kristen J. Williams (2016), Biodiversity Hotspots v2016.1. doi:10.5281/zenodo.3261807. CC BY-SA 4.0: https://creativecommons.org/licenses/by-sa/4.0/.",
+      "verifiedOn": "2026-10-23",
+      "sidecars": [
+        "README hotspot 2016.1.txt"
+      ]
+    }
+  ]
+}

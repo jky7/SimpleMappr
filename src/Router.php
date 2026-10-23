@@ -130,6 +130,11 @@ class Router
             return $this->_main();
         });
 
+        $router->get('/data-credits', function () {
+            Header::setHeader('html');
+            return $this->_twig()->render('data-credits.html', ['datasets'=>DatasetCredits::DATASETS]);
+        });
+
         $router->get('/about', function () {
             Header::setHeader("html");
             Session::selectLocale();

@@ -1,0 +1,66 @@
+#!/usr/bin/env python3
+import argparse
+import hashlib
+import json
+from pathlib import Path
+import re
+import struct
+import xml.etree.ElementTree as ET
+import zipfile
+
+root = Path(__file__).resolve().parent.parent
+parser = argparse.ArgumentParser(description='Generate RESOLVE 2017 styles from the pinned ECO_ID and COLOR fields.')
+parser.add_argument('--archive', type=Path, default=root/'.asset-cache/Ecoregions2017.zip')
+parser.add_argument('--check', action='store_true')
+args = parser.parse_args()
+manifest = json.loads((root/'config/asset-profiles/ecology-v1.json').read_text())
+asset = next(asset for asset in manifest['assets'] if asset['basename'] == 'Ecoregions2017')
+with args.archive.open('rb') as stream:
+    if hashlib.file_digest(stream, 'sha256').hexdigest() != asset['archiveSha256']:
+        raise SystemExit('Ecoregions archive checksum differs from its manifest.')
+with zipfile.ZipFile(args.archive) as archive:
+    data = archive.read('Ecoregions2017.dbf')
+count, header, record = struct.unpack_from('<IHH', data, 4)
+fields = {}
+offset = 1
+for position in range(32, header-1, 32):
+    field = data[position:position+32]
+    name = field[:11].split(b'\0')[0].decode('ascii')
+    fields[name] = (offset, field[16])
+    offset += field[16]
+colors = {}
+for index in range(count):
+    row = data[header+index*record:header+(index+1)*record]
+    if row[0:1] == b'*':
+        continue
+    values = {name: row[start:start+length].decode('cp1252').strip() for name, (start, length) in fields.items() if name in ['ECO_ID', 'COLOR']}
+    identifier = int(values['ECO_ID'])
+    if identifier in colors or not re.fullmatch(r'#[A-Fa-f0-9]{6}', values['COLOR']):
+        raise SystemExit('Ecoregion identifiers or colors are invalid.')
+    colors[identifier] = values['COLOR']
+if len(colors) != 847:
+    raise SystemExit('Expected 847 ecoregions.')
+sld = 'http://www.opengis.net/sld'
+ogc = 'http://www.opengis.net/ogc'
+ET.register_namespace('sld', sld)
+ET.register_namespace('ogc', ogc)
+document = ET.Element('{'+sld+'}StyledLayerDescriptor', version='1.0.0')
+layer = ET.SubElement(document, '{'+sld+'}NamedLayer')
+ET.SubElement(layer, '{'+sld+'}Name').text = 'RESOLVE Ecoregions 2017'
+style = ET.SubElement(ET.SubElement(layer, '{'+sld+'}UserStyle'), '{'+sld+'}FeatureTypeStyle')
+for identifier, color in sorted(colors.items()):
+    rule = ET.SubElement(style, '{'+sld+'}Rule')
+    equals = ET.SubElement(ET.SubElement(rule, '{'+ogc+'}Filter'), '{'+ogc+'}PropertyIsEqualTo')
+    ET.SubElement(equals, '{'+ogc+'}PropertyName').text = 'ECO_ID'
+    ET.SubElement(equals, '{'+ogc+'}Literal').text = str(identifier)
+    fill = ET.SubElement(ET.SubElement(rule, '{'+sld+'}PolygonSymbolizer'), '{'+sld+'}Fill')
+    ET.SubElement(fill, '{'+sld+'}CssParameter', name='fill').text = color
+ET.indent(document, space='  ')
+expected = ET.tostring(document, encoding='utf-8', xml_declaration=True)+b'\n'
+target = root/'config/ecoregions-2017.sld'
+if args.check:
+    if target.read_bytes() != expected:
+        raise SystemExit('Ecoregions style differs from the pinned data.')
+else:
+    target.write_bytes(expected)
+print('Verified 847 ecoregion styles.' if args.check else 'Generated 847 ecoregion styles.')
