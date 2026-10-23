@@ -29,6 +29,10 @@ Apache exposes the restricted front controller document root, `/_runtime`, and a
 
 The Dockerfile pins the Debian base digest and package snapshot. Keep `/usr/local/share/simplemappr-packages.tsv` available in the image. Update the digest and snapshot together, rebuild, and run both HTTP and CLI checks.
 
+Use a normal `022` file-creation mask for Git checkout and Docker builds. Docker preserves source permissions; a checkout created under `077` can leave PHP files unreadable to Apache even while native health passes. Keep deployment credentials mode `0600` separately. Before replacing the running app, verify application startup as `www-data`, then check the actual HTTP login page after replacement.
+
+Production Twig templates are cached in the persistent `public/tmp` volume with automatic reload disabled. Retire only verified compiled Twig cache directories when deploying changed templates; preserve preview images and other temporary files. A fresh-container test does not cover upgrades with an existing template cache. Confirm the new controls appear on the hosted page after deployment.
+
 ## Application port
 
 The canonical request is the original map document. Keep `bbox_map`, `projection_map` and `origin_map` together as source viewport state. Rendered responses include `rendered_origin`; the browser echoes it into `origin_map`. Native projection changes require explicit extent transformation. Never mutate the shared projection registry per request.
