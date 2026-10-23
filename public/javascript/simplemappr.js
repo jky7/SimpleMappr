@@ -590,12 +590,10 @@ var SimpleMappr = (function($, window, document) {
       }
 
       if(prev_data.width !== curr_data.width) {
-        commitHistory();
-        this.mapToggleSettings();
-      } else {
-        this.showSpinner();
-        this.postData($.param(prev_data), null, commitHistory);
+        this.restorePreviewWidth(prev_data.width);
       }
+      this.showSpinner();
+      this.postData($.param(prev_data), null, commitHistory);
     },
 
     mapRedo: function() {
@@ -625,12 +623,10 @@ var SimpleMappr = (function($, window, document) {
       }
 
       if(undo_data.width !== do_data.width) {
-        commitHistory();
-        this.mapToggleSettings();
-      } else {
-        this.showSpinner();
-        this.postData($.param(undo_data), null, commitHistory);
+        this.restorePreviewWidth(undo_data.width);
       }
+      this.showSpinner();
+      this.postData($.param(undo_data), null, commitHistory);
     },
 
     bindHotkeys: function() {
@@ -977,14 +973,15 @@ var SimpleMappr = (function($, window, document) {
             projection_map : $('#projection_map').val(),
             origin         : $('#origin').val(),
             qlayer         : ($('#stateprovinces').prop('checked')) ? 'stateprovinces_polygon' : 'countries',
-            width          : $('#width').val(),
-            height         : $('#height').val()
+            width          : self.vars.mapOutputImage.width(),
+            height         : self.vars.mapOutputImage.height()
           };
 
       $(document).unbind("mouseup", self.aQuery);
 
       self.destroyJcrop();
       self.destroyRedo();
+      self.hideErrorMessage();
       self.showSpinner();
 
       $.ajax({
@@ -1020,8 +1017,9 @@ var SimpleMappr = (function($, window, document) {
           }
         },
         error   : function(xhr, ajaxOptions, thrownError) {
-          self.unusedVariables(xhr,thrownError);
-          if(ajaxOptions === 'timeout') { self.hideSpinner(); }
+          self.unusedVariables(ajaxOptions,thrownError);
+          self.hideSpinner();
+          self.showErrorMessage((xhr.responseJSON && xhr.responseJSON.error) || $('#mapper-loading-error-message').text());
         }
       });
     },
@@ -1869,6 +1867,14 @@ var SimpleMappr = (function($, window, document) {
 
     mapToggleSettings: function() {
       $('#mapToolsCollapse').find('a').trigger('click');
+    },
+
+    restorePreviewWidth: function(width) {
+      width = Number(width) || 900;
+      var collapsed = width > 900;
+      $('#mapToolsCollapse').toggleClass('mapTools-collapsed', collapsed).find('a').attr('aria-expanded', String(!collapsed));
+      $('#mapTools').toggle(!collapsed);
+      $('#actionsBar').width(width + 10); $('#map').width(width);
     },
 
     bindPanelToggle: function() {

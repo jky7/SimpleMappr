@@ -102,8 +102,9 @@ class Query extends Mappr
                 throw new \InvalidArgumentException('The region selection must stay inside the map canvas.');
             }
         }
-        if ($bbox_query[0] >= $bbox_query[2] || $bbox_query[1] >= $bbox_query[3]) {
-            throw new \InvalidArgumentException('The region selection must have positive width and height.');
+        $pointSelection = (float)$bbox_query[0] === (float)$bbox_query[2] && (float)$bbox_query[1] === (float)$bbox_query[3];
+        if (!$pointSelection && ($bbox_query[0] >= $bbox_query[2] || $bbox_query[1] >= $bbox_query[3])) {
+            throw new \InvalidArgumentException('The region selection must be a point or a box with positive width and height.');
         }
 
         if (!array_key_exists($this->request->queryLayer, $this->shapes)) {
@@ -129,9 +130,15 @@ class Query extends Mappr
         $layer->template = "template.html";
         $layer->setProjection(parent::getProjection($this->default_projection));
 
-        $rect = new \rectObj($ll_coord->x, $ll_coord->y, $ur_coord->x, $ur_coord->y);
-
-        $return = $layer->queryByRect($this->map_obj, $rect);
+        if ($pointSelection) {
+            $layer->tolerance = 0;
+            $point = new \pointObj();
+            $point->setXY($ll_coord->x, $ll_coord->y);
+            $return = $layer->queryByPoint($this->map_obj, $point, MS_SINGLE, 0);
+        } else {
+            $rect = new \rectObj($ll_coord->x, $ll_coord->y, $ur_coord->x, $ur_coord->y);
+            $return = $layer->queryByRect($this->map_obj, $rect);
+        }
         if ($return == MS_SUCCESS) {
             if ($layer->getNumResults() > 0) {
                 $layer->open();
