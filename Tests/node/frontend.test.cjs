@@ -255,3 +255,19 @@ test('added and renumbered groups keep unique accordion targets and field labels
  groups.find('label').each(function(){assert.equal(e.w.document.getElementById(this.htmlFor).closest('.form-item'),this.closest('.form-item'));});
  assert.equal(groups.children().last().find('textarea').attr('name'),'coords[3][data]');
 });
+test('Clear All resets marker shape and size on every point layer',t=>{
+ const e=finish(t,editor());
+ for(let i=0;i<2;i++)e.$('#fieldSetsPoints').append('<div class="fieldset-points"><select class="m-mapShape">'+['','plus','cross','asterisk','circle','square'].map(v=>'<option>'+v+'</option>').join('')+'</select><select class="m-mapSize">'+['','6','8','10','16'].map(v=>'<option>'+v+'</option>').join('')+'</select></div>');
+ e.$('#fieldSetsPoints .m-mapShape').val('square');e.$('#fieldSetsPoints .m-mapSize').val('16');
+ e.p.clearZone(e.$('#fieldSetsPoints').children());
+ assert.deepEqual(e.$('#fieldSetsPoints .m-mapShape').map(function(){return this.value;}).get(),['circle','circle']);
+ assert.deepEqual(e.$('#fieldSetsPoints .m-mapSize').map(function(){return this.value;}).get(),['10','10']);
+});
+test('Tab accepts the active country autocomplete suggestion without an error',t=>{
+ const e=finish(t,editor());e.$('#fieldSetsRegions').append('<textarea name="regions[0][data]"></textarea>');
+ e.$.getJSON=(url,data,respond)=>respond([{label:'Canada',value:'Canada'}]);e.p.bindAutocomplete();
+ const field=e.$('#fieldSetsRegions textarea');field.val('Can').autocomplete('search');
+ field.autocomplete('instance').menu.next();
+ field.trigger(e.$.Event('keydown',{key:'Tab',keyCode:9,which:9}));
+ assert.equal(field.val(),'Canada, ');
+});
