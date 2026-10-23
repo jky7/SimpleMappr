@@ -17,7 +17,7 @@ FORMAT = 'simplemappr-deployment-v1'
 DATABASE_IMAGE = 'mariadb:11.8.9@sha256:f16d7a344413e519dff518f27bdb221388f84b0d274c97c4fb5f2cb0dc1b34fa'
 PROFILES = ('minimal-vector-v1', 'extended-vector-v1', 'gray-relief-v1')
 OVERRIDES = {'config/conf.php': 'config-conf.php', 'config/shapefiles.yml': 'config-shapefiles.yml'}
-SOCIAL_PROVIDERS = ('GOOGLE', 'MICROSOFT')
+SOCIAL_PROVIDERS = ('GOOGLE', 'GITHUB')
 SOCIAL_ENV_KEYS = tuple('SIMPLEMAPPR_' + provider + suffix
                         for provider in SOCIAL_PROVIDERS for suffix in ('_CLIENT_ID', '_CLIENT_SECRET'))
 ENV_KEYS = {'SIMPLEMAPPR_OWNER_USERNAME', 'SIMPLEMAPPR_OWNER_PASSWORD_HASH', 'SIMPLEMAPPR_DB_PASSWORD',
@@ -156,9 +156,11 @@ def parse_env(data):
             parsed = urlsplit(url)
             valid_port = parsed.port is None or 1 <= parsed.port <= 65535
         except ValueError:
-            fail('Social sign-in requires a valid absolute origin.')
-        if not url.startswith(('http://', 'https://')) or not parsed.hostname or parsed.path not in ('', '/') or not valid_port:
-            fail('Social sign-in requires an absolute origin without a path.')
+            fail('Social sign-in requires a valid absolute base URL.')
+        if (not url.startswith(('http://', 'https://')) or not parsed.hostname
+                or not re.fullmatch(r'(?:/[A-Za-z0-9._~-]+)*/?', parsed.path)
+                or set(parsed.path.split('/')) & {'.', '..'} or not valid_port):
+            fail('Social sign-in requires an absolute base URL with a safe path.')
         if parsed.scheme != 'https' and parsed.hostname.lower() not in ('localhost', '127.0.0.1', '::1'):
             fail('Social sign-in requires HTTPS outside localhost.')
     if 'SIMPLEMAPPR_ASSET_CACHE' in values:

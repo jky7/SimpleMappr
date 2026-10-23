@@ -24,7 +24,7 @@ final class SocialLoginTest extends TestCase
     {
         foreach (['SIMPLEMAPPR_URL' => 'http://localhost:8080',
             'SIMPLEMAPPR_GOOGLE_CLIENT_ID' => 'google-client', 'SIMPLEMAPPR_GOOGLE_CLIENT_SECRET' => 'google-secret',
-            'SIMPLEMAPPR_MICROSOFT_CLIENT_ID' => 'microsoft-client', 'SIMPLEMAPPR_MICROSOFT_CLIENT_SECRET' => 'microsoft-secret'] as $name => $value) {
+            'SIMPLEMAPPR_GITHUB_CLIENT_ID' => 'github-client', 'SIMPLEMAPPR_GITHUB_CLIENT_SECRET' => 'github-secret'] as $name => $value) {
             $this->environment[$name] = getenv($name);
             putenv($name.'='.$value);
         }
@@ -72,15 +72,91 @@ final class SocialLoginTest extends TestCase
         self::assertCount(0, $_SESSION['social_flows']);
     }
 
-    public function testMicrosoftAcceptsTenantBoundSignature(): void
+    public function testGitHubUsesEmptyScopePkceAndNumericIdentityAcrossRenames(): void
     {
-        $tenant = '9188040d-6c67-4c5b-b112-36a304b66dad';
-        [$login, $query] = $this->flow('microsoft', [
-            'iss' => 'https://login.microsoftonline.com/'.$tenant.'/v2.0',
-            'tid' => $tenant, 'aud' => 'microsoft-client',
-        ], ['issuer' => 'https://login.microsoftonline.com/{tenantid}/v2.0']);
-        $identity = $login->complete('microsoft', $query);
-        self::assertSame('oidc:microsoft:'.hash('sha256', 'https://login.microsoftonline.com/'.$tenant."/v2.0\0subject"), $identity->identifier);
+        $identifiers = [];
+        foreach (['Original account', 'Renamed account'] as $name) {
+            $auth = [];
+            $calls = [];
+            $login = new SocialLogin(function (string $url, ?array $form, ?string $bearer) use (&$auth, &$calls, $name): array {
+                $calls[] = $url;
+                if ($form !== null) {
+                    self::assertNull($bearer);
+                    self::assertSame('http://localhost:8080/auth/github/callback', $form['redirect_uri']);
+                    self::assertSame($auth['code_challenge'], self::base64Url(hash('sha256', $form['code_verifier'], true)));
+                    return ['token_type' => 'bearer', 'scope' => '', 'access_token' => 'github-private-token'];
+                }
+                self::assertSame('github-private-token', $bearer);
+                return ['id' => 123456789, 'login' => 'renamed-login', 'name' => "  ".$name."\0 ", 'email' => 'unused@example.invalid'];
+            });
+            parse_str(parse_url($login->begin('github'), PHP_URL_QUERY), $auth);
+            self::assertSame('', $auth['scope']);
+            self::assertArrayNotHasKey('nonce', $auth);
+            self::assertSame('S256', $auth['code_challenge_method']);
+            $identity = $login->complete('github', ['state' => $auth['state'], 'code' => 'code']);
+            $identifiers[] = $identity->identifier;
+            self::assertSame($name, $identity->displayName);
+            self::assertSame('github', $identity->provider);
+            self::assertSame(['https://github.com/login/oauth/access_token', 'https://api.github.com/user'], $calls);
+            self::assertSame(['provider', 'identifier', 'displayName'], array_keys(get_object_vars($identity)));
+            self::assertStringNotContainsString('github-private-token', serialize($_SESSION));
+        }
+        self::assertSame('oauth:github:'.hash('sha256', "https://github.com\0".'123456789'), $identifiers[0]);
+        self::assertSame($identifiers[0], $identifiers[1]);
+    }
+
+    #[DataProvider('invalidGitHubResponses')]
+    public function testGitHubRejectsMalformedTokenAndProfile(array $tokens, array $profile): void
+    {
+        $login = new SocialLogin(static fn(string $url, ?array $form): array => $form === null ? $profile : $tokens);
+        parse_str(parse_url($login->begin('github'), PHP_URL_QUERY), $auth);
+        $query = ['state' => $auth['state'], 'code' => 'code'];
+        $this->assertRefused($login, 'github', $query);
+        $this->assertRefused($login, 'github', $query);
+    }
+
+    public static function invalidGitHubResponses(): array
+    {
+        $tokens = ['access_token' => 'private-token', 'token_type' => 'bearer', 'scope' => ''];
+        $profile = ['id' => 123, 'login' => 'test-user'];
+        $cases = [];
+        foreach ([['access_token' => null], ['access_token' => []], ['access_token' => ''],
+            ['access_token' => str_repeat('a', 4097)], ['access_token' => "token\n"],
+            ['token_type' => null], ['token_type' => 'MAC'], ['scope' => null], ['scope' => 'repo'],
+            ['error' => 'private-secret']] as $change) {
+            $cases[] = [array_replace($tokens, $change), $profile];
+        }
+        foreach ([['id' => null], ['id' => 0], ['id' => -1], ['id' => '123'], ['id' => 1.2],
+            ['id' => []], ['id' => true], ['message' => 'Bad credentials']] as $change) {
+            $cases[] = [$tokens, array_replace($profile, $change)];
+        }
+        return $cases;
+    }
+
+    public function testGitHubFallbackNamesAndBoundedDisplayName(): void
+    {
+        foreach ([['name' => null, 'login' => 'github-login', 'expected' => 'github-login'],
+            ['name' => "\0", 'login' => null, 'expected' => 'GitHub user'],
+            ['name' => str_repeat('é', 130), 'expected' => str_repeat('é', 125)]] as $profile) {
+            $login = new SocialLogin(static fn(string $url, ?array $form): array => $form === null
+                ? ['id' => 123] + $profile : ['access_token' => 'token', 'token_type' => 'Bearer', 'scope' => '']);
+            parse_str(parse_url($login->begin('github'), PHP_URL_QUERY), $auth);
+            self::assertSame($profile['expected'], $login->complete('github', ['state' => $auth['state'], 'code' => 'code'])->displayName);
+        }
+    }
+
+    public function testGitHubFlowsRejectExpiryProviderMixupAndRotationBeforeNetwork(): void
+    {
+        foreach (['expiry', 'provider', 'rotation', 'state'] as $failure) {
+            $called = false;
+            $login = new SocialLogin(function () use (&$called): array { $called = true; return []; });
+            parse_str(parse_url($login->begin('github'), PHP_URL_QUERY), $auth);
+            if ($failure === 'expiry') { $_SESSION['social_flows'][$auth['state']]['created'] -= 301; }
+            if ($failure === 'rotation') { putenv('SIMPLEMAPPR_GITHUB_CLIENT_SECRET=rotated'); }
+            $this->assertRefused($login, $failure === 'provider' ? 'google' : 'github',
+                ['state' => $failure === 'state' ? str_repeat('b', 43) : $auth['state'], 'code' => 'code']);
+            self::assertFalse($called);
+        }
     }
 
     public function testMultipleAudiencesRequireCorrectAuthorizedParty(): void
@@ -138,31 +214,6 @@ final class SocialLoginTest extends TestCase
             'not before string' => [['nbf' => (string)(time() - 100)]],
             'not before null' => [['nbf' => null]],
             'future iat with nbf' => [['iat' => time() + 100, 'nbf' => time() - 10]],
-        ];
-    }
-
-    #[DataProvider('invalidMicrosoftClaims')]
-    public function testRejectsMicrosoftTenantOrKeyIssuerMismatch(array $claims, array $key): void
-    {
-        [$login, $query] = $this->flow('microsoft', $claims + [
-            'tid' => '9188040d-6c67-4c5b-b112-36a304b66dad',
-            'iss' => 'https://login.microsoftonline.com/9188040d-6c67-4c5b-b112-36a304b66dad/v2.0',
-            'aud' => 'microsoft-client',
-        ], $key);
-        $this->expectException(HttpException::class);
-        $login->complete('microsoft', $query);
-    }
-
-    public static function invalidMicrosoftClaims(): array
-    {
-        return [
-            'no tenant' => [['tid' => null], ['issuer' => 'https://login.microsoftonline.com/{tenantid}/v2.0']],
-            'malformed tenant' => [['tid' => '../common'], ['issuer' => 'https://login.microsoftonline.com/{tenantid}/v2.0']],
-            'common issuer' => [['iss' => 'https://login.microsoftonline.com/common/v2.0'], ['issuer' => 'https://login.microsoftonline.com/{tenantid}/v2.0']],
-            'wrong tenant issuer' => [['iss' => 'https://login.microsoftonline.com/aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa/v2.0'], ['issuer' => 'https://login.microsoftonline.com/{tenantid}/v2.0']],
-            'no key issuer' => [[], []],
-            'different key tenant' => [[], ['issuer' => 'https://login.microsoftonline.com/aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa/v2.0']],
-            'invalid key host' => [[], ['issuer' => 'https://attacker.example/{tenantid}/v2.0']],
         ];
     }
 
@@ -304,7 +355,7 @@ final class SocialLoginTest extends TestCase
             if ($failure === 'expiry') { $_SESSION['social_flows'][$query['state']]['created'] -= 301; }
             if ($failure === 'rotation') { putenv('SIMPLEMAPPR_GOOGLE_CLIENT_SECRET=rotated'); }
             if ($failure === 'signed-in') { $_SESSION['uid'] = 123; }
-            $this->assertRefused($login, $failure === 'provider' ? 'microsoft' : 'google', $query);
+            $this->assertRefused($login, $failure === 'provider' ? 'github' : 'google', $query);
             self::assertArrayNotHasKey($query['state'], $_SESSION['social_flows']);
             unset($_SESSION['uid']);
         }

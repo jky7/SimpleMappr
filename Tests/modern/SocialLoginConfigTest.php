@@ -7,7 +7,7 @@ final class SocialLoginConfigTest extends TestCase
 {
     private array $environment = [];
     private const KEYS = ['SIMPLEMAPPR_URL', 'SIMPLEMAPPR_GOOGLE_CLIENT_ID', 'SIMPLEMAPPR_GOOGLE_CLIENT_SECRET',
-        'SIMPLEMAPPR_MICROSOFT_CLIENT_ID', 'SIMPLEMAPPR_MICROSOFT_CLIENT_SECRET'];
+        'SIMPLEMAPPR_GITHUB_CLIENT_ID', 'SIMPLEMAPPR_GITHUB_CLIENT_SECRET'];
 
     protected function setUp(): void
     {
@@ -73,12 +73,27 @@ final class SocialLoginConfigTest extends TestCase
             'relative origin' => [['SIMPLEMAPPR_URL'=>'/']],
             'HTTP remote' => [['SIMPLEMAPPR_URL'=>'http://map.example']],
             'origin credentials' => [['SIMPLEMAPPR_URL'=>'https://user:password@map.example']],
-            'origin path' => [['SIMPLEMAPPR_URL'=>'https://map.example/maps']],
+            'unsafe path' => [['SIMPLEMAPPR_URL'=>'https://map.example/a/../maps']],
+            'encoded path' => [['SIMPLEMAPPR_URL'=>'https://map.example/%2f/maps']],
+            'double slash path' => [['SIMPLEMAPPR_URL'=>'https://map.example//maps']],
             'origin query' => [['SIMPLEMAPPR_URL'=>'https://map.example?x=y']],
             'origin fragment' => [['SIMPLEMAPPR_URL'=>'https://map.example#x']],
             'secret whitespace' => [['SIMPLEMAPPR_GOOGLE_CLIENT_SECRET'=>'private-secret with-spaces']],
             'secret too long' => [['SIMPLEMAPPR_GOOGLE_CLIENT_SECRET'=>str_repeat('a',4097)]],
         ];
+    }
+
+    public function testHostedPrefixAppliesToBothProviders(): void
+    {
+        $this->configure();
+        putenv('SIMPLEMAPPR_URL=https://jky.io/simplemappr/');
+        putenv('SIMPLEMAPPR_GITHUB_CLIENT_ID=github-client');
+        putenv('SIMPLEMAPPR_GITHUB_CLIENT_SECRET=github-secret');
+        self::assertSame('https://jky.io/simplemappr/auth/google/callback', SocialLoginConfig::provider('google')['redirect_uri']);
+        self::assertSame('https://jky.io/simplemappr/auth/github/callback', SocialLoginConfig::provider('github')['redirect_uri']);
+        self::assertSame('oauth:github:', SocialLoginConfig::provider('github')['identity_prefix']);
+        self::assertSame('', SocialLoginConfig::provider('github')['scope']);
+        self::assertNull(SocialLoginConfig::fingerprint('microsoft'));
     }
 
     private function configure(): void

@@ -50,7 +50,7 @@ jobs:
           Tests/smoke/check-import-boundary > build/receipts/import-boundary.log
           python3 -B -m unittest discover -s Tests/operations -p 'test_*.py'
           python3 -B -m unittest discover -s Tests/browser -p 'test_*.py'
-      - name: Google and Microsoft sign-in over isolated HTTPS
+      - name: Google and GitHub sign-in over isolated HTTPS
         run: |
           docker build -t simplemappr-browser-contract:local Tests/browser
           Tests/smoke/check-social-login --image simplemappr-runtime:local --browser-image simplemappr-browser-contract:local > build/receipts/social-login.log

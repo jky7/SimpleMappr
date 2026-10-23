@@ -31,7 +31,7 @@ final class SocialLogin
             array_shift($flows);
         }
         $state = self::base64Url(random_bytes(32));
-        $nonce = self::base64Url(random_bytes(32));
+        $nonce = $config['protocol'] === 'oidc' ? self::base64Url(random_bytes(32)) : null;
         $verifier = self::base64Url(random_bytes(32));
         $flows[$state] = [
             'provider' => $provider, 'nonce' => $nonce, 'verifier' => $verifier,
@@ -40,7 +40,7 @@ final class SocialLogin
         $_SESSION['social_flows'] = $flows;
         return $config['authorize_url'].'?'.http_build_query([
             'client_id' => $config['client_id'], 'redirect_uri' => $config['redirect_uri'],
-            'response_type' => 'code', 'response_mode' => 'query', 'scope' => 'openid profile',
+            'response_type' => 'code', 'response_mode' => 'query', 'scope' => $config['scope'],
             'state' => $state, 'nonce' => $nonce, 'code_challenge_method' => 'S256',
             'code_challenge' => self::base64Url(hash('sha256', $verifier, true)),
         ], '', '&', PHP_QUERY_RFC3986);
@@ -80,20 +80,24 @@ final class SocialLogin
                 'client_id' => $config['client_id'], 'client_secret' => $config['client_secret'],
                 'redirect_uri' => $config['redirect_uri'], 'code_verifier' => $flow['verifier'],
             ]);
-            if (!isset($tokens['id_token']) || !is_string($tokens['id_token'])
-                || isset($tokens['error'])
-                || !is_string($tokens['token_type'] ?? null)
+            if (isset($tokens['error']) || !is_string($tokens['token_type'] ?? null)
                 || strcasecmp($tokens['token_type'], 'Bearer') !== 0) {
                 throw new \UnexpectedValueException();
             }
-            return $this->identity($provider, $tokens['id_token'], $config, $flow);
+            return $config['protocol'] === 'oidc'
+                ? $this->googleIdentity($tokens, $config, $flow)
+                : $this->githubIdentity($tokens, $config);
         } catch (\Throwable) {
             throw new HttpException(400, 'Sign-in could not be verified. Start again.');
         }
     }
 
-    private function identity(string $provider, #[\SensitiveParameter] string $token, array $config, array $flow): SocialIdentity
+    private function googleIdentity(#[\SensitiveParameter] array $tokens, array $config, array $flow): SocialIdentity
     {
+        $token = $tokens['id_token'] ?? null;
+        if (!is_string($token)) {
+            throw new \UnexpectedValueException();
+        }
         if (strlen($token) > 32768 || !preg_match('/\A([A-Za-z0-9_-]{1,2048})\.([A-Za-z0-9_-]+)\.([A-Za-z0-9_-]+)\z/', $token, $parts)) {
             throw new \UnexpectedValueException();
         }
@@ -163,44 +167,58 @@ final class SocialLogin
             || (array_key_exists('azp', $claims) || count($audiences) > 1) && ($claims['azp'] ?? null) !== $config['client_id']) {
             throw new \UnexpectedValueException();
         }
-        if ($provider === 'google') {
-            if (!in_array($claims['iss'], ['accounts.google.com', 'https://accounts.google.com'], true)) {
-                throw new \UnexpectedValueException();
-            }
-            $issuer = 'https://accounts.google.com';
-        } else {
-            $tenant = $claims['tid'] ?? null;
-            if (!is_string($tenant) || !preg_match('/\A[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\z/', $tenant)) {
-                throw new \UnexpectedValueException();
-            }
-            $issuer = 'https://login.microsoftonline.com/'.$tenant.'/v2.0';
-            if ($claims['iss'] !== $issuer || !is_string($jwk['issuer'] ?? null)
-                || str_replace('{tenantid}', $tenant, $jwk['issuer']) !== $issuer) {
-                throw new \UnexpectedValueException();
-            }
+        if (!in_array($claims['iss'], ['accounts.google.com', $config['issuer']], true)) {
+            throw new \UnexpectedValueException();
         }
         $name = is_string($claims['name'] ?? null) ? $claims['name'] : '';
         $name = trim(preg_replace('/[\p{C}]/u', '', $name) ?? '');
         if ($name === '') {
             $name = $config['name'].' user';
         }
-        return new SocialIdentity($provider, 'oidc:'.$provider.':'.hash('sha256', $issuer."\0".$claims['sub']), mb_substr($name, 0, 125, 'UTF-8'));
+        return new SocialIdentity($config['id'], $config['identity_prefix'].hash('sha256', $config['issuer']."\0".$claims['sub']), mb_substr($name, 0, 125, 'UTF-8'));
     }
 
-    private function fetch(string $url, #[\SensitiveParameter] ?array $form): array
+    private function githubIdentity(#[\SensitiveParameter] array $tokens, array $config): SocialIdentity
+    {
+        $token = $tokens['access_token'] ?? null;
+        if (!is_string($token) || strlen($token) > 4096 || !preg_match('/\A[A-Za-z0-9._~+\/-]+=*\z/', $token)
+            || ($tokens['scope'] ?? null) !== '') {
+            throw new \UnexpectedValueException();
+        }
+        $profile = $this->fetch($config['profile_url'], null, $token);
+        if (!is_int($profile['id'] ?? null) || $profile['id'] <= 0 || isset($profile['message']) || isset($profile['error'])) {
+            throw new \UnexpectedValueException();
+        }
+        $name = '';
+        foreach (['name', 'login'] as $field) {
+            $value = is_string($profile[$field] ?? null) ? $profile[$field] : '';
+            $name = trim(preg_replace('/[\p{C}]/u', '', $value) ?? '');
+            if ($name !== '') {
+                break;
+            }
+        }
+        return new SocialIdentity($config['id'], $config['identity_prefix'].hash('sha256', $config['issuer']."\0".(string)$profile['id']),
+            mb_substr($name === '' ? 'GitHub user' : $name, 0, 125, 'UTF-8'));
+    }
+
+    private function fetch(string $url, #[\SensitiveParameter] ?array $form, #[\SensitiveParameter] ?string $bearer = null): array
     {
         if ($this->request !== null) {
-            return ($this->request)($url, $form);
+            return ($this->request)($url, $form, $bearer);
         }
         $body = '';
         $headers = 0;
+        $requestHeaders = ['Accept: application/json'];
+        if ($bearer !== null) {
+            $requestHeaders = ['Accept: application/vnd.github+json', 'X-GitHub-Api-Version: 2026-03-10', 'Authorization: Bearer '.$bearer];
+        }
         $curl = curl_init($url);
         try {
             curl_setopt_array($curl, [
                 CURLOPT_PROTOCOLS => CURLPROTO_HTTPS, CURLOPT_FOLLOWLOCATION => false,
                 CURLOPT_PROXY => '', CURLOPT_NOPROXY => '*', CURLOPT_SSL_VERIFYPEER => true,
                 CURLOPT_SSL_VERIFYHOST => 2, CURLOPT_CONNECTTIMEOUT => 5, CURLOPT_TIMEOUT => 15,
-                CURLOPT_HTTPHEADER => ['Accept: application/json'], CURLOPT_ENCODING => '',
+                CURLOPT_HTTPHEADER => $requestHeaders, CURLOPT_USERAGENT => 'SimpleMappr', CURLOPT_ENCODING => '',
                 CURLOPT_HEADERFUNCTION => static function ($curl, string $line) use (&$headers): int {
                     $headers += strlen($line);
                     return $headers <= 65536 ? strlen($line) : 0;

@@ -4,6 +4,8 @@ import base64
 import copy
 import hashlib
 import http.cookiejar
+import http.client
+import http.server
 import json
 import os
 from pathlib import Path
@@ -106,6 +108,40 @@ class ForwardConnection(socketserver.BaseRequestHandler):
             return
 
 
+class PrefixProxy(http.server.BaseHTTPRequestHandler):
+    def log_message(self, *args):
+        pass
+
+    def do_GET(self):
+        self.forward()
+
+    def do_POST(self):
+        self.forward()
+
+    def forward(self):
+        prefix = '/simplemappr'
+        if not self.path.startswith(prefix + '/'):
+            self.send_error(404)
+            return
+        size = int(self.headers.get('Content-Length', '0'))
+        body = self.rfile.read(size) if size else None
+        upstream = http.client.HTTPConnection(*self.server.fixture.app_address, timeout=25)
+        try:
+            upstream.request(self.command, self.path[len(prefix):], body=body,
+                             headers={key: value for key, value in self.headers.items() if key.lower() != 'connection'})
+            response = upstream.getresponse()
+            raw = response.read()
+            self.send_response(response.status)
+            for key, value in response.getheaders():
+                if key.lower() not in ['connection', 'transfer-encoding', 'content-length']:
+                    self.send_header(key, value)
+            self.send_header('Content-Length', str(len(raw)))
+            self.end_headers()
+            self.wfile.write(raw)
+        finally:
+            upstream.close()
+
+
 def retry(call, message, seconds=100):
     deadline = time.monotonic() + seconds
     while True:
@@ -122,7 +158,7 @@ def certificates(directory):
         return process(['openssl', *map(str, args)])
     openssl('req', '-x509', '-newkey', 'rsa:2048', '-nodes', '-days', '1', '-subj', '/CN=Disposable social fixture CA', '-keyout', directory / 'ca-key.pem', '-out', directory / 'ca.pem')
     openssl('req', '-new', '-newkey', 'rsa:2048', '-nodes', '-subj', '/CN=oauth2.googleapis.com', '-keyout', directory / 'tls-key.pem', '-out', directory / 'server.csr')
-    (directory / 'extensions').write_text('subjectAltName=DNS:oauth2.googleapis.com,DNS:www.googleapis.com,DNS:login.microsoftonline.com,DNS:accounts.google.com\nextendedKeyUsage=serverAuth\n')
+    (directory / 'extensions').write_text('subjectAltName=DNS:oauth2.googleapis.com,DNS:www.googleapis.com,DNS:github.com,DNS:api.github.com,DNS:accounts.google.com\nextendedKeyUsage=serverAuth\n')
     (directory / 'wrong-extensions').write_text('subjectAltName=DNS:wrong.example.invalid\nextendedKeyUsage=serverAuth\n')
     for output, extensions in [('cert.pem', 'extensions'), ('wrong-cert.pem', 'wrong-extensions')]:
         openssl('x509', '-req', '-in', directory / 'server.csr', '-CA', directory / 'ca.pem', '-CAkey', directory / 'ca-key.pem', '-CAcreateserial', '-days', '1', '-extfile', directory / extensions, '-out', directory / output)
@@ -177,7 +213,7 @@ class Fixture:
             'SIMPLEMAPPR_DB_HOST': 'db', 'SIMPLEMAPPR_DB_NAME': 'simplemappr', 'SIMPLEMAPPR_DB_USER': 'simplemappr', 'SIMPLEMAPPR_DB_PASSWORD': db_password,
             'SIMPLEMAPPR_OWNER_USERNAME': 'fixture-owner', 'SIMPLEMAPPR_OWNER_PASSWORD_HASH': password_hash,
             'SIMPLEMAPPR_GOOGLE_CLIENT_ID': 'fixture-google-client', 'SIMPLEMAPPR_GOOGLE_CLIENT_SECRET': 'fixture-google-secret',
-            'SIMPLEMAPPR_MICROSOFT_CLIENT_ID': 'fixture-microsoft-client', 'SIMPLEMAPPR_MICROSOFT_CLIENT_SECRET': 'fixture-microsoft-secret',
+            'SIMPLEMAPPR_GITHUB_CLIENT_ID': 'fixture-github-client', 'SIMPLEMAPPR_GITHUB_CLIENT_SECRET': 'fixture-github-secret',
             'MARIADB_DATABASE': 'simplemappr', 'MARIADB_USER': 'simplemappr', 'MARIADB_PASSWORD': db_password, 'MARIADB_ROOT_PASSWORD': secrets.token_hex(32),
         }
         self.env.write_text(''.join(key + '=' + value + '\n' for key, value in env.items()))
@@ -194,7 +230,7 @@ class Fixture:
         docker('run', '--rm', '--network', self.network, '--env-file', self.env, '-v', self.volumes[0] + ':/srv/simplemappr/mapserver/maps:ro', self.image, 'scripts/initialize-database')
         self.containers.append(self.provider)
         docker('run', '-d', '--name', self.provider, '--network', self.network,
-               '--network-alias', 'oauth2.googleapis.com', '--network-alias', 'www.googleapis.com', '--network-alias', 'login.microsoftonline.com', '--network-alias', 'accounts.google.com',
+               '--network-alias', 'oauth2.googleapis.com', '--network-alias', 'www.googleapis.com', '--network-alias', 'github.com', '--network-alias', 'api.github.com', '--network-alias', 'accounts.google.com',
                '-v', str(fixture_dir) + ':/fixture:ro', '--entrypoint', 'python3', self.image, '/fixture/provider.py')
         address = json.loads(docker('inspect', self.provider))[0]['NetworkSettings']['Networks'][self.network]['IPAddress']
         self.provider_address = address
@@ -295,7 +331,7 @@ class Fixture:
                     failure = json.loads(line)
                 except ValueError:
                     continue
-                if isinstance(failure, dict) and failure.get('provider') in ['', 'Google', 'Microsoft'] and failure.get('stage') in [
+                if isinstance(failure, dict) and failure.get('provider') in ['', 'Google', 'GitHub'] and failure.get('stage') in [
                     'launch', 'open-login', 'click-provider', 'return-to-editor', 'signed-in-control',
                     'editor-ready', 'open-my-maps', 'private-maps-request', 'sign-out', 'signed-out-control',
                 ] and failure.get('category') in ['TimeoutError', 'Error', 'AssertionError', 'TypeError']:
@@ -306,7 +342,7 @@ class Fixture:
                 (diagnostics / 'browser-process.stderr').chmod(0o600)
                 description += '; private diagnostics in ' + str(diagnostics)
             raise RuntimeError(description)
-        self.passed('Chromium clicks Google and Microsoft buttons through HTTPS callbacks, My Maps and sign-out')
+        self.passed('Chromium clicks Google and GitHub buttons through HTTPS callbacks, My Maps and sign-out')
 
     def cleanup(self):
         self.forwarder.shutdown()
@@ -323,7 +359,7 @@ def checks(fixture):
     origin = fixture.origin
     guest = Browser(origin)
     page, headers = guest.page()
-    require('Continue with Google' in page and 'Continue with Microsoft' in page and 'Apple' not in page, 'Configured provider buttons')
+    require('Continue with Google' in page and 'Continue with GitHub' in page and 'Apple' not in page, 'Configured provider buttons')
     require('no-store' in headers['Cache-Control'] and headers['Referrer-Policy'] == 'no-referrer', 'Login response privacy headers')
     require(guest.request('/auth/google/start', 'POST', fields={}, csrf=False)[0] == 403, 'Initiation requires CSRF')
     require(guest.request('/auth/google/start')[0] != 303, 'GET cannot initiate sign-in')
@@ -348,15 +384,15 @@ def checks(fixture):
     require(google.request('/citation.json')[0] == 403 and google.request('/user')[0] == 403, 'Social users cannot administer')
     fixture.passed('Google HTTPS code exchange, RS256 validation, session rotation and ordinary role')
 
-    microsoft = Browser(origin)
-    fixture.login(microsoft, 'microsoft', 'fixture-one')
-    microsoft_map = fixture.save(microsoft, 'shared-title')
-    microsoft_uid = fixture.sql(f'SELECT uid FROM maps WHERE mid={microsoft_map};')
-    require(google_uid != microsoft_uid, 'Same-email profiles and same subject remain separate across providers')
-    require(fixture.sql(f'SELECT role FROM users WHERE uid={microsoft_uid};') == '1', 'Microsoft role stays ordinary')
-    fixture.passed('Microsoft HTTPS code exchange, tenant signing key and separate private account')
+    github = Browser(origin)
+    fixture.login(github, 'github', 'fixture-one')
+    github_map = fixture.save(github, 'shared-title')
+    github_uid = fixture.sql(f'SELECT uid FROM maps WHERE mid={github_map};')
+    require(google_uid != github_uid, 'Same-email profiles and same subject remain separate across providers')
+    require(fixture.sql(f'SELECT role FROM users WHERE uid={github_uid};') == '1', 'GitHub role stays ordinary')
+    fixture.passed('GitHub HTTPS PKCE exchange, authenticated public profile and separate private account')
 
-    for browser, own_map, foreign_maps in [(google, google_map, [owner_map, microsoft_map]), (microsoft, microsoft_map, [owner_map, google_map]), (owner, owner_map, [google_map, microsoft_map])]:
+    for browser, own_map, foreign_maps in [(google, google_map, [owner_map, github_map]), (github, github_map, [owner_map, google_map]), (owner, owner_map, [google_map, github_map])]:
         require(browser.request(f'/usermap/{own_map}.json')[0] == 200, 'Owner reads own map')
         require(browser.request(f'/map/{own_map}.png')[2].startswith(b'\x89PNG\r\n\x1a\n'), 'Owner exports own map')
         for foreign in foreign_maps:
@@ -364,12 +400,12 @@ def checks(fixture):
                 require(browser.request(path)[0] == 404, 'Cross-account read and export denied')
             require(browser.request(f'/usermap/{foreign}', 'DELETE')[0] == 404, 'Cross-account deletion denied')
             require(browser.request('/share', 'POST', fields={'mid': foreign})[0] == 404, 'Cross-account share creation denied')
-    fixture.passed('Google, Microsoft and local owner map read, export, delete and share isolation')
+    fixture.passed('Google, GitHub and local owner map read, export, delete and share isolation')
 
     status, _, body = google.request('/share', 'POST', fields={'mid': google_map})
     require(status == 200, 'Owner creates explicit sharing link')
     share = json.loads(body)
-    require(microsoft.request('/share/' + str(share['sid']), 'DELETE')[0] == 404, 'Foreign share revocation denied')
+    require(github.request('/share/' + str(share['sid']), 'DELETE')[0] == 404, 'Foreign share revocation denied')
     require(guest.request(urllib.parse.urlsplit(share['url']).path + '.json')[0] == 200, 'Explicit share is readable by guest')
     require(google.request('/share/' + str(share['sid']), 'DELETE')[0] == 200, 'Owner revokes share')
     require(guest.request(urllib.parse.urlsplit(share['url']).path + '.json')[0] == 404, 'Revoked share stops working')
@@ -378,7 +414,7 @@ def checks(fixture):
     repeated = Browser(origin)
     fixture.login(repeated)
     require(repeated.request(f'/usermap/{google_map}.json')[0] == 200, 'Repeat identity reaches original private maps')
-    require(fixture.sql("SELECT COUNT(*) FROM users WHERE identifier LIKE 'oidc:%';") == '2', 'Repeat login does not duplicate identity')
+    require(fixture.sql("SELECT COUNT(*) FROM users WHERE identifier LIKE 'oidc:%' OR identifier LIKE 'oauth:%';") == '2', 'Repeat login does not duplicate identity')
     fixture.passed('repeated provider identity retains original account')
 
     expected_id = 'oidc:google:' + hashlib.sha256(b'https://accounts.google.com\x00fixture-one').hexdigest()
@@ -386,10 +422,13 @@ def checks(fixture):
     case_variant = Browser(origin)
     fixture.login(case_variant, subject='Fixture-one')
     require(case_variant.request(f'/usermap/{google_map}.json')[0] == 404, 'Case-sensitive subjects stay separate')
-    other_tenant = Browser(origin)
-    fixture.login(other_tenant, 'microsoft', 'fixture-one', tenant='11111111-2222-3333-4444-555555555555')
-    require(other_tenant.request(f'/usermap/{microsoft_map}.json')[0] == 404, 'Same subject in another Microsoft tenant stays separate')
-    fixture.passed('case-sensitive subjects and Microsoft tenants retain separate identities')
+    renamed = Browser(origin)
+    fixture.login(renamed, 'github', 'fixture-one', name='Renamed account', login='renamed-login')
+    require(renamed.request(f'/usermap/{github_map}.json')[0] == 200, 'GitHub numeric ID survives account rename')
+    github_id = int.from_bytes(hashlib.sha256(b'fixture-one').digest()[:6], 'big') + 1
+    expected_github = 'oauth:github:' + hashlib.sha256(('https://github.com\x00' + str(github_id)).encode()).hexdigest()
+    require(fixture.sql(f"SELECT uid FROM users WHERE identifier='{expected_github}';") == github_uid, 'GitHub identity uses fixed issuer and numeric profile ID')
+    fixture.passed('case-sensitive Google subjects and stable GitHub numeric IDs retain ownership')
 
     fixture.expire(repeated, 'activity')
     require(repeated.request('/usermap')[0] == 403, 'Two-hour inactive session expires')
@@ -404,7 +443,7 @@ def checks(fixture):
     cases = [
         ('wrong browser', lambda b, f: fixture.callback(Browser(origin), f)),
         ('wrong state', lambda b, f: fixture.callback(b, f, state='invalid-state')),
-        ('wrong provider', lambda b, f: fixture.callback(b, f, 'microsoft')),
+        ('wrong provider', lambda b, f: fixture.callback(b, f, 'github')),
         ('cancellation', lambda b, f: fixture.callback(b, f, error='access_denied')),
     ]
     for label, action in cases:
@@ -448,14 +487,27 @@ def checks(fixture):
         require(status == 303 and response_headers['Location'].startswith('/login'), mode + ' rejected')
         require(browser.request('/usermap')[0] == 403, mode + ' does not create authenticated session')
     require(fixture.sql('SELECT COUNT(*) FROM users;') == accounts_before_failure, 'Failed transport does not create accounts')
-    fixture.passed('real cURL rejects token/JWKS redirects, oversized bodies, non-JSON and TLS hostname mismatch')
+    for mode in ['token_redirect', 'token_oversize', 'token_nonjson', 'token_scope', 'profile_redirect', 'profile_oversize', 'profile_nonjson', 'profile_error', 'profile_bad_id', 'bad_tls']:
+        browser = Browser(origin)
+        candidate = fixture.issue(fixture.begin(browser, 'github'), 'github', mode=mode, subject='must-not-be-created')
+        counts_before = fixture.control('/')
+        status, response_headers, _ = fixture.callback(browser, candidate, 'github')
+        counts_after = fixture.control('/')
+        if mode == 'profile_redirect':
+            require(counts_after['profile_calls'] == counts_before['profile_calls'] + 1, 'Profile redirect is not followed')
+        require(counts_after['jwks_calls'] == counts_before['jwks_calls'], 'GitHub never requests signing keys')
+        fixture.control('/reset', {})
+        require(status == 303 and response_headers['Location'].startswith('/login'), mode + ' rejected for GitHub')
+        require(browser.request('/usermap')[0] == 403, mode + ' leaves GitHub session unauthenticated')
+    require(fixture.sql('SELECT COUNT(*) FROM users;') == accounts_before_failure, 'Failed GitHub transport creates no accounts')
+    fixture.passed('real cURL rejects token/JWKS/profile redirects, oversized bodies, non-JSON, invalid scope/profile and TLS hostname mismatch')
 
     pending_browser = Browser(origin)
     pending = fixture.issue(fixture.begin(pending_browser))
     before = fixture.control('/')['token_calls']
     fixture.start_app({'SIMPLEMAPPR_GOOGLE_CLIENT_SECRET': 'fixture-rotated-secret'})
     require(google.request('/usermap')[0] == 403, 'Credential rotation revokes existing provider session')
-    require(microsoft.request('/usermap')[0] == 200, 'Credential rotation preserves other provider session')
+    require(github.request('/usermap')[0] == 200, 'Credential rotation preserves other provider session')
     require(owner.request('/usermap')[0] == 200, 'Credential rotation preserves local owner session')
     require(fixture.callback(pending_browser, pending)[1]['Location'].startswith('/login'), 'Credential rotation invalidates pending flows')
     require(fixture.control('/')['token_calls'] == before, 'Rotated pending flow fails before token exchange')
@@ -467,16 +519,54 @@ def checks(fixture):
     fixture.start_app({'SIMPLEMAPPR_GOOGLE_CLIENT_ID': '', 'SIMPLEMAPPR_GOOGLE_CLIENT_SECRET': ''})
     require(reenabled_google.request('/usermap')[0] == 403, 'Disabled provider revokes an existing valid session')
     page, _ = Browser(origin).page()
-    require('Continue with Google' not in page and 'Continue with Microsoft' in page, 'Disabled provider button hidden')
-    require(owner.request('/usermap')[0] == 200 and microsoft.request('/usermap')[0] == 200, 'Other login methods survive provider disablement')
+    require('Continue with Google' not in page and 'Continue with GitHub' in page, 'Disabled provider button hidden')
+    require(owner.request('/usermap')[0] == 200 and github.request('/usermap')[0] == 200, 'Other login methods survive provider disablement')
     fixture.passed('disabled provider disappears while local owner and other provider remain usable')
 
     fixture.start_app()
     recovered = Browser(origin)
     fixture.local_login(recovered)
     require(recovered.request(f'/usermap/{owner_map}/settings.json')[2] == owner_bytes, 'Original owner document bytes unchanged')
-    require(fixture.control('/')['token_calls'] > 0 and fixture.control('/')['jwks_calls'] > 0, 'Integration exercised actual provider transport')
+    require(fixture.control('/')['token_calls'] > 0 and fixture.control('/')['jwks_calls'] > 0 and fixture.control('/')['profile_calls'] > 0, 'Integration exercised actual provider transport')
     fixture.passed('local owner recovery and original private map bytes survive provider configuration changes')
+
+
+def prefix_checks(fixture):
+    proxy = http.server.ThreadingHTTPServer(('127.0.0.1', 0), PrefixProxy)
+    proxy.fixture = fixture
+    threading.Thread(target=proxy.serve_forever, daemon=True).start()
+    base = 'http://127.0.0.1:' + str(proxy.server_address[1]) + '/simplemappr'
+    try:
+        fixture.start_app({'SIMPLEMAPPR_URL': base})
+        browser = Browser(base)
+        page, _ = browser.page()
+        require('action="/simplemappr/session"' in page, 'Prefixed local owner form')
+        status, headers, _ = browser.request('/session', 'POST', fields={
+            '_csrf': browser.csrf, 'username': 'fixture-owner', 'password': fixture.owner_password})
+        require(status == 303 and headers['Location'] == '/simplemappr/', 'Prefixed local owner callback')
+        require(browser.request('/usermap')[0] == 200, 'Prefixed local owner reaches private maps')
+        browser.page('/')
+        require(browser.request('/logout', 'POST')[1]['Location'] == '/simplemappr/', 'Prefixed owner sign-out')
+        for provider in ['google', 'github']:
+            require('action="/simplemappr/auth/' + provider + '/start"' in page, 'Prefixed provider form')
+            browser = Browser(base)
+            authorize = fixture.begin(browser, provider)
+            flow = fixture.issue(authorize, provider, subject='fixture-one')
+            require(flow['redirect_uri'] == base + '/auth/' + provider + '/callback', 'Prefixed callback address')
+            status, headers, _ = fixture.callback(browser, flow, provider)
+            require(status == 303 and headers['Location'] == '/simplemappr/', 'Successful callback stays under prefix')
+            require(browser.request('/usermap')[0] == 200, 'Prefixed social session reaches private maps')
+        browser = Browser(base)
+        denied = fixture.issue(fixture.begin(browser, 'github'), 'github')
+        status, headers, _ = fixture.callback(browser, denied, 'github', error='access_denied')
+        require(status == 303 and headers['Location'].startswith('/simplemappr/login'), 'Failed callback stays under prefix')
+        page, _ = browser.page()
+        require('Social sign-in could not be completed' in page, 'Prefixed callback exposes safe retry message')
+        fixture.passed('prefix-stripping proxy preserves provider forms, exact callback URL, private sessions and success/error redirects')
+    finally:
+        proxy.shutdown()
+        proxy.server_close()
+        fixture.start_app()
 
 
 def main():
@@ -497,6 +587,7 @@ def main():
         try:
             fixture.start()
             checks(fixture)
+            prefix_checks(fixture)
             if arguments.browser_image:
                 fixture.browser_checks(arguments.browser_image, arguments.diagnostics_dir)
             print(f'Social sign-in HTTP integration passed ({fixture.count} assertion groups). Real provider console setup remains a separate deployment check.', flush=True)

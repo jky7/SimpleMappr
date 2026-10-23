@@ -6,15 +6,19 @@ final class SocialLoginConfig
     private const PROVIDERS = [
         'google' => [
             'name' => 'Google',
+            'protocol' => 'oidc', 'scope' => 'openid profile', 'identity_prefix' => 'oidc:google:',
+            'issuer' => 'https://accounts.google.com',
             'authorize_url' => 'https://accounts.google.com/o/oauth2/v2/auth',
             'token_url' => 'https://oauth2.googleapis.com/token',
             'jwks_url' => 'https://www.googleapis.com/oauth2/v3/certs',
         ],
-        'microsoft' => [
-            'name' => 'Microsoft',
-            'authorize_url' => 'https://login.microsoftonline.com/common/oauth2/v2.0/authorize',
-            'token_url' => 'https://login.microsoftonline.com/common/oauth2/v2.0/token',
-            'jwks_url' => 'https://login.microsoftonline.com/common/discovery/v2.0/keys',
+        'github' => [
+            'name' => 'GitHub',
+            'protocol' => 'oauth', 'scope' => '', 'identity_prefix' => 'oauth:github:',
+            'issuer' => 'https://github.com',
+            'authorize_url' => 'https://github.com/login/oauth/authorize',
+            'token_url' => 'https://github.com/login/oauth/access_token',
+            'profile_url' => 'https://api.github.com/user',
         ],
     ];
 
@@ -73,9 +77,10 @@ final class SocialLoginConfig
             if (!is_array($parts) || !isset($parts['host']) || filter_var($origin, FILTER_VALIDATE_URL) === false
                 || !in_array($parts['scheme'] ?? '', ['http', 'https'], true)
                 || isset($parts['user']) || isset($parts['pass']) || isset($parts['query']) || isset($parts['fragment'])
-                || !in_array($parts['path'] ?? '', ['', '/'], true) || preg_match('/[\s\\\\]/', $origin)
+                || !preg_match('#\A(?:/[A-Za-z0-9._~-]+)*/?\z#', $parts['path'] ?? '')
+                || array_intersect(explode('/', $parts['path'] ?? ''), ['.', '..']) || preg_match('/[\s\\\\]/', $origin)
                 || isset($parts['port']) && ($parts['port'] < 1 || $parts['port'] > 65535)) {
-                throw new \RuntimeException('Social sign-in requires SIMPLEMAPPR_URL as an absolute origin without a path.');
+                throw new \RuntimeException('Social sign-in requires SIMPLEMAPPR_URL as an absolute base URL with a safe path.');
             }
             if ($parts['scheme'] !== 'https' && !in_array(strtolower($parts['host']), ['localhost', '127.0.0.1', '[::1]'], true)) {
                 throw new \RuntimeException('Social sign-in requires HTTPS outside localhost.');

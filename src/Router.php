@@ -268,13 +268,13 @@ class Router
             unset($_SESSION['social_login_error']);
             return $this->_twig()->render('login.html', ['login_error'=>$error]);
         });
-        $router->post('/auth/{provider:(?:google|microsoft)}/start', function ($provider) {
+        $router->post('/auth/{provider:(?:google|github)}/start', function ($provider) {
             $this->_privateHeaders();
             header('Referrer-Policy: no-referrer');
             Session::currentUser();
             Session::redirect((new SocialLogin())->begin($provider));
         });
-        $router->get('/auth/{provider:(?:google|microsoft)}/callback', function ($provider) {
+        $router->get('/auth/{provider:(?:google|github)}/callback', function ($provider) {
             $this->_privateHeaders();
             header('Referrer-Policy: no-referrer');
             try {
@@ -282,9 +282,9 @@ class Router
             } catch (\Throwable $error) {
                 error_log('Social sign-in failed for '.$provider.' ('.$error::class.').');
                 $_SESSION['social_login_error'] = 'Social sign-in could not be completed. Please try again.';
-                Session::redirect('/login'.Session::makeLocaleParam($_SESSION['locale'] ?? 'en_US'));
+                Session::redirect(SiteUrl::path().'/login'.Session::makeLocaleParam($_SESSION['locale'] ?? 'en_US'));
             }
-            Session::redirect('/'.Session::makeLocaleParam($_SESSION['locale'] ?? 'en_US'));
+            Session::redirect(SiteUrl::path().'/'.Session::makeLocaleParam($_SESSION['locale'] ?? 'en_US'));
         });
         $router->post('/logout', function () { Session::destroy(); });
 

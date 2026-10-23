@@ -92,8 +92,7 @@ final class Session
         $method = $_SESSION['authentication_method'] ?? 'local';
         $fingerprint = match ($method) {
             'local' => self::localConfigured() ? self::fingerprint() : null,
-            'google', 'microsoft' => SocialLoginConfig::fingerprint($method),
-            default => null,
+            default => SocialLoginConfig::fingerprint($method),
         };
         if ($fingerprint === null || !hash_equals($fingerprint, $_SESSION['credential_fingerprint'] ?? '') || ($_SESSION['activity'] ?? 0) < time()-7200) {
             unset($_SESSION['uid'], $_SESSION['credential_fingerprint'], $_SESSION['activity'], $_SESSION['authentication_method']);
@@ -101,7 +100,7 @@ final class Session
         }
         $user = (new User)->show((int)$_SESSION['uid'])->results;
         if (!$user) { unset($_SESSION['uid']); return null; }
-        if ($method !== 'local' && !str_starts_with($user->identifier, 'oidc:'.$method.':')) {
+        if ($method !== 'local' && !str_starts_with($user->identifier, SocialLoginConfig::provider($method)['identity_prefix'])) {
             unset($_SESSION['uid']);
             return null;
         }

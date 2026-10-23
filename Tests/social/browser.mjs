@@ -9,15 +9,15 @@ let browser;
 try {
   browser = await chromium.launch({
     headless: true,
-    args: ['--no-proxy-server', `--host-resolver-rules=MAP accounts.google.com ${address}, MAP login.microsoftonline.com ${address}`],
+    args: ['--no-proxy-server', `--host-resolver-rules=MAP accounts.google.com ${address}, MAP github.com ${address}`],
   });
-  for (const provider of ['Google', 'Microsoft']) {
+  for (const provider of ['Google', 'GitHub']) {
     activeProvider = provider;
     const context = await browser.newContext({ignoreHTTPSErrors: true, serviceWorkers: 'block'});
     try {
       await context.route('**/*', route => {
         const url = new URL(route.request().url());
-        return url.origin === origin || ['accounts.google.com', 'login.microsoftonline.com'].includes(url.hostname)
+        return url.origin === origin || ['accounts.google.com', 'github.com'].includes(url.hostname)
           ? route.continue() : route.abort();
       });
       const page = await context.newPage();

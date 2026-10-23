@@ -24,7 +24,7 @@ ENV = ("# fixture\r\nSIMPLEMAPPR_OWNER_USERNAME='before'\r\nSIMPLEMAPPR_OWNER_PA
        "SIMPLEMAPPR_DB_PASSWORD='database-dollar$literal'\r\nSIMPLEMAPPR_DB_ROOT_PASSWORD='root-secret'\r\nSIMPLEMAPPR_PORT=18081").encode()
 SOCIAL = {'SIMPLEMAPPR_URL': 'https://maps.example.org',
           'SIMPLEMAPPR_GOOGLE_CLIENT_ID': 'google-client', 'SIMPLEMAPPR_GOOGLE_CLIENT_SECRET': 'google-secret',
-          'SIMPLEMAPPR_MICROSOFT_CLIENT_ID': 'microsoft-client', 'SIMPLEMAPPR_MICROSOFT_CLIENT_SECRET': 'microsoft-secret'}
+          'SIMPLEMAPPR_GITHUB_CLIENT_ID': 'github-client', 'SIMPLEMAPPR_GITHUB_CLIENT_SECRET': 'github-secret'}
 
 
 class BundleBoundaryTest(unittest.TestCase):
@@ -155,12 +155,14 @@ class BundleBoundaryTest(unittest.TestCase):
                     bundle.parse_env(bundle.replace_values(ENV, SOCIAL | {key: value}))
                 self.assertNotIn(value, str(error.exception))
 
-    def test_social_sign_in_requires_https_origin_or_literal_loopback(self):
+    def test_social_sign_in_accepts_safe_prefix_and_requires_https_or_literal_loopback(self):
         for url in ('https://maps.example.org', 'https://maps.example.org/',
+                    'https://jky.io/simplemappr', 'https://jky.io/simplemappr/',
                     'http://localhost:8080', 'http://127.0.0.1:8080', 'http://[::1]:8080'):
             with self.subTest(url=url):
                 self.assertEqual(bundle.parse_env(bundle.replace_values(ENV, SOCIAL | {'SIMPLEMAPPR_URL': url}))['SIMPLEMAPPR_URL'], url)
-        for url in ('', '/maps', 'https://maps.example.org/maps', 'http://maps.example.org',
+        for url in ('', '/maps', 'https://maps.example.org/a/../maps', 'https://maps.example.org/%2f/maps',
+                    'https://maps.example.org//maps', 'http://maps.example.org',
                     'http://localhost.example.org', 'http://127.0.0.2:8080', 'http://localhost:0', 'http://localhost:65536',
                     'HTTP://localhost:8080'):
             with self.subTest(url=url), self.assertRaises(bundle.OperationError):
@@ -221,7 +223,7 @@ class BundleBoundaryTest(unittest.TestCase):
         return result, bundle.parse_env((destination / 'deployment.env').read_bytes())
 
     def test_restore_changed_origin_disables_pairs_and_preserves_protected_source_secrets(self):
-        result, active = self.restore_fixture(SOCIAL)
+        result, active = self.restore_fixture(SOCIAL | {'SIMPLEMAPPR_URL': 'https://jky.io/simplemappr'})
         self.assertTrue(result['socialLoginDisabled'])
         self.assertIn('local owner login', result['note'])
         self.assertEqual(active['SIMPLEMAPPR_URL'], 'http://127.0.0.1:18082')

@@ -1,6 +1,6 @@
 # Private deployment and recovery
 
-The default deployment is a localhost Docker Compose instance with one local owner. Optional [Google and Microsoft sign-in](social-login.md) allows people to register separate accounts. The local owner has the administrator role for citation maintenance. Every saved-map read and mutation still checks its owning user. TLS and access controls belong at an operator-managed reverse proxy if the instance is exposed beyond localhost.
+The default deployment is a localhost Docker Compose instance with one local owner. Optional [Google and GitHub sign-in](social-login.md) allows people to register separate accounts. The local owner has the administrator role for citation maintenance. Every saved-map read and mutation still checks its owning user. TLS and access controls belong at an operator-managed reverse proxy if the instance is exposed beyond localhost.
 
 ## Start and verify
 

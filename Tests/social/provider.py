@@ -12,9 +12,8 @@ import urllib.parse
 from pathlib import Path
 
 ROOT = Path('/fixture')
-STATE = {'codes': {}, 'token_calls': 0, 'jwks_calls': 0, 'mode': ''}
+STATE = {'codes': {}, 'token_calls': 0, 'jwks_calls': 0, 'profile_calls': 0, 'tokens': {}, 'mode': ''}
 LOCK = threading.Lock()
-TENANT = '9188040d-6c67-4c5b-b112-36a304b66dad'
 
 
 def encoded(value):
@@ -23,16 +22,12 @@ def encoded(value):
 
 def token(flow):
     now = int(time.time())
-    provider = flow['provider']
-    tenant = flow.get('tenant', TENANT)
     claims = {
-        'iss': 'https://accounts.google.com' if provider == 'google' else f'https://login.microsoftonline.com/{tenant}/v2.0',
-        'sub': flow['subject'], 'aud': f'fixture-{provider}-client', 'iat': now,
+        'iss': 'https://accounts.google.com',
+        'sub': flow['subject'], 'aud': 'fixture-google-client', 'iat': now,
         'exp': now + 300, 'nonce': flow['nonce'], 'name': 'Fixture account',
         'email': flow.get('email', 'same@example.invalid'),
     }
-    if provider == 'microsoft':
-        claims['tid'] = tenant
     signing_input = '.'.join(encoded(json.dumps(part, separators=(',', ':')).encode()) for part in [
         {'alg': 'RS256', 'typ': 'JWT', 'kid': 'fixture-key'}, claims,
     ]).encode()
@@ -42,15 +37,18 @@ def token(flow):
 
 
 def issue_code(data):
-    query = urllib.parse.parse_qs(urllib.parse.urlsplit(data['authorize']).query)
+    query = urllib.parse.parse_qs(urllib.parse.urlsplit(data['authorize']).query, keep_blank_values=True)
     provider = data['provider']
-    expected_host = 'accounts.google.com' if provider == 'google' else 'login.microsoftonline.com'
+    expected_host = 'accounts.google.com' if provider == 'google' else 'github.com'
     required = {'response_type': 'code', 'client_id': f'fixture-{provider}-client', 'code_challenge_method': 'S256'}
-    if urllib.parse.urlsplit(data['authorize']).hostname != expected_host or any(query.get(k) != [v] for k, v in required.items()) or set(query.get('scope', [''])[0].split()) != {'openid', 'profile'}:
+    if urllib.parse.urlsplit(data['authorize']).hostname != expected_host or any(query.get(k) != [v] for k, v in required.items()) or query.get('scope') != ['openid profile' if provider == 'google' else '']:
+        raise ValueError('Authorization contract failed')
+    if (provider == 'google') != ('nonce' in query):
         raise ValueError('Authorization contract failed')
     code = secrets.token_urlsafe(32)
     flow = {'provider': provider, 'subject': data.get('subject', 'fixture-one'), 'email': data.get('email', 'same@example.invalid'),
-            'tenant': data.get('tenant', TENANT), 'nonce': query['nonce'][0], 'challenge': query['code_challenge'][0], 'redirect_uri': query['redirect_uri'][0]}
+            'id': data.get('id', int.from_bytes(hashlib.sha256(data.get('subject', 'fixture-one').encode()).digest()[:6], 'big') + 1),
+            'name': data.get('name', 'Fixture account'), 'login': data.get('login', 'fixture-login'), 'nonce': query.get('nonce', [''])[0], 'challenge': query['code_challenge'][0], 'redirect_uri': query['redirect_uri'][0]}
     with LOCK:
         STATE['codes'][code] = flow
         STATE['mode'] = data.get('mode', '')
@@ -78,18 +76,38 @@ class Handler(http.server.BaseHTTPRequestHandler):
 
     def do_GET(self):
         if self.server.server_port == 8000:
-            self.answer(200, {key: STATE[key] for key in ['token_calls', 'jwks_calls']})
+            self.answer(200, {key: STATE[key] for key in ['token_calls', 'jwks_calls', 'profile_calls']})
             return
         host = self.headers.get('Host')
-        authorization = {('accounts.google.com', '/o/oauth2/v2/auth'): 'google', ('login.microsoftonline.com', '/common/oauth2/v2.0/authorize'): 'microsoft'}.get((host, urllib.parse.urlsplit(self.path).path))
+        authorization = {('accounts.google.com', '/o/oauth2/v2/auth'): 'google', ('github.com', '/login/oauth/authorize'): 'github'}.get((host, urllib.parse.urlsplit(self.path).path))
         if authorization:
             flow = issue_code({'authorize': 'https://' + host + self.path, 'provider': authorization, 'subject': 'browser-' + authorization})
             target = flow['redirect_uri'] + '?' + urllib.parse.urlencode({'code': flow['code'], 'state': flow['state']})
             self.answer(303, {}, headers={'Location': target})
             return
+        if host == 'api.github.com' and self.path == '/user':
+            with LOCK:
+                STATE['profile_calls'] += 1
+                flow = STATE['tokens'].get(self.headers.get('Authorization'))
+                mode = STATE['mode']
+            if flow is None or self.headers.get('Accept') != 'application/vnd.github+json' or self.headers.get('X-GitHub-Api-Version') != '2026-03-10' or self.headers.get('User-Agent') != 'SimpleMappr':
+                self.answer(401, {'message': 'Bad credentials or missing API headers'})
+            elif mode == 'profile_redirect':
+                self.answer(302, {}, headers={'Location': 'https://api.github.com/user'})
+            elif mode == 'profile_nonjson':
+                self.answer(200, b'<html>not a profile</html>', 'text/html')
+            elif mode == 'profile_error':
+                self.answer(401, {'message': 'Bad credentials'})
+            else:
+                value = {'id': flow['id'], 'name': flow['name'], 'login': flow['login'], 'email': flow['email']}
+                if mode == 'profile_oversize':
+                    value['padding'] = 'x' * 2097152
+                if mode == 'profile_bad_id':
+                    value['id'] = str(value['id'])
+                self.answer(200, value)
+            return
         allowed = {
             ('www.googleapis.com', '/oauth2/v3/certs'): 'google',
-            ('login.microsoftonline.com', '/common/discovery/v2.0/keys'): 'microsoft',
         }
         provider = allowed.get((host, self.path))
         if provider is None:
@@ -104,8 +122,6 @@ class Handler(http.server.BaseHTTPRequestHandler):
             self.answer(200, b'<html>not keys</html>', 'text/html')
         else:
             key = json.loads((ROOT / 'jwk.json').read_text())
-            if provider == 'microsoft':
-                key['issuer'] = 'https://login.microsoftonline.com/{tenantid}/v2.0'
             value = {'keys': [key]}
             if mode == 'jwks_oversize':
                 value['padding'] = 'x' * 2097152
@@ -131,7 +147,7 @@ class Handler(http.server.BaseHTTPRequestHandler):
             return
         params = urllib.parse.parse_qs(raw.decode())
         host = self.headers.get('Host')
-        provider = {('oauth2.googleapis.com', '/token'): 'google', ('login.microsoftonline.com', '/common/oauth2/v2.0/token'): 'microsoft'}.get((host, self.path))
+        provider = {('oauth2.googleapis.com', '/token'): 'google', ('github.com', '/login/oauth/access_token'): 'github'}.get((host, self.path))
         with LOCK:
             STATE['token_calls'] += 1
             flow = STATE['codes'].pop(params.get('code', [''])[0], None)
@@ -150,7 +166,15 @@ class Handler(http.server.BaseHTTPRequestHandler):
         elif mode == 'token_nonjson':
             self.answer(200, b'<html>not a token</html>', 'text/html')
         else:
-            value = {'token_type': 'Bearer', 'id_token': token(flow), 'access_token': 'fixture-unused-token'}
+            if provider == 'google':
+                value = {'token_type': 'Bearer', 'id_token': token(flow), 'access_token': 'fixture-unused-token'}
+            else:
+                access_token = secrets.token_urlsafe(32)
+                with LOCK:
+                    STATE['tokens']['Bearer ' + access_token] = flow
+                value = {'token_type': 'bearer', 'scope': '', 'access_token': access_token}
+                if mode == 'token_scope':
+                    value['scope'] = 'repo'
             if mode == 'token_oversize':
                 value['padding'] = 'x' * 2097152
             self.answer(200, value)
