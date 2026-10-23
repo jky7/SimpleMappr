@@ -72,8 +72,11 @@ final class DetailedReliefHttpTest extends TestCase
         [$status,$v13]=$this->request('/wms?'.http_build_query($query));self::assertSame(200,$status,substr($v13,0,300));self::assertSame(hash('sha256',$v11),hash('sha256',$v13));
         $xml='<sld:GetMap xmlns:sld="http://www.opengis.net/sld" xmlns:ogc="http://www.opengis.net/ogc" service="WMS" version="1.1.1"><sld:StyledLayerDescriptor version="1.0.0"><sld:NamedLayer><sld:Name>reliefgrey</sld:Name><sld:NamedStyle><sld:Name>default</sld:Name></sld:NamedStyle></sld:NamedLayer></sld:StyledLayerDescriptor><sld:BoundingBox srsName="EPSG:4326"><ogc:LowerCorner>6.5 45.8</ogc:LowerCorner><ogc:UpperCorner>6.9 46.0</ogc:UpperCorner></sld:BoundingBox><sld:Output><sld:Size><sld:Width>600</sld:Width><sld:Height>300</sld:Height></sld:Size><sld:Format>image/png</sld:Format></sld:Output></sld:GetMap>';
         [$status,$body]=$this->request('/wms',$xml);self::assertSame(200,$status,substr($body,0,300));self::assertSame(hash('sha256',$v11),hash('sha256',$body));
-        $query['CRS']='EPSG:3857';$query['BBOX']='-1e100,-100,1e100,100';
-        [$status,$body,$headers]=$this->request('/wms?'.http_build_query($query));self::assertSame(400,$status);self::assertStringContainsString('xml',$headers);self::assertStringContainsString('supported Earth coordinates',$body);
+        $query['CRS']='EPSG:3857';
+        foreach (['-1e100,-100,1e100,100','-1e309,-100,1e309,100'] as $bounds) {
+            $query['BBOX']=$bounds;
+            [$status,$body,$headers]=$this->request('/wms?'.http_build_query($query));self::assertSame(400,$status);self::assertStringContainsString('xml',$headers);self::assertStringContainsString('supported Earth coordinates',$body);
+        }
     }
 
     public function testInternalTerrainAndMaskCannotBeRequestedOrAdvertisedAsPublicLayers(): void

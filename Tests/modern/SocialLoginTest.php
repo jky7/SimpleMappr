@@ -179,8 +179,10 @@ final class SocialLoginTest extends TestCase
     }
 
     #[DataProvider('invalidClaims')]
-    public function testRejectsInvalidSignedClaims(array $claims): void
+    public function testRejectsInvalidSignedClaims(array $claims,array $timeOffsets=[]): void
     {
+        $now=time();
+        foreach ($timeOffsets as $name=>$offset) { $claims[$name]=$now+$offset; }
         [$login, $query] = $this->flow('google', $claims);
         $this->expectException(HttpException::class);
         $login->complete('google', $query);
@@ -202,18 +204,18 @@ final class SocialLoginTest extends TestCase
             'multiple audiences missing authorized party' => [['aud' => ['google-client', 'another']]],
             'nonce' => [['nonce' => 'another-nonce']],
             'nonce missing' => [['nonce' => null]],
-            'issued string' => [['iat' => (string)time()]],
+            'issued string' => [['iat' => '1700000000']],
             'issued float' => [['iat' => 1.25]],
             'issued missing' => [['iat' => null]],
-            'issued future' => [['iat' => time() + 100]],
-            'expired' => [['exp' => time() - 100]],
+            'issued future' => [[], ['iat' => 100]],
+            'expired' => [[], ['exp' => -100]],
             'expiry missing' => [['exp' => null]],
-            'expiry string' => [['exp' => (string)(time() + 300)]],
-            'invalid ordering' => [['iat' => time() - 100, 'exp' => time() - 200]],
-            'not before future' => [['nbf' => time() + 100]],
-            'not before string' => [['nbf' => (string)(time() - 100)]],
+            'expiry string' => [['exp' => '2000000000']],
+            'invalid ordering' => [[], ['iat' => -100, 'exp' => -200]],
+            'not before future' => [[], ['nbf' => 100]],
+            'not before string' => [['nbf' => '1700000000']],
             'not before null' => [['nbf' => null]],
-            'future iat with nbf' => [['iat' => time() + 100, 'nbf' => time() - 10]],
+            'future iat with nbf' => [[], ['iat' => 100, 'nbf' => -10]],
         ];
     }
 

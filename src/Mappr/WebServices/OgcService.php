@@ -180,6 +180,7 @@ abstract class OgcService extends Mappr
         $values=explode(',',$this->parameters['BBOX'] ?? '');
         if (count($values)!==4 || count(array_filter($values,'is_numeric'))!==4) { return; }
         $bounds=array_map('floatval',$values);
+        if (count(array_filter($bounds,static fn($value)=>is_finite($value) && abs($value)<=1e9))!==4) { throw new \InvalidArgumentException('The map extent is outside supported Earth coordinates.'); }
         if ($crs==='EPSG:4326' && $modern) { $bounds=[$bounds[1],$bounds[0],$bounds[3],$bounds[2]]; }
         if ($bounds[2]<=$bounds[0] || $bounds[3]<=$bounds[1]) { return; }
         $viewport=msLoadMapFromString('MAP MAXSIZE 5000 END',ROOT,null);
