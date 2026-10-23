@@ -8,6 +8,7 @@ COPY public/stylesheets/ public/stylesheets/
 COPY public/images/ public/images/
 COPY Tests/node/ Tests/node/
 COPY Tests/fixtures/editor-map-response.json Tests/fixtures/
+COPY views/main.html views/help.html views/
 RUN npm run build && npm test && npm run check:build
 
 FROM debian:trixie-slim@sha256:62bd423aeee912639ca8ee681c2b762cb3e25137e0a92b20be455898a9f034ad

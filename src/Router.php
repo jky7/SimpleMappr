@@ -346,7 +346,7 @@ class Router
         });
 
         $router->post('/session', function () {
-            if (Session::login($_POST)) { Session::redirect('/'.Session::makeLocaleParam($_SESSION['locale'] ?? 'en_US')); }
+            if (Session::login($_POST)) { Session::redirect(SiteUrl::path().'/'.Session::makeLocaleParam($_SESSION['locale'] ?? 'en_US')); }
             http_response_code(401);
             return $this->_twig()->render('login.html', ['login_enabled'=>Session::configured(), 'login_error'=>'The username or password was not accepted.']);
         });
@@ -587,6 +587,7 @@ class Router
         }
         $twig->addExtension(new TranslationExtension($translator));
         $twig->addGlobal('environment', ENVIRONMENT);
+        $twig->addGlobal('base', SiteUrl::path());
 
         $qlocale = "?locale={$locale}";
 

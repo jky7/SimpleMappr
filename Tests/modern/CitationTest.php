@@ -35,6 +35,10 @@ final class CitationTest extends TestCase
         self::assertSame('https://example.org/maps',SiteUrl::base(['HTTP_HOST'=>'example.org','HTTPS'=>'on'],'/maps'));
         self::assertSame('http://[::1]:8080',SiteUrl::base(['HTTP_HOST'=>'[::1]:8080'],''));
         self::assertSame('https://example.org/maps',SiteUrl::base([], 'https://example.org/maps/'));
+        self::assertSame('',SiteUrl::path(''));
+        self::assertSame('',SiteUrl::path('https://example.org/'));
+        self::assertSame('/maps',SiteUrl::path('/maps'));
+        self::assertSame('/maps',SiteUrl::path('https://example.org/maps/'));
         $this->expectException(RuntimeException::class);SiteUrl::base([],'https://user@example.org');
     }
     public function testFullLengthDoiRemainsAvailableInFeed(): void

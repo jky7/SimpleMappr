@@ -55,6 +55,7 @@ var SimpleMappr = (function($, window, document) {
       zoom               : true,
       renderRequest      : null,
       renderSequence     : 0,
+      renderedMap        : null,
       fillColor          : "",
       jCropType          : "zoom",
       cropUpdated        : false,
@@ -418,7 +419,6 @@ var SimpleMappr = (function($, window, document) {
 
     resetAndBuild: function() {
       this.resetJbbox();
-      this.destroyRedo();
       this.showMap();
     },
 
@@ -455,7 +455,6 @@ var SimpleMappr = (function($, window, document) {
       });
       this.setRotation();
       $('#projection')[0].selectedIndex = 0;
-      this.destroyRedo();
       this.showMap();
     },
 
@@ -493,7 +492,6 @@ var SimpleMappr = (function($, window, document) {
           zoom = $('#zoom_in');
           this.resetJbbox();
           zoom.val(1);
-          this.destroyRedo();
           this.showMap();
           zoom.val('');
         break;
@@ -502,7 +500,6 @@ var SimpleMappr = (function($, window, document) {
           zoom = $('#zoom_out');
           this.resetJbbox();
           zoom.val(1);
-          this.destroyRedo();
           this.showMap();
           zoom.val('');
         break;
@@ -558,75 +555,76 @@ var SimpleMappr = (function($, window, document) {
 
       if(index.length > 0) {
         actionsBar.find('a.toolsRedo').addClass('toolsRedoDisabled').removeClass('toolsRedo').off('click');
-        window.SimpleMapprStorage.deleteKey(index.pop());
+        $.each(index, function(i, name) { window.SimpleMapprStorage.deleteKey(name); });
       }
     },
 
     mapUndo: function() {
-      var index          = this.storageType("do"),
+      var self           = this,
+          index          = this.storageType("do"),
           curr_key       = "",
           curr_data      = {},
           prev_key       = "",
-          prev_data      = {},
-          prev_data_prep = {};
+          prev_data      = {};
 
-      if(index.length === 1) { return; }
-
-      this.destroyRedo();
+      if(index.length < 2) { return; }
 
       curr_key       = index[index.length-1];
       curr_data      = window.SimpleMapprStorage.get(curr_key);
       prev_key       = index[index.length-2];
       prev_data      = window.SimpleMapprStorage.get(prev_key);
-      prev_data_prep = this.prepareInputs(prev_data);
 
-      this.loadInputs(prev_data_prep);
-
-      window.SimpleMapprStorage.deleteKey(curr_key);
-      window.SimpleMapprStorage.set("un" + curr_key, curr_data);
-
-      if(prev_data.width !== curr_data.width) {
-        this.mapToggleSettings();
-      } else {
-        this.showSpinner();
-        this.postData($.param(prev_data), null);
+      function commitHistory() {
+        window.SimpleMapprStorage.deleteKey(curr_key);
+        window.SimpleMapprStorage.set("un" + curr_key, curr_data);
+        window.SimpleMapprStorage.current(prev_data);
+        self.toggleRedo(true);
+        self.toggleUndo(index.length > 2);
       }
 
-      this.toggleRedo(true);
-      if(index.length === 2) { this.toggleUndo(); }
+      this.renderHistory(prev_data, commitHistory);
     },
 
     mapRedo: function() {
-      var undo_index     = this.storageType("undo"),
+      var self           = this,
+          undo_index     = this.storageType("undo"),
           undo_key       = "",
-          undo_data      = {},
-          undo_data_prep = {},
-          do_index       = this.storageType("do"),
-          do_key         = "",
-          do_data        = {},
-          token          = new Date().getTime();
+          undo_data      = {};
 
       if(undo_index.length === 0) { return; }
 
-      this.toggleRedo();
-      undo_key       = undo_index.pop();
+      undo_key       = undo_index.shift();
       undo_data      = window.SimpleMapprStorage.get(undo_key);
-      do_key         = do_index[do_index.length-1];
-      do_data        = window.SimpleMapprStorage.get(do_key);
-      undo_data_prep = this.prepareInputs(undo_data);
-      this.loadInputs(undo_data_prep);
 
-      window.SimpleMapprStorage.deleteKey(undo_key);
-      window.SimpleMapprStorage.set("do-" + token.toString(), undo_data);
-
-      if(undo_data.width !== do_data.width) {
-        this.mapToggleSettings();
-      } else {
-        this.showSpinner();
-        this.postData($.param(undo_data), null);
+      function commitHistory() {
+        window.SimpleMapprStorage.deleteKey(undo_key);
+        window.SimpleMapprStorage.set(undo_key.substring(2), undo_data);
+        self.toggleUndo(true);
+        self.toggleRedo(undo_index.length > 0);
       }
 
-      this.toggleUndo(true);
+      this.renderHistory(undo_data, commitHistory);
+    },
+
+    renderHistory: function(document, commitHistory) {
+      var self = this, image = self.vars.mapOutputImage, previousDocument = self.readDocument(),
+          previousView = self.vars.renderedMap;
+      if (!previousView) {
+        previousView = {size: [image.width(), image.height()], mapOutputImage: image.attr('src'), rendered_origin: previousDocument.origin_map};
+        ['rendered_bbox', 'rendered_rotation', 'rendered_projection', 'legend_url', 'scalebar_url', 'bad_points', 'bad_drawings'].forEach(function(name) {
+          previousView[name] = $('#' + name).val();
+        });
+      }
+      self.showSpinner();
+      self.postData($.param(document), {map: document}, function(renderedDocument) {
+        self.loadInputs(self.prepareInputs(renderedDocument));
+        self.restorePreviewWidth(renderedDocument.width);
+        commitHistory();
+      }, function() {
+        self.resetFormValues(previousView);
+        self.drawMap(previousView, {map: previousDocument});
+        self.drawLegend(); self.drawScalebar(); self.showBadPoints(); self.showBadDrawings();
+      });
     },
 
     bindHotkeys: function() {
@@ -654,7 +652,6 @@ var SimpleMappr = (function($, window, document) {
         e.stopPropagation();
       } else {
         this.resetJbbox();
-        this.destroyRedo();
         this.showMap();
 
       }
@@ -712,7 +709,6 @@ var SimpleMappr = (function($, window, document) {
           self.unusedVariables(e);
           if(!self.missingFieldSetTitle()) {
             $('#border_thickness').val(ui.value);
-            self.destroyRedo();
             self.showMap();
 
           } else {
@@ -793,8 +789,8 @@ var SimpleMappr = (function($, window, document) {
         self.unusedVariables(key);
         zone.find(value).val('');
       });
-      if(shape_picker.length > 0) { shape_picker[0].selectedIndex = 4; }
-      if(size_picker.length > 0) { size_picker[0].selectedIndex = 3; }
+      shape_picker.each(function() { this.selectedIndex = 4; });
+      size_picker.each(function() { this.selectedIndex = 3; });
       if(shadow_check.length > 0) { shadow_check.prop('checked', false); }
       if(border_check.length > 0) { border_check.prop('checked', false); }
       if(hatch_check.length > 0) { hatch_check.prop('checked', false); }
@@ -811,10 +807,10 @@ var SimpleMappr = (function($, window, document) {
       var self = this, term = "", terms = [];
 
       this.vars.fieldSetsRegions.find('textarea').on('keydown', function(e) {
-        if (e.keyCode === $.ui.keyCode.TAB && $(this).data("autocomplete").menu.active) { e.preventDefault(); }
+        if (e.keyCode === $.ui.keyCode.TAB && $(this).autocomplete('instance').menu.active) { e.preventDefault(); }
       }).autocomplete({
         source: function(request, response) {
-          $.getJSON( "/places.json?term=" + self.extractLast(request.term), {}, response);
+          $.getJSON( self.settings.baseUrl + "/places.json?term=" + self.extractLast(request.term), {}, response);
         },
         search: function() {
           term = self.extractLast(this.value);
@@ -946,7 +942,6 @@ var SimpleMappr = (function($, window, document) {
 
     aZoom: function(event) {
       var self = event.data;
-      self.destroyRedo();
       self.showMap();
       $(document).unbind("mouseup", self.aZoom);
     },
@@ -959,7 +954,6 @@ var SimpleMappr = (function($, window, document) {
       y   = (e.pageY - pos.top);
 
       $('#bbox_rubberband').val(x+','+y+','+x+','+y);
-      this.destroyRedo();
       this.showMap();
     },
 
@@ -969,18 +963,20 @@ var SimpleMappr = (function($, window, document) {
           formData  = {
             bbox           : $('#rendered_bbox').val(),
             bbox_query     : $('#bbox_query').val(),
-            projection     : $('#projection').val(),
-            projection_map : $('#projection_map').val(),
-            origin         : $('#origin').val(),
+            projection     : $('#rendered_projection').val(),
+            projection_map : $('#rendered_projection').val(),
+            origin         : $('#origin_map').val(),
+            origin_map     : $('#origin_map').val(),
+            rotation       : $('#rendered_rotation').val(),
             qlayer         : ($('#stateprovinces').prop('checked')) ? 'stateprovinces_polygon' : 'countries',
-            width          : $('#width').val(),
-            height         : $('#height').val()
+            width          : self.vars.mapOutputImage.width(),
+            height         : self.vars.mapOutputImage.height()
           };
 
       $(document).unbind("mouseup", self.aQuery);
 
       self.destroyJcrop();
-      self.destroyRedo();
+      self.hideErrorMessage();
       self.showSpinner();
 
       $.ajax({
@@ -1016,8 +1012,9 @@ var SimpleMappr = (function($, window, document) {
           }
         },
         error   : function(xhr, ajaxOptions, thrownError) {
-          self.unusedVariables(xhr,thrownError);
-          if(ajaxOptions === 'timeout') { self.hideSpinner(); }
+          self.unusedVariables(ajaxOptions,thrownError);
+          self.hideSpinner();
+          self.showErrorMessage((xhr.responseJSON && xhr.responseJSON.error) || $('#mapper-loading-error-message').text());
         }
       });
     },
@@ -1083,9 +1080,9 @@ var SimpleMappr = (function($, window, document) {
           clone = button.parent().prev().children("div:last").clone();
           num = parseInt(clone.find("h3 a").text().split(" ")[1],10);
           counter = self.textareaCounter(data_type, 'increase');
-          clone.find("h3").attr("id", clone.find("h3").attr("id").replace(/(\d+)+/g, num));
+          clone.find("h3").removeAttr("id aria-controls");
           clone.find("h3 a").text(clone.find("h3 a").text().split(" ")[0] + " " + (num+1).toString());
-          clone.find("div").eq(0).attr("id", clone.find("div").eq(0).attr("id").replace(/(\d+)+/g, num));
+          clone.find("div").eq(0).removeAttr("id aria-labelledby");
           clone.find("input.m-mapTitle").attr("name", data_type + "["+num.toString()+"][title]").val("");
           clone.find("textarea")
                   .attr("name", data_type + "["+num.toString()+"][data]")
@@ -1828,7 +1825,6 @@ var SimpleMappr = (function($, window, document) {
       $('#map-points, #map-regions, #map-wkt').find('button.submitForm').on('click', function(e) {
         e.preventDefault();
         if(!self.missingFieldSetTitle()) {
-          self.destroyRedo();
           self.showMap();
           self.tabSelector(0);
         }
@@ -1865,6 +1861,14 @@ var SimpleMappr = (function($, window, document) {
 
     mapToggleSettings: function() {
       $('#mapToolsCollapse').find('a').trigger('click');
+    },
+
+    restorePreviewWidth: function(width) {
+      width = Number(width) || 900;
+      var collapsed = width > 900;
+      $('#mapToolsCollapse').toggleClass('mapTools-collapsed', collapsed).find('a').attr('aria-expanded', String(!collapsed));
+      $('#mapTools').toggle(!collapsed);
+      $('#actionsBar').width(width + 10); $('#map').width(width);
     },
 
     bindPanelToggle: function() {
@@ -1957,8 +1961,7 @@ var SimpleMappr = (function($, window, document) {
     showMap: function(load_data) {
       var self         = this,
           token        = new Date().getTime(),
-          formString   = "",
-          formObj      = {};
+          formString   = "";
 
       self.destroyJcrop();
 
@@ -1967,15 +1970,21 @@ var SimpleMappr = (function($, window, document) {
       $('#download_token').val(token);
 
       self.showSpinner();
+      self.setFormOptions();
       formString = $("#form-mapper").serialize();
-      formObj    = self.readDocument();
-      self.postData(formString, load_data);
-      window.SimpleMapprStorage.set("do-" + token.toString(), formObj);
-      self.toggleUndo(true);
+      self.postData(formString, load_data, function(document) {
+        self.destroyRedo();
+        window.SimpleMapprStorage.set("do-" + token.toString(), document);
+        self.toggleUndo(true);
+      });
     },
 
-    postData: function(formData, load_data) {
+    postData: function(formData, load_data, onRendered, onFailed) {
       var self = this, sequence = ++self.vars.renderSequence;
+      var submittedDocument = window.SimpleMapprDocument.fromEntries(
+        Array.from(new window.URLSearchParams(formData), function(entry) { return {name: entry[0], value: entry[1]}; }),
+        self.settings.maxTextareaCount
+      );
       if (self.vars.renderRequest) { self.vars.renderRequest.abort(); }
       self.hideErrorMessage();
       self.vars.renderRequest = $.ajax({
@@ -1983,15 +1992,28 @@ var SimpleMappr = (function($, window, document) {
         success: function(data) {
           if (sequence !== self.vars.renderSequence) { return; }
           if (!data || !Array.isArray(data.size) || !data.mapOutputImage) {
+            if (onFailed) { onFailed(); }
             self.hideSpinner(); self.showErrorMessage($('#mapper-loading-error-message').text()); return;
           }
           self.resetFormValues(data);
-          window.SimpleMapprStorage.current(self.readDocument());
-          self.resetJbbox(); self.drawMap(data, load_data);
+          self.resetJbbox();
+          var renderedDocument = Object.assign(submittedDocument, {
+            bbox_map: data.rendered_bbox,
+            projection_map: data.rendered_projection,
+            origin_map: data.rendered_origin == null || data.rendered_origin === false ? '' : data.rendered_origin,
+            rotation: data.rendered_rotation,
+            bbox_rubberband: ''
+          });
+          self.drawMap(data, load_data, function() {
+            self.vars.renderedMap = data;
+            if (onRendered) { onRendered(renderedDocument); }
+            window.SimpleMapprStorage.current(self.readDocument());
+          }, onFailed);
           self.drawLegend(); self.drawScalebar(); self.showBadPoints(); self.showBadDrawings(); self.addBadRecordsViewer();
         },
         error: function(xhr, status) {
           if (status === 'abort' || sequence !== self.vars.renderSequence) { return; }
+          if (onFailed) { onFailed(); }
           self.hideSpinner();
           self.showErrorMessage((xhr.responseJSON && xhr.responseJSON.error) || $('#mapper-loading-error-message').text());
         }
@@ -2010,7 +2032,7 @@ var SimpleMappr = (function($, window, document) {
       $('#pan').val('');
     },
 
-    drawMap: function(data, load_data) {
+    drawMap: function(data, load_data, onRendered, onFailed) {
       var self = this, sequence = self.vars.renderSequence;
       this.vars.mapOutputImage.off('.simplemapprRender')
         .attr('width', data.size[0]).attr('height', data.size[1])
@@ -2018,9 +2040,11 @@ var SimpleMappr = (function($, window, document) {
         .one('load.simplemapprRender', function() {
           if (sequence !== self.vars.renderSequence) { return; }
           self.loadCropSettings(load_data || {map: {bbox_rubberband: ''}}); self.hideSpinner();
+          if (onRendered) { onRendered(); }
         })
         .one('error.simplemapprRender', function() {
           if (sequence !== self.vars.renderSequence) { return; }
+          if (onFailed) { onFailed(); }
           self.hideSpinner(); self.showErrorMessage($('#mapper-loading-error-message').text());
         }).attr('src', data.mapOutputImage);
     },
@@ -2234,9 +2258,8 @@ var SimpleMappr = (function($, window, document) {
     },
 
     performRotation: function(element) {
-      $('#rotation').val($(element).attr("data-rotate"));
+      this.setRotation($(element).attr("data-rotate"));
       this.resetJbbox();
-      this.destroyRedo();
       this.showMap();
 
     },
@@ -2398,7 +2421,7 @@ var SimpleMappr = (function($, window, document) {
             try {
               var document = response.document || Object.assign(self.readDocument(), {coords: response.coords || [], wkt: response.wkt || [], regions: response.regions || []});
               document = window.SimpleMapprDocument.normalize(document, self.settings.maxTextareaCount);
-              self.loadInputs({map: document}); self.destroyRedo(); self.showMap({map: document}); self.tabSelector(0);
+              self.loadInputs({map: document}); self.showMap({map: document}); self.tabSelector(0);
               $('#import-status').text(response.bad_drawings && response.bad_drawings.length ? $('#mapper-import-warning').text() + ' ' + response.bad_drawings.length : $('#mapper-import-success').text());
             } catch (error) { self.hideSpinner(); self.showUnsupportedFile(); }
           })
@@ -2519,7 +2542,7 @@ var SimpleMappr = (function($, window, document) {
       var self = this;
       $('#form-mapper').on('submit.simplemappr', function(event) {
         event.preventDefault();
-        if (!self.missingFieldSetTitle()) { self.destroyRedo(); self.showMap(); self.tabSelector(0); }
+        if (!self.missingFieldSetTitle()) { self.showMap(); self.tabSelector(0); }
       });
     },
 

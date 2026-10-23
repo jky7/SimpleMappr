@@ -78,6 +78,8 @@ class Query extends Mappr
         $attr->projection       = Utility::loadParam('projection', 'epsg:4326');
         $attr->projection_map   = Utility::loadParam('projection_map', 'epsg:4326');
         $attr->origin           = Utility::loadParam('origin', null);
+        $attr->origin_map       = Utility::loadParam('origin_map', null);
+        $attr->rotation         = Utility::loadParam('rotation', 0);
         $attr->bbox_map         = Utility::loadParam('bbox', '-180,-90,180,90');
         $attr->layers           = Utility::loadParam('layers', []);
         $attr->graticules       = Utility::loadParam('graticules', false);
@@ -102,25 +104,14 @@ class Query extends Mappr
                 throw new \InvalidArgumentException('The region selection must stay inside the map canvas.');
             }
         }
-        if ($bbox_query[0] >= $bbox_query[2] || $bbox_query[1] >= $bbox_query[3]) {
-            throw new \InvalidArgumentException('The region selection must have positive width and height.');
+        $pointSelection = (float)$bbox_query[0] === (float)$bbox_query[2] && (float)$bbox_query[1] === (float)$bbox_query[3];
+        if (!$pointSelection && ($bbox_query[0] >= $bbox_query[2] || $bbox_query[1] >= $bbox_query[3])) {
+            throw new \InvalidArgumentException('The region selection must be a point or a box with positive width and height.');
         }
 
         if (!array_key_exists($this->request->queryLayer, $this->shapes)) {
             $this->request->queryLayer = 'countries';
         }
-
-        //lower-left coordinate
-        $ll_point = new \stdClass();
-        $ll_point->x = $bbox_query[0];
-        $ll_point->y = $bbox_query[3];
-        $ll_coord = $this->pix2Geo($ll_point);
-
-        //upper-right coordinate
-        $ur_point = new \stdClass();
-        $ur_point->x = $bbox_query[2];
-        $ur_point->y = $bbox_query[1];
-        $ur_coord = $this->pix2Geo($ur_point);
 
         $layer = new \layerObj($this->map_obj);
         $layer->name = "stateprovinces_polygon_query";
@@ -129,9 +120,22 @@ class Query extends Mappr
         $layer->template = "template.html";
         $layer->setProjection(parent::getProjection($this->default_projection));
 
-        $rect = new \rectObj($ll_coord->x, $ll_coord->y, $ur_coord->x, $ur_coord->y);
-
-        $return = $layer->queryByRect($this->map_obj, $rect);
+        if ($pointSelection) {
+            $layer->tolerance = 0;
+            $point = new \pointObj();
+            $this->map_obj->pixelToGeoref((float)$bbox_query[0], (float)$bbox_query[1], $point);
+            $return = $layer->queryByPoint($this->map_obj, $point, MS_SINGLE, 0);
+        } else {
+            $ring = new \lineObj();
+            foreach ([[0, 1], [2, 1], [2, 3], [0, 3], [0, 1]] as [$x, $y]) {
+                $point = new \pointObj();
+                $this->map_obj->pixelToGeoref((float)$bbox_query[$x], (float)$bbox_query[$y], $point);
+                $ring->add($point);
+            }
+            $polygon = new \shapeObj(MS_SHAPE_POLYGON);
+            $polygon->add($ring);
+            $return = $layer->queryByShape($this->map_obj, $polygon);
+        }
         if ($return == MS_SUCCESS) {
             if ($layer->getNumResults() > 0) {
                 $layer->open();

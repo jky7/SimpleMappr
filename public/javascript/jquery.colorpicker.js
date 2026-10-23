@@ -139,6 +139,8 @@
 				current.preview = current.cal.data('colorpicker').livePreview;
 				$(document).bind('mouseup', current, upHue);
 				$(document).bind('mousemove', current, moveHue);
+				ev.data = current;
+				moveHue(ev);
 			},
 			moveHue = function (ev) {
 				change.apply(
@@ -166,6 +168,8 @@
 				current.preview = current.cal.data('colorpicker').livePreview;
 				$(document).bind('mouseup', current, upSelector);
 				$(document).bind('mousemove', current, moveSelector);
+				ev.data = current;
+				moveSelector(ev);
 			},
 			moveSelector = function (ev) {
 				change.apply(
@@ -409,7 +413,7 @@
 						options.newColor = cal.find('div.colorpicker_new_color');
 						options.currentColor = cal.find('div.colorpicker_current_color');
 						cal.data('colorpicker', options);
-						cal.find('div.colorpicker_submit')
+						cal.find('.colorpicker_submit')
 							.bind('mouseenter', enterSubmit)
 							.bind('mouseleave', leaveSubmit)
 							.bind('click', clickSubmit);
