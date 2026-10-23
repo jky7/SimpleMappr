@@ -77,6 +77,24 @@ final class DetailedReliefTest extends TestCase
         } finally { foreach (glob($directory.'/*') as $path) { unlink($path); }rmdir($directory); }
     }
 
+    public function testNativeMosaicKeepsBlackTerrainOpaqueAndEmptyTilesTransparent(): void
+    {
+        $directory=sys_get_temp_dir().'/relief-alpha-'.bin2hex(random_bytes(8));mkdir($directory);
+        try {
+            $image=imagecreatetruecolor(256,256);imagesetpixel($image,255,255,imagecolorallocate($image,128,128,128));
+            imagejpeg($image,$directory.'/1-0-0.jpeg');imagedestroy($image);
+            file_put_contents($directory.'/1-1-0.jpeg',$this->jpeg());
+            $plan=['zoom'=>1,'x0'=>0,'x1'=>1,'y0'=>0,'y1'=>0];
+            file_put_contents($directory.'/mosaic.vrt',DetailedRelief::mosaic($plan,$directory,hrtime(true)/1e9+5));
+            $process=proc_open(['gdal_translate','-q','-of','PNG',$directory.'/mosaic.vrt',$directory.'/mosaic.png'],[['file','/dev/null','r'],['file','/dev/null','a'],['file','/dev/null','a']],$pipes);
+            self::assertIsResource($process);self::assertSame(0,proc_close($process));
+            $image=imagecreatefrompng($directory.'/mosaic.png');self::assertSame(512,imagesx($image));
+            $land=imagecolorsforindex($image,imagecolorat($image,10,10));$empty=imagecolorsforindex($image,imagecolorat($image,300,10));
+            self::assertSame(['red'=>0,'green'=>0,'blue'=>0,'alpha'=>0],$land);
+            self::assertSame(127,$empty['alpha']);imagedestroy($image);
+        } finally { foreach (glob($directory.'/*') as $path) { unlink($path); }rmdir($directory); }
+    }
+
     private function jpeg(): string
     {
         $image=imagecreatetruecolor(256,256);imagefill($image,0,0,imagecolorallocate($image,88,88,88));

@@ -89,30 +89,31 @@ final class DetailedRelief
                 if (!is_file($path) || is_link($path) || filesize($path)>ReliefTileCache::MAX_BYTES || !copy($path,$this->directory.'/'.$name)) { throw new \RuntimeException('Detailed relief cache changed. Please retry.',503); }
             }
         } finally { flock($lock,LOCK_UN);fclose($lock); }
-        $vrt=$this->vrt($plan,$deadline);
+        $vrt=self::mosaic($plan,$this->directory,$deadline);
         if ($vrt===null) { return null; }
         $path=$this->directory.'/relief.vrt';
         if (file_put_contents($path,$vrt)===false) { throw new \RuntimeException('Detailed relief storage is unavailable.',503); }
         return $path;
     }
 
-    private function vrt(array $plan,float $deadline): ?string
+    public static function mosaic(array $plan,string $directory,float $deadline): ?string
     {
         $tiles=[];
         foreach (self::tileNames($plan) as $position=>$name) {
             if (hrtime(true)/1e9>=$deadline) { throw new \RuntimeException('Detailed relief timed out. Please retry.',503); }
-            if (!self::emptyTile($this->directory.'/'.$name)) { $tiles[$position]=$name; }
+            if (!self::emptyTile($directory.'/'.$name)) { $tiles[$position]=$name; }
         }
         if (!$tiles) { return null; }
         $columns=$plan['x1']-$plan['x0']+1;$rows=$plan['y1']-$plan['y0']+1;
         $span=2*self::HALF_WORLD/(1<<$plan['zoom']);$pixel=$span/256;
         $left=-self::HALF_WORLD+$plan['x0']*$span;$top=self::HALF_WORLD-$plan['y0']*$span;
         $xml='<VRTDataset rasterXSize="'.($columns*256).'" rasterYSize="'.($rows*256).'"><SRS>EPSG:3857</SRS><GeoTransform>'.$left.','.$pixel.',0,'.$top.',0,-'.$pixel.'</GeoTransform>';
-        for ($band=1;$band<=3;$band++) {
-            $xml.='<VRTRasterBand dataType="Byte" band="'.$band.'"><NoDataValue>0</NoDataValue><ColorInterp>'.['Red','Green','Blue'][$band-1].'</ColorInterp>';
+        for ($band=1;$band<=4;$band++) {
+            $xml.='<VRTRasterBand dataType="Byte" band="'.$band.'"><ColorInterp>'.['Red','Green','Blue','Alpha'][$band-1].'</ColorInterp>';
             foreach ($tiles as $position=>$name) {
                 [$x,$y]=array_map('intval',explode(',',$position));
-                $xml.='<SimpleSource><SourceFilename relativeToVRT="1">'.$name.'</SourceFilename><SourceBand>'.$band.'</SourceBand><SrcRect xOff="0" yOff="0" xSize="256" ySize="256"/><DstRect xOff="'.(($x-$plan['x0'])*256).'" yOff="'.(($y-$plan['y0'])*256).'" xSize="256" ySize="256"/></SimpleSource>';
+                $source=$band===4?'ComplexSource':'SimpleSource';
+                $xml.='<'.$source.'><SourceFilename relativeToVRT="1">'.$name.'</SourceFilename><SourceBand>'.min($band,3).'</SourceBand><SrcRect xOff="0" yOff="0" xSize="256" ySize="256"/><DstRect xOff="'.(($x-$plan['x0'])*256).'" yOff="'.(($y-$plan['y0'])*256).'" xSize="256" ySize="256"/>'.($band===4?'<ScaleOffset>255</ScaleOffset><ScaleRatio>0</ScaleRatio>':'').'</'.$source.'>';
             }
             $xml.='</VRTRasterBand>';
         }
