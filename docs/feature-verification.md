@@ -19,6 +19,8 @@ The Docker runtime uses PHP 8.4, MapServer 8.4 and SWIG MapScript. The old PHP e
 | Temporary preview expiration and eligible cleanup | Actual isolated image-creation cleanup fixture; immutable saved-map byte comparison |
 | Dependency reproducibility, platform requirements and security audits | Pinned image/package snapshots, Composer/npm locks and release CI |
 
+The [2026-10-22 control audit](ui-audit.md) records actual clicks, drags, dialogs and downloaded files. Document/Node tests prove state and failure contracts; they do not replace an interaction check. Its limitations include live Ctrl+X input delivery and optional datasets.
+
 Settings JSON is a versioned editor document, distinct from exported GeoJSON geometry. Importing settings in the editor creates editable transient state; the My Maps importer writes private persistence. Administrator status never grants access to another owner's private maps.
 
 General legacy Selenium/database/bootstrap tests remain archived under `Tests/`; a modern-suite pass does not claim that their original infrastructure runs. Specialist ecological data and unverified raster products remain explicitly excluded by the profile registry. No legacy public hosted records can be recovered without an actual database backup.

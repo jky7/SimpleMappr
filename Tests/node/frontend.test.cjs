@@ -69,6 +69,15 @@ test('failed Undo and Redo previews leave their destinations available for retry
  e.p.mapRedo();e.respond(c);e.$('#mapOutputImage').trigger('error');
  const count=e.requests.length;e.p.mapRedo();assert.equal(e.requests.length,count+1);assert.equal(e.request().get('bbox_map'),c);e.render(c);
 });
+test('Undo and Redo restore expanded preview width without losing their destinations',t=>{
+ const e=viewportEditor(t),bbox='-90,-60,-30,10';
+ Object.defineProperty(e.w.document.documentElement,'clientWidth',{value:1400});
+ e.$('body').append('<div id="mapToolsCollapse"><a href="#">Toggle settings</a></div><div id="mapTools"></div><div id="map"></div>');e.p.bindPanelToggle();
+ e.p.showMap();e.render(bbox);e.$('#mapToolsCollapse a').trigger('click');assert.equal(e.request().get('width'),'1372');e.render(bbox);
+ e.p.mapUndo();assert.equal(e.request().get('width'),'900');e.render(bbox);
+ const count=e.requests.length;e.p.mapRedo();assert.equal(e.requests.length,count+1);assert.equal(e.request().get('width'),'1372');e.render(bbox);
+ e.p.mapUndo();assert.equal(e.request().get('width'),'900');
+});
 test('a pending preview records submitted data without losing later draft edits',t=>{
  const e=viewportEditor(t);
  e.$('#form-mapper').append('<textarea name="coords[0][data]">0,0</textarea>');
@@ -105,6 +114,13 @@ test('HTTP failures release spinner, expose text error, preserve form',t=>{
  assert.equal(e.$('#m-mapSaveTitle').val(),'keep me');
  assert.equal(e.$('.mapper-message-error').text(),'<script>untrusted</script>');
  assert.equal(e.$('.mapper-message-error script').length,0);
+});
+test('failed region selection releases the spinner and reports a useful error',t=>{
+ const e=finish(t,editor());let request;e.p.vars.fillColor={r:150,g:150,b:150};
+ e.$.ajax=options=>(request=options,{});e.p.aQuery({data:e.p});
+ request.error({responseJSON:{error:'Selection failed. Please try again.'}},'error');
+ assert.equal(e.p.vars.spinner.css('display'),'none');
+ assert.equal(e.$('.mapper-message-error').text(),'Selection failed. Please try again.');
 });
 test('a new render aborts the old request and ignores its response',t=>{
  const e=finish(t,editor());let calls=[],aborted=0;e.$.ajax=o=>(calls.push(o),{abort(){aborted++;}});
@@ -222,4 +238,66 @@ test('accordion headings act as buttons with labeled regions without nested focu
 });
 test('keyboard rotation updates canonical form rotation and announced slider value',t=>{
  const e=finish(t,editor());e.$('#form-mapper').append('<input id="rotation" name="rotation">');e.$('body').append('<div id="mapControls"><div class="thumb"></div><ul class="overview"><li></li></ul></div>');e.p.setRotation(45);assert.equal(e.$('#rotation').val(),'45');assert.equal(e.$('#mapControls .thumb').attr('aria-valuenow'),'45');
+});
+test('mouse rotation updates the announced slider value before rendering',t=>{
+ const e=finish(t,editor());e.$('#form-mapper').append('<input id="rotation" name="rotation">');e.$('body').append('<div id="mapControls"><div class="thumb" aria-valuenow="0"></div><ul class="overview"><li data-rotate="85"></li></ul></div>');
+ let rendered=0;e.p.showMap=()=>{rendered++;};e.p.performRotation(e.$('#mapControls li')[0]);
+ assert.equal(rendered,1);assert.equal(e.$('#rotation').val(),'85');assert.equal(e.$('#mapControls .thumb').attr('aria-valuenow'),'85');
+});
+test('added and renumbered groups keep unique accordion targets and field labels',t=>{
+ const e=finish(t,editor());e.$.fn.ColorPicker=function(){return this;};
+ const groups=e.$('#fieldSetsPoints').addClass('fieldSets');
+ for(let i=0;i<3;i++)groups.append(`<div class="form-item fieldset-points"><button class="removemore">Remove</button><h3><a href="#">Layer ${i+1}</a></h3><div><label data-field="title">Legend</label><input class="m-mapTitle" name="coords[${i}][title]"><label data-field="data">Map data</label><textarea name="coords[${i}][data]"></textarea><button class="clearself">Clear</button></div></div>`);
+ groups.after('<p><button class="addmore" data-type="coords">Add layer</button></p>');e.p.bindAccordions();e.p.associateGroupLabels();
+ e.p.addAccordionPanel('coords');e.p.addAccordionPanel('coords');e.p.removeAccordionPanel(groups.children().eq(3),'coords');
+ const ids=Array.from(e.w.document.querySelectorAll('[id]'),node=>node.id);assert.equal(new Set(ids).size,ids.length);
+ groups.find('h3').each(function(){const content=e.w.document.getElementById(e.$(this).attr('aria-controls'));assert.equal(content,this.nextElementSibling);assert.equal(content.getAttribute('aria-labelledby'),this.id);});
+ groups.find('label').each(function(){assert.equal(e.w.document.getElementById(this.htmlFor).closest('.form-item'),this.closest('.form-item'));});
+ assert.equal(groups.children().last().find('textarea').attr('name'),'coords[3][data]');
+});
+test('Clear All resets marker shape and size on every point layer',t=>{
+ const e=finish(t,editor());
+ for(let i=0;i<2;i++)e.$('#fieldSetsPoints').append('<div class="fieldset-points"><select class="m-mapShape">'+['','plus','cross','asterisk','circle','square'].map(v=>'<option>'+v+'</option>').join('')+'</select><select class="m-mapSize">'+['','6','8','10','16'].map(v=>'<option>'+v+'</option>').join('')+'</select></div>');
+ e.$('#fieldSetsPoints .m-mapShape').val('square');e.$('#fieldSetsPoints .m-mapSize').val('16');
+ e.p.clearZone(e.$('#fieldSetsPoints').children());
+ assert.deepEqual(Array.from(e.$('#fieldSetsPoints .m-mapShape'),n=>n.value),['circle','circle']);
+ assert.deepEqual(Array.from(e.$('#fieldSetsPoints .m-mapSize'),n=>n.value),['10','10']);
+});
+test('Tab accepts the active country autocomplete suggestion without an error',t=>{
+ const e=finish(t,editor());e.$('#fieldSetsRegions').append('<textarea name="regions[0][data]"></textarea>');
+ e.$.getJSON=(url,data,respond)=>respond([{label:'Canada',value:'Canada'}]);e.p.bindAutocomplete();
+ const field=e.$('#fieldSetsRegions textarea');field.val('Can').autocomplete('search');
+ field.autocomplete('instance').menu.next();
+ field.trigger(e.$.Event('keydown',{key:'Tab',keyCode:9,which:9}));
+ assert.equal(field.val(),'Canada, ');
+});
+test('Help loads its country-code table without an obsolete waypoint plugin',t=>{
+ const e=finish(t,editor()),loaded=[];
+ e.$('body').append('<div id="map-help"><h3>Tools</h3><h3>Countries</h3><div id="country-codes"></div></div>');
+ e.w.SimpleMappr.loadCodes=element=>loaded.push(element.attr('id'));
+ const help=fs.readFileSync(path.join(root,'views/help.html'),'utf8');
+ e.w.eval(help.match(/<script>([\s\S]*?)<\/script>/)[1]);
+ assert.deepEqual(loaded,['country-codes']);
+});
+
+test('fill queries the rendered viewport when form projection or rotation has changed',t=>{
+ const e=finish(t,editor());let request;e.p.vars.fillColor={r:150,g:150,b:150};
+ e.$('#form-mapper').append('<input id="rendered_bbox" value="-180,-90,180,90"><input id="rendered_projection" value="epsg:4326"><input id="rendered_rotation" value="90"><input id="projection" value="esri:102009"><input id="projection_map" value="esri:102009"><input id="origin" value="-96"><input id="rotation" value="0">');
+ e.$('#rendered_origin').val('0');e.$.ajax=options=>(request=options,{});e.p.aQuery({data:e.p});
+ assert.equal(request.data.projection,'epsg:4326');assert.equal(request.data.projection_map,'epsg:4326');assert.equal(request.data.origin,'0');assert.equal(request.data.origin_map,'0');assert.equal(request.data.rotation,'90');
+});
+
+test('failed new branches and ocean clicks retain the available Redo destination',t=>{
+ const e=viewportEditor(t),a='-90,-60,-30,10',b='-80,-60,-20,10';
+ e.p.showMap();e.render(a);e.p.mapPan('right');e.render(b);e.p.mapUndo();e.render(a);
+ e.p.mapPan('up');e.requests.at(-1).error({},'error');
+ let count=e.requests.length;e.p.mapRedo();assert.equal(e.requests.length,count+1);assert.equal(e.request().get('bbox_map'),b);e.render(b);
+ e.p.mapUndo();e.render(a);e.p.mapPan('up');e.respond('-90,-50,-30,20');e.$('#mapOutputImage').trigger('error');
+ count=e.requests.length;e.p.mapRedo();assert.equal(e.requests.length,count+1);e.render(b);
+ e.p.mapUndo();e.render(a);e.p.vars.fillColor={r:150,g:150,b:150};e.p.aQuery({data:e.p});e.requests.at(-1).success([]);
+ count=e.requests.length;e.p.mapRedo();assert.equal(e.requests.length,count+1);assert.equal(e.request().get('bbox_map'),b);
+});
+test('Ctrl+X activates crop when the keyboard event reaches the preview',t=>{
+ const e=finish(t,editor());let cropped=0;e.p.mapCrop=()=>{cropped++;};e.p.bindHotkeys();
+ e.$('#mapOutput').trigger(e.$.Event('keydown',{key:'x',ctrlKey:true}));assert.equal(cropped,1);
 });
