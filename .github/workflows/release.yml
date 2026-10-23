@@ -65,10 +65,10 @@ jobs:
       - name: Optional datasets through the editor
         if: github.event_name == 'workflow_dispatch' && inputs.optional_assets
         run: |
-          scripts/fetch-assets --profile gray-relief-v1
-          SIMPLEMAPPR_ASSET_PROFILE=gray-relief-v1 SIMPLEMAPPR_ASSET_CACHE="$PWD/.asset-cache" docker compose --env-file "$SIMPLEMAPPR_CI_ENV" up -d --no-build --wait
+          scripts/fetch-assets --profile full-map-v1
+          SIMPLEMAPPR_ASSET_PROFILE=full-map-v1 SIMPLEMAPPR_ASSET_CACHE="$PWD/.asset-cache" docker compose --env-file "$SIMPLEMAPPR_CI_ENV" up -d --no-build --wait
           mkdir -p build/receipts/profiles
-          docker run --rm --network host --shm-size=1g -v "$PWD/build/receipts/profiles:/receipts" simplemappr-browser-contract:local node profiles.mjs
+          docker run --rm --network host --shm-size=1g -e SIMPLEMAPPR_TEST_PROFILE=full-map-v1 -v "$PWD/build/receipts/profiles:/receipts" simplemappr-browser-contract:local node profiles.mjs
       - name: Collect package inventory
         if: always()
         run: docker compose --env-file "$SIMPLEMAPPR_CI_ENV" exec -T app cat /usr/local/share/simplemappr-packages.tsv > build/receipts/system-packages.tsv

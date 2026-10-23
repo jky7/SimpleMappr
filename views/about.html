@@ -48,7 +48,7 @@
 {% set urls_mapserver = '<a href="http://mapserver.org" target="_blank">http://mapserver.org</a>' %}
 {% set urls_conservation = '<a href="http://www.conservation.org/where/priority_areas/hotspots/Pages/hotspots_main.aspx" target="_blank">Conservation International</a>' %}
 {% set urls_wwf = '<a href="http://www.worldwildlife.org/pages/conservation-science-data-and-tools">World Wildlife Fund</a>' %}
-{% set urls_nasa = '<a href="http://visibleearth.nasa.gov/view.php?id=57752">NASA</a>' %}
+{% set urls_nasa = '<a href="https://science.nasa.gov/earth/faq/">NASA Visible Earth</a>' %}
 {% set urls_us_census = '<a href="https://www.census.gov/geo/maps-data/data/cbf/cbf_counties.html">US Census Bureau</a>' %}
 <p>{{ "Underlying ArcView shapefiles were obtained from Natural Earth, %urls_naturalearth% and the mapping software used is MapServer, %urls_mapserver% via PHP MapScript. Biodiversity Hotspot data were obtained from %urls_conservation% and ecoregions from the %urls_wwf%. Blue Marble from %urls_nasa% and US Counties from the %urls_us_census%."|trans({"%urls_naturalearth%": urls_naturalearth, "%urls_mapserver%": urls_mapserver, "%urls_conservation%": urls_conservation, "%urls_wwf%": urls_wwf, "%urls_nasa%": urls_nasa, "%urls_us_census%": urls_us_census})|raw }}</p>
 

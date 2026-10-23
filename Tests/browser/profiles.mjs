@@ -1,7 +1,9 @@
 import {chromium,expect} from '@playwright/test';
 import {mkdir,writeFile} from 'node:fs/promises';
 import path from 'node:path';
-const base=process.env.SIMPLEMAPPR_TEST_URL||'http://127.0.0.1:8080';
+const base=(process.env.SIMPLEMAPPR_TEST_URL||'http://127.0.0.1:8080').replace(/\/$/,'');
+const expectedProfile=process.env.SIMPLEMAPPR_TEST_PROFILE||'gray-relief-v1';
+const basePath=new URL(base).pathname.replace(/\/$/,'');
 const output=process.env.SIMPLEMAPPR_BROWSER_OUTPUT||'/receipts';
 await mkdir(output,{recursive:true});
 const browser=await chromium.launch({headless:true});
@@ -10,11 +12,11 @@ const receipts=[];
 try{
  await page.goto(base,{waitUntil:'networkidle'});await page.waitForFunction(()=>window.SimpleMappr&&window.jQuery);
  const profile=await(await page.request.get(base+'/_runtime')).json();
- expect(profile.assetProfile).toBe('gray-relief-v1');
- const keys=['rivers','oceans','roads','railroads','rivernames','placenames','physicalLabels','marineLabels','reliefgrey'];
+ expect(profile.assetProfile).toBe(expectedProfile);
+ const keys=['rivers','oceans','roads','railroads','rivernames','placenames','physicalLabels','marineLabels','reliefgrey',...(expectedProfile==='full-map-v1'?['relief','reliefalt','blueMarble']:[])];
  async function render(label){
   const old=await page.locator('#mapOutputImage').getAttribute('src');
-  const response=page.waitForResponse(response=>new URL(response.url()).pathname==='/application.json');
+  const response=page.waitForResponse(response=>new URL(response.url()).pathname===basePath+'/application.json');
   await page.locator('a.toolsRefresh').click();const result=await response;expect(result.status()).toBe(200);
   await page.waitForFunction(old=>{const image=document.querySelector('#mapOutputImage');return image.getAttribute('src')!==old&&image.complete&&image.naturalWidth>0;},old);
   const dimensions=await page.locator('#mapOutputImage').evaluate(image=>[image.naturalWidth,image.naturalHeight]);

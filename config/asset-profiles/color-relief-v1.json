@@ -1,0 +1,90 @@
+{
+  "schemaVersion": 1,
+  "profile": "color-relief-v1",
+  "assets": [
+    {
+      "basename": "HYP_LR_SR_OB_DR",
+      "kind": "raster",
+      "format": "zip",
+      "url": "https://naciscdn.org/naturalearth/10m/raster/HYP_LR_SR_OB_DR.zip",
+      "archive": "HYP_LR_SR_OB_DR.zip",
+      "archiveBytes": 239926010,
+      "archiveSha256": "016924509def418d79e048f40434daed84d9848829813a54063333f8b68b9af9",
+      "version": "2.0.0",
+      "extractedBytes": 393800624,
+      "components": [
+        {
+          "name": "HYP_LR_SR_OB_DR.README.html",
+          "bytes": 31189,
+          "sha256": "3a635575039e08b4f41526fd79f347fe9029ff53e767ca6c876b600bc6728c79"
+        },
+        {
+          "name": "HYP_LR_SR_OB_DR.VERSION.txt",
+          "bytes": 5,
+          "sha256": "f22abd6773ab232869321ad4b1e47ac0c908febf4f3a2bd10c8066140f741261"
+        },
+        {
+          "name": "HYP_LR_SR_OB_DR.prj",
+          "bytes": 147,
+          "sha256": "3259f0e55290a82b1350646f604e8a7ee1e2136c0320a40fad838ab40819fff8"
+        },
+        {
+          "name": "HYP_LR_SR_OB_DR.tfw",
+          "bytes": 167,
+          "sha256": "8831aca96d1841e26aac6b198a975d50c5bc3989d09a462b3d361fd0bbc28643"
+        },
+        {
+          "name": "HYP_LR_SR_OB_DR.tif",
+          "bytes": 393769116,
+          "sha256": "7bcc529c3f1148b05c4b6b78427fe3a68921c4e745068f5ab42d72c8087a230d"
+        }
+      ],
+      "destination": "HYP_LR_SR_OB_DR",
+      "license": "Public domain",
+      "licenseUrl": "https://www.naturalearthdata.com/about/terms-of-use/",
+      "verifiedOn": "2026-10-23"
+    },
+    {
+      "basename": "NE2_LR_LC_SR_W_DR",
+      "kind": "raster",
+      "format": "zip",
+      "url": "https://naciscdn.org/naturalearth/10m/raster/NE2_LR_LC_SR_W_DR.zip",
+      "archive": "NE2_LR_LC_SR_W_DR.zip",
+      "archiveBytes": 194338220,
+      "archiveSha256": "73eb7a00b182c702e69892332cbd380edc7aa00ccaf68ae0111deefb87303a0e",
+      "version": "2.0.0",
+      "extractedBytes": 393800288,
+      "components": [
+        {
+          "name": "NE2_LR_LC_SR_W_DR.README.html",
+          "bytes": 31413,
+          "sha256": "bc8a0df3bebde20e585f7cdb009533eb59979995f4e54603adbb57d16b1bd4be"
+        },
+        {
+          "name": "NE2_LR_LC_SR_W_DR.VERSION.txt",
+          "bytes": 5,
+          "sha256": "f22abd6773ab232869321ad4b1e47ac0c908febf4f3a2bd10c8066140f741261"
+        },
+        {
+          "name": "NE2_LR_LC_SR_W_DR.prj",
+          "bytes": 147,
+          "sha256": "3259f0e55290a82b1350646f604e8a7ee1e2136c0320a40fad838ab40819fff8"
+        },
+        {
+          "name": "NE2_LR_LC_SR_W_DR.tfw",
+          "bytes": 167,
+          "sha256": "8831aca96d1841e26aac6b198a975d50c5bc3989d09a462b3d361fd0bbc28643"
+        },
+        {
+          "name": "NE2_LR_LC_SR_W_DR.tif",
+          "bytes": 393768556,
+          "sha256": "1106445234446c33c023fa15175c2da673cdf6093ad668fc964a9ae137f6d63b"
+        }
+      ],
+      "destination": "NE2_LR_LC_SR_W_DR",
+      "license": "Public domain",
+      "licenseUrl": "https://www.naturalearthdata.com/about/terms-of-use/",
+      "verifiedOn": "2026-10-23"
+    }
+  ]
+}

@@ -1,0 +1,28 @@
+{
+  "schemaVersion": 1,
+  "profile": "blue-marble-v1",
+  "assets": [
+    {
+      "basename": "land_shallow_topo_21600",
+      "kind": "raster",
+      "format": "file",
+      "url": "https://eoimages.gsfc.nasa.gov/images/imagerecords/57000/57752/land_shallow_topo_21600.tif",
+      "archive": "land_shallow_topo_21600.tif",
+      "archiveBytes": 181981194,
+      "archiveSha256": "e89c499af628517972ab0fd893fe75d522c88370dd8fd7aff4b30dba6f88f434",
+      "version": "2002",
+      "extractedBytes": 181981194,
+      "components": [
+        {
+          "name": "land_shallow_topo_21600.tif",
+          "bytes": 181981194,
+          "sha256": "e89c499af628517972ab0fd893fe75d522c88370dd8fd7aff4b30dba6f88f434"
+        }
+      ],
+      "destination": "blueMarble",
+      "license": "NASA imagery public use; credit NASA Visible Earth",
+      "licenseUrl": "https://science.nasa.gov/earth/faq/",
+      "verifiedOn": "2026-10-23"
+    }
+  ]
+}

@@ -18,14 +18,22 @@ final class AssetInstaller
                 $destination.='/'.$segment;
                 if (is_link($destination) || (!is_dir($destination) && ($check || !mkdir($destination,0755)))) { throw new \RuntimeException('Missing or unsafe asset directory.'); }
             }
+            $format=$asset['format'] ?? 'zip';
+            if (!in_array($format,['zip','file'],true)) { throw new \RuntimeException('Unsupported asset source format.'); }
+            if ($format==='file') {
+                $component=$asset['components'][0] ?? [];
+                if (count($asset['components'])!==1 || ($component['name'] ?? null)!==$asset['archive'] || ($component['sha256'] ?? null)!==$asset['archiveSha256'] || !is_int($asset['archiveBytes'] ?? null) || $asset['archiveBytes']<=0 || $asset['archiveBytes']>536870912 || ($component['bytes'] ?? null)!==$asset['archiveBytes']) { throw new \RuntimeException('Raw asset must declare one identical bounded component.'); }
+            }
             $zip=null;
             if (!$check) {
                 $archive=$archiveRoot.'/'.$asset['archive'];
                 if (is_link($archive) || !is_file($archive) || hash_file('sha256',$archive)!==$asset['archiveSha256'] || isset($asset['archiveBytes']) && filesize($archive)!==$asset['archiveBytes']) { throw new \RuntimeException('Missing or corrupt archive: '.$asset['archive']); }
-                $zip=new \ZipArchive();if ($zip->open($archive)!==true) { throw new \RuntimeException('Cannot open asset archive.'); }
-                $expected=array_column($asset['components'],'name');$actual=[];
-                for ($i=0;$i<$zip->numFiles;$i++) { $actual[]=$zip->getNameIndex($i); }
-                sort($expected);sort($actual);if ($expected!==$actual) { throw new \RuntimeException('Archive members differ from manifest.'); }
+                if ($format==='zip') {
+                    $zip=new \ZipArchive();if ($zip->open($archive)!==true) { throw new \RuntimeException('Cannot open asset archive.'); }
+                    $expected=array_column($asset['components'],'name');$actual=[];
+                    for ($i=0;$i<$zip->numFiles;$i++) { $actual[]=$zip->getNameIndex($i); }
+                    sort($expected);sort($actual);if ($expected!==$actual) { throw new \RuntimeException('Archive members differ from manifest.'); }
+                }
             }
             try {
                 foreach ($asset['components'] as $component) {
@@ -37,11 +45,11 @@ final class AssetInstaller
                         if (hash_file('sha256',$target)!==$component['sha256'] || isset($component['bytes']) && filesize($target)!==$component['bytes']) { throw new \RuntimeException('Corrupt installed asset: '.$name); }
                     } elseif ($check) { throw new \RuntimeException('Missing asset: '.$name); }
                     else {
-                        $input=$zip->getStream($name);$temporary=tempnam($destination,'.install-');
+                        $input=$format==='zip'?$zip->getStream($name):fopen($archive,'rb');$temporary=tempnam($destination,'.install-');
                         if ($input===false || $temporary===false) { throw new \RuntimeException('Cannot stage asset.'); }
                         try {
                             $output=fopen($temporary,'wb');if ($output===false) { throw new \RuntimeException('Cannot open staged asset.'); }
-                            $copied=stream_copy_to_stream($input,$output);fclose($input);
+                            $copied=isset($component['bytes'])?stream_copy_to_stream($input,$output,$component['bytes']+1):stream_copy_to_stream($input,$output);fclose($input);
                             if ($copied===false || !fflush($output) || !fsync($output) || !fclose($output) || isset($component['bytes']) && $copied!==$component['bytes'] || hash_file('sha256',$temporary)!==$component['sha256'] || !chmod($temporary,0644) || !rename($temporary,$target)) { throw new \RuntimeException('Asset extraction or verification failed: '.$name); }
                         } finally { if (is_file($temporary)) { unlink($temporary); } }
                     }

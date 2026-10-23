@@ -39,17 +39,39 @@
           "cache": true
         }
       ]
+    },
+    "full-map-v1": {
+      "configuration": "config/shapefiles.full.yml",
+      "manifests": [
+        {
+          "path": "Tests/fixtures/manifest.json",
+          "cache": false
+        },
+        {
+          "path": "config/asset-profiles/natural-earth-extra-vector-v1.json",
+          "cache": true
+        },
+        {
+          "path": "config/asset-profiles/gray-earth-relief-v1.json",
+          "cache": true
+        },
+        {
+          "path": "config/asset-profiles/color-relief-v1.json",
+          "cache": true
+        },
+        {
+          "path": "config/asset-profiles/blue-marble-v1.json",
+          "cache": true
+        }
+      ]
     }
   },
   "excluded": {
-    "relief": "Full-color raster archives are not verified.",
-    "reliefalt": "Full-color raster archives are not verified.",
-    "blueMarble": "No matching georeferenced archive is verified.",
-    "conservation": "Archived hotspot data and redistribution terms are not verified.",
-    "hotspotLabels": "Archived hotspot data and redistribution terms are not verified.",
-    "ecoregions": "The archived data, field mappings and styles are not verified.",
-    "ecoregionLabels": "The archived data, field mappings and styles are not verified.",
-    "marine_ecoregions": "The archived data, field mappings and styles are not verified.",
-    "marineEcoregionLabels": "The archived data, field mappings and styles are not verified."
+    "conservation": "The available 2016.1 hotspots use CC BY-SA 4.0. Share-alike output attribution is not implemented.",
+    "hotspotLabels": "The available 2016.1 hotspots use CC BY-SA 4.0. Share-alike output attribution is not implemented.",
+    "ecoregions": "The available RESOLVE 2017 data use CC BY 4.0. Output attribution is not implemented.",
+    "ecoregionLabels": "The available RESOLVE 2017 data use CC BY 4.0. Output attribution is not implemented.",
+    "marine_ecoregions": "Source terms restrict redistribution and commercial use; not installed.",
+    "marineEcoregionLabels": "Source terms restrict redistribution and commercial use; not installed."
   }
 }
