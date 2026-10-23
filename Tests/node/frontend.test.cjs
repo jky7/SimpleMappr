@@ -260,8 +260,8 @@ test('Clear All resets marker shape and size on every point layer',t=>{
  for(let i=0;i<2;i++)e.$('#fieldSetsPoints').append('<div class="fieldset-points"><select class="m-mapShape">'+['','plus','cross','asterisk','circle','square'].map(v=>'<option>'+v+'</option>').join('')+'</select><select class="m-mapSize">'+['','6','8','10','16'].map(v=>'<option>'+v+'</option>').join('')+'</select></div>');
  e.$('#fieldSetsPoints .m-mapShape').val('square');e.$('#fieldSetsPoints .m-mapSize').val('16');
  e.p.clearZone(e.$('#fieldSetsPoints').children());
- assert.deepEqual(e.$('#fieldSetsPoints .m-mapShape').map(function(){return this.value;}).get(),['circle','circle']);
- assert.deepEqual(e.$('#fieldSetsPoints .m-mapSize').map(function(){return this.value;}).get(),['10','10']);
+ assert.deepEqual(Array.from(e.$('#fieldSetsPoints .m-mapShape'),n=>n.value),['circle','circle']);
+ assert.deepEqual(Array.from(e.$('#fieldSetsPoints .m-mapSize'),n=>n.value),['10','10']);
 });
 test('Tab accepts the active country autocomplete suggestion without an error',t=>{
  const e=finish(t,editor());e.$('#fieldSetsRegions').append('<textarea name="regions[0][data]"></textarea>');

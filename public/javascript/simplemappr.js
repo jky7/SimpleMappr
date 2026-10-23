@@ -793,8 +793,8 @@ var SimpleMappr = (function($, window, document) {
         self.unusedVariables(key);
         zone.find(value).val('');
       });
-      if(shape_picker.length > 0) { shape_picker[0].selectedIndex = 4; }
-      if(size_picker.length > 0) { size_picker[0].selectedIndex = 3; }
+      shape_picker.each(function() { this.selectedIndex = 4; });
+      size_picker.each(function() { this.selectedIndex = 3; });
       if(shadow_check.length > 0) { shadow_check.prop('checked', false); }
       if(border_check.length > 0) { border_check.prop('checked', false); }
       if(hatch_check.length > 0) { hatch_check.prop('checked', false); }
@@ -811,7 +811,7 @@ var SimpleMappr = (function($, window, document) {
       var self = this, term = "", terms = [];
 
       this.vars.fieldSetsRegions.find('textarea').on('keydown', function(e) {
-        if (e.keyCode === $.ui.keyCode.TAB && $(this).data("autocomplete").menu.active) { e.preventDefault(); }
+        if (e.keyCode === $.ui.keyCode.TAB && $(this).autocomplete('instance').menu.active) { e.preventDefault(); }
       }).autocomplete({
         source: function(request, response) {
           $.getJSON( self.settings.baseUrl + "/places.json?term=" + self.extractLast(request.term), {}, response);
