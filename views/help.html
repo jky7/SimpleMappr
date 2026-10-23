@@ -12,20 +12,14 @@
 #country-codes{position:relative;width:200px;}
 #country-codes .mapper-loading-message{left:5%;}
 </style>
-<script src="../public/javascript/jquery.waypoints.min.js"></script>
 <script>
-  $('#map-help h3:eq(1)').waypoint(function() {
-    var elem = $('#country-codes').css("width", "100%");
-    if ($('#country-codes').html().length === 0) {
-        SimpleMappr.loadCodes(elem, { locale : "{{ locale['locale'] }}" });
-    }
-  });
+  SimpleMappr.loadCodes($('#country-codes').css('width', '100%'), {locale: "{{ locale['locale'] }}"});
 </script>
 <!-- help tab -->
 <div id="map-help">
 
   <div class="panel">
-    <p>{{ "This application makes heavy use of JavaScript. A modern browser like Internet Explorer 9, FireFox 6+, Google Chrome, or Safari 5+ is strongly recommended."|trans }}</p>
+    <p>Use a current version of Firefox, Chrome, Edge, or Safari with JavaScript enabled.</p>
   </div>
 
   <div class="header">
@@ -46,7 +40,7 @@
     <dd>{{ "draw an expandable, square-shaped rubber band that precisely defines a cropped portion of the map you wish to appear in the exported map. Typing precise coordinates in the corner boxes within the crop window are not always retained after the crop window is automatically redrawn because your computer monitor has a finite number of pixels."|trans }}</dd>
 
     <dt class="sprites-before toolsQuery">{{ "Fill regions"|trans }}:</dt>
-    <dd>{{ "choose a color then draw an expandable, square-shaped rubber band to shade States/Provinces (if layer visible) or Countries. Selections are sequentially added in the Regions tab."|trans }}</dd>
+    <dd>Choose a color and click Apply. Click a country to shade it, or drag a box to select several regions. Enable States/Provinces to select a state or province. Selections are added to the Regions tab.</dd>
 
     <dt class="sprites-before toolsUndo">{{ "Undo"|trans }}:</dt>
     <dd>{{ "undo the last executed action"|trans }}</dd>
