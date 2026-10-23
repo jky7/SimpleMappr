@@ -969,9 +969,11 @@ var SimpleMappr = (function($, window, document) {
           formData  = {
             bbox           : $('#rendered_bbox').val(),
             bbox_query     : $('#bbox_query').val(),
-            projection     : $('#projection').val(),
-            projection_map : $('#projection_map').val(),
-            origin         : $('#origin').val(),
+            projection     : $('#rendered_projection').val(),
+            projection_map : $('#rendered_projection').val(),
+            origin         : $('#rendered_origin').val(),
+            origin_map     : $('#rendered_origin').val(),
+            rotation       : $('#rendered_rotation').val(),
             qlayer         : ($('#stateprovinces').prop('checked')) ? 'stateprovinces_polygon' : 'countries',
             width          : self.vars.mapOutputImage.width(),
             height         : self.vars.mapOutputImage.height()

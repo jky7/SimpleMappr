@@ -5,10 +5,10 @@ use SimpleMappr\Mappr\Application\Query;
 
 final class RegionSelectionTest extends TestCase
 {
-    private function select(string $pixels, string $layer = 'countries'): array
+    private function select(string $pixels, string $layer = 'countries', array $viewport = []): array
     {
         $previous = $_REQUEST;
-        $_REQUEST = ['bbox_query' => $pixels, 'qlayer' => $layer, 'width' => 900, 'height' => 450];
+        $_REQUEST = $viewport + ['bbox_query' => $pixels, 'qlayer' => $layer, 'width' => 900, 'height' => 450];
         try {
             return (new Query())->execute()->queryLayer()->data;
         } finally {
@@ -34,6 +34,16 @@ final class RegionSelectionTest extends TestCase
     public function testBoxSelectionStillFindsCountries(): void
     {
         self::assertContains('Brazil', $this->select('310,260,330,280'));
+    }
+
+    public function testClickUsesTheRotatedPreview(): void
+    {
+        self::assertSame(['Brazil'], $this->select('408,90,408,90', 'countries', ['rotation' => 90]));
+    }
+
+    public function testBoxUsesTheRotatedPreview(): void
+    {
+        self::assertContains('Brazil', $this->select('400,80,416,100', 'countries', ['rotation' => 90]));
     }
 
     public function testReversedSelectionIsRejected(): void

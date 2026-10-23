@@ -1486,3 +1486,9 @@ msgstr "Luminosité"
 
 msgid "Rotation"
 msgstr "Rotation"
+
+msgid "Use a current version of Firefox, Chrome, Edge, or Safari with JavaScript enabled."
+msgstr "Utilisez une version à jour de Firefox, Chrome, Edge ou Safari avec JavaScript activé."
+
+msgid "Choose a color and click Apply. Click a country to shade it, or drag a box to select several regions. Enable States/Provinces to select a state or province. Selections are added to the Regions tab."
+msgstr "Choisissez une couleur, puis cliquez sur Appliquer. Cliquez sur un pays pour le colorier, ou tracez un rectangle pour sélectionner plusieurs régions. Activez États/Provinces pour sélectionner un état ou une province. Les sélections sont ajoutées à l’onglet Régions."

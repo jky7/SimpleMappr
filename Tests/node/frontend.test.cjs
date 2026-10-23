@@ -279,3 +279,10 @@ test('Help loads its country-code table without an obsolete waypoint plugin',t=>
  e.w.eval(help.match(/<script>([\s\S]*?)<\/script>/)[1]);
  assert.deepEqual(loaded,['country-codes']);
 });
+
+test('fill queries the rendered viewport when form projection or rotation has changed',t=>{
+ const e=finish(t,editor());let request;e.p.vars.fillColor={r:150,g:150,b:150};
+ e.$('#form-mapper').append('<input id="rendered_bbox" value="-180,-90,180,90"><input id="rendered_projection" value="epsg:4326"><input id="rendered_rotation" value="90"><input id="projection" value="esri:102009"><input id="projection_map" value="esri:102009"><input id="origin" value="-96"><input id="rotation" value="0">');
+ e.$('#rendered_origin').val('0');e.$.ajax=options=>(request=options,{});e.p.aQuery({data:e.p});
+ assert.equal(request.data.projection,'epsg:4326');assert.equal(request.data.projection_map,'epsg:4326');assert.equal(request.data.origin,'0');assert.equal(request.data.origin_map,'0');assert.equal(request.data.rotation,'90');
+});
