@@ -105,6 +105,10 @@ abstract class Mappr
      */
     protected $map_obj;
 
+    private ?\SimpleMappr\DetailedRelief $detailedRelief = null;
+    protected bool $detailedReliefUsed = false;
+    protected ?int $detailedReliefZoom = null;
+
     /**
      * Default extent when map first loaded
      *
@@ -305,7 +309,6 @@ abstract class Mappr
         $this->addGraticules();
         $this->addCoordinates();
         $this->_addWatermark();
-        $this->addDataCredits(array_keys($this->request->layers));
         $this->_prepareOutput();
 
         return $this;
@@ -1438,9 +1441,51 @@ abstract class Mappr
         }
     }
 
+    protected function addDetailedRelief(array $layers,?array $bounds=null,?string $projection=null,?int $width=null,?int $height=null): void
+    {
+        if (!in_array('reliefgrey',$layers,true) || $this->request->output==='svg' || !\SimpleMappr\DetailedRelief::enabled()) { return; }
+        $extent=$this->map_obj->extent;
+        $bounds ??= [$extent->minx,$extent->miny,$extent->maxx,$extent->maxy];
+        if (count(array_filter($bounds,static fn($value)=>is_finite((float)$value) && abs((float)$value)<=1e9))!==4) { throw new \InvalidArgumentException('The map extent is outside supported Earth coordinates.'); }
+        $source=new \projectionObj($projection ?? $this->map_obj->getProjection());
+        $destination=new \projectionObj('EPSG:3857');
+        $center=new \pointObj(($bounds[0]+$bounds[2])/2,($bounds[1]+$bounds[3])/2);
+        if ($center->project($source,$destination)!==MS_SUCCESS || !is_finite($center->x)) { return; }
+        $angle=deg2rad($projection===null?(float)$this->request->rotation:0);
+        $cx=($bounds[0]+$bounds[2])/2;$cy=($bounds[1]+$bounds[3])/2;
+        $xs=[];$ys=[];
+        for ($i=0;$i<=16;$i++) {
+            $fraction=$i/16;
+            foreach ([[$bounds[0]+($bounds[2]-$bounds[0])*$fraction,$bounds[1]],[$bounds[0]+($bounds[2]-$bounds[0])*$fraction,$bounds[3]],[$bounds[0],$bounds[1]+($bounds[3]-$bounds[1])*$fraction],[$bounds[2],$bounds[1]+($bounds[3]-$bounds[1])*$fraction]] as [$x,$y]) {
+                $dx=$x-$cx;$dy=$y-$cy;
+                $point=new \pointObj($cx+$dx*cos($angle)-$dy*sin($angle),$cy+$dx*sin($angle)+$dy*cos($angle));
+                if ($point->project($source,$destination)!==MS_SUCCESS || !is_finite($point->x) || !is_finite($point->y)) { return; }
+                $half=\SimpleMappr\DetailedRelief::HALF_WORLD;$world=2*$half;
+                $point->x=$center->x+fmod(fmod($point->x-$center->x+$half,$world)+$world,$world)-$half;
+                $xs[]=$point->x;$ys[]=$point->y;
+            }
+        }
+        $plan=\SimpleMappr\DetailedRelief::plan([min($xs),min($ys),max($xs),max($ys)],$width ?? $this->map_obj->width,$height ?? $this->map_obj->height);
+        if ($plan===null) { return; }
+        $this->detailedRelief=new \SimpleMappr\DetailedRelief();
+        $path=$this->detailedRelief->prepare($plan);
+        if ($path===null) { return; }
+        $mask=new \layerObj($this->map_obj);$mask->name='internal_detailed_relief_land';$mask->type=MS_LAYER_POLYGON;$mask->status=MS_OFF;
+        $mask->data=$this->shapes['base']['path'];$mask->setProjection('EPSG:4326');$mask->metadata->set('ows_enable_request','!*');
+        $maskClass=new \classObj($mask);$maskStyle=new \styleObj($maskClass);$maskStyle->color->setRGB(255,255,255);
+        $layer=new \layerObj($this->map_obj);$layer->name='internal_detailed_relief';$layer->type=MS_LAYER_RASTER;$layer->status=MS_DEFAULT;
+        $layer->data=$path;$layer->setProjection('EPSG:3857');$layer->setProcessing('RESAMPLE=BILINEAR');$layer->updateFromString('LAYER MASK internal_detailed_relief_land END');
+        $layer->metadata->set('ows_enable_request','!*');
+        $order=[];$detail=$layer->index;
+        for ($i=0;$i<$detail;$i++) { $order[]=$i;if ($this->map_obj->getLayer($i)->name==='reliefgrey') { $order[]=$detail; } }
+        $this->map_obj->setLayersDrawingOrder($order);
+        $this->detailedReliefUsed=true;$this->detailedReliefZoom=$plan['zoom'];
+    }
+
     protected function addDataCredits(array $layers,?int $width=null,?int $height=null): void
     {
         $datasets=DatasetCredits::selected($layers);
+        if ($this->detailedReliefUsed) { $datasets['detailedRelief']=DatasetCredits::DETAILED_RELIEF; }
         if (!$datasets) { return; }
         $scale=$width===null && $this->_isResize()?max(1,(int)$this->request->download_factor):1;
         $width ??= $this->map_obj->width;$height ??= $this->map_obj->height;
@@ -1528,6 +1573,8 @@ abstract class Mappr
     {
         if (isset($this->request->projection)) {
             $this->_reproject($this->request->projection);
+            $this->addDetailedRelief(array_keys($this->request->layers));
+            $this->addDataCredits(array_keys($this->request->layers));
             $this->_addLegendScalebar();
             $this->_addBorder();
             $this->image = $this->map_obj->drawQuery();

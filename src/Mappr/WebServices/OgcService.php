@@ -15,6 +15,7 @@ abstract class OgcService extends Mappr
     private array $parameters = [];
     private string $postXml = '';
     private ?string $inputError = null;
+    private int $errorStatus = 400;
 
     public function __construct(array $layers = [])
     {
@@ -154,11 +155,33 @@ abstract class OgcService extends Mappr
                 }
             }
             if ($this->service==='WMS' && strtolower($this->parameters['REQUEST'])==='getmap') {
-                try { $this->addDataCredits($this->responseLayers(),(int)$this->parameters['WIDTH'],(int)$this->parameters['HEIGHT']); }
-                catch (\InvalidArgumentException $error) { $this->inputError=$error->getMessage(); }
+                try {
+                    $this->prepareDetailedServiceRelief();
+                    $this->addDataCredits($this->responseLayers(),(int)$this->parameters['WIDTH'],(int)$this->parameters['HEIGHT']);
+                } catch (\InvalidArgumentException $error) { $this->inputError=$error->getMessage(); }
+                catch (\RuntimeException $error) {
+                    if ($error->getCode()!==503) { throw $error; }
+                    $this->inputError=$error->getMessage();$this->errorStatus=503;
+                }
             }
         }
         return $this;
+    }
+
+    private function prepareDetailedServiceRelief(): void
+    {
+        $crs=strtoupper($this->parameters['CRS'] ?? $this->parameters['SRS'] ?? '');
+        if (!in_array($crs,explode(' ',self::SERVICE_SRS),true)) { return; }
+        $values=explode(',',$this->parameters['BBOX'] ?? '');
+        if (count($values)!==4 || count(array_filter($values,'is_numeric'))!==4) { return; }
+        $bounds=array_map('floatval',$values);
+        if ($crs==='EPSG:4326' && version_compare($this->parameters['VERSION'],'1.3.0','>=')) { $bounds=[$bounds[1],$bounds[0],$bounds[3],$bounds[2]]; }
+        if ($bounds[2]<=$bounds[0] || $bounds[3]<=$bounds[1]) { return; }
+        $viewport=msLoadMapFromString('MAP MAXSIZE 5000 END',ROOT,null);
+        $viewport->setSize((int)$this->parameters['WIDTH'],(int)$this->parameters['HEIGHT']);$viewport->setProjection($crs);
+        $viewport->setExtent(...$bounds);$extent=$viewport->extent;
+        $bounds=[$extent->minx,$extent->miny,$extent->maxx,$extent->maxy];
+        $this->addDetailedRelief($this->responseLayers(),$bounds,$crs,(int)$this->parameters['WIDTH'],(int)$this->parameters['HEIGHT']);
     }
 
     public function createOutput()
@@ -209,7 +232,7 @@ abstract class OgcService extends Mappr
 
     private function exception(string $message): string
     {
-        http_response_code(400); Header::setHeader('xml');
+        http_response_code($this->errorStatus); Header::setHeader('xml');
         $message = htmlspecialchars($message, ENT_XML1 | ENT_QUOTES, 'UTF-8');
         if ($this->service === 'WMS') {
             return '<?xml version="1.0" encoding="UTF-8"?><ServiceExceptionReport version="1.3.0"><ServiceException code="InvalidParameterValue">'.$message.'</ServiceException></ServiceExceptionReport>';

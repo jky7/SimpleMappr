@@ -192,6 +192,18 @@ class BundleBoundaryTest(unittest.TestCase):
         with patch.object(bundle, 'run_compose', side_effect=[b'a' * 64, b'b' * 64]), patch.object(bundle, 'docker_json', side_effect=inspect):
             return bundle.app_identity(None, supplied)
 
+    def test_detailed_relief_is_validated_preserved_and_checked_against_runtime(self):
+        for value in ('0', '1'):
+            values = bundle.parse_env(bundle.replace_values(ENV, {'SIMPLEMAPPR_DETAILED_RELIEF': value}))
+            self.assertEqual(values['SIMPLEMAPPR_DETAILED_RELIEF'], value)
+            self.inspect_source(values, values)
+        with self.assertRaises(bundle.OperationError):
+            bundle.parse_env(ENV + b'\nSIMPLEMAPPR_DETAILED_RELIEF=yes\n')
+        with self.assertRaisesRegex(bundle.OperationError, 'does not match'):
+            self.inspect_source(bundle.parse_env(ENV), bundle.parse_env(ENV) | {'SIMPLEMAPPR_DETAILED_RELIEF': '1'})
+        _, active = self.restore_fixture({'SIMPLEMAPPR_DETAILED_RELIEF': '1'})
+        self.assertEqual(active['SIMPLEMAPPR_DETAILED_RELIEF'], '1')
+
     def test_backup_requires_running_social_credentials_and_canonical_url(self):
         supplied = bundle.parse_env(bundle.replace_values(ENV, SOCIAL))
         self.assertEqual(self.inspect_source(supplied, supplied)[0], 'sha256:' + 'a' * 64)

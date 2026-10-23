@@ -132,7 +132,7 @@ class Router
 
         $router->get('/data-credits', function () {
             Header::setHeader('html');
-            return $this->_twig()->render('data-credits.html', ['datasets'=>DatasetCredits::DATASETS]);
+            return $this->_twig()->render('data-credits.html', ['datasets'=>DatasetCredits::DATASETS+['detailedRelief'=>DatasetCredits::DETAILED_RELIEF]]);
         });
 
         $router->get('/about', function () {

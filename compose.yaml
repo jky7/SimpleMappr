@@ -24,6 +24,7 @@ services:
       assets-init:
         condition: service_completed_successfully
     environment: &application-environment
+      SIMPLEMAPPR_DETAILED_RELIEF: ${SIMPLEMAPPR_DETAILED_RELIEF:-0}
       SIMPLEMAPPR_ENV: ${SIMPLEMAPPR_ENV:-production}
       SIMPLEMAPPR_URL: ${SIMPLEMAPPR_URL:-}
       SIMPLEMAPPR_ASSET_PROFILE: ${SIMPLEMAPPR_ASSET_PROFILE:-minimal-vector-v1}
@@ -64,6 +65,7 @@ services:
       - "127.0.0.1:${SIMPLEMAPPR_PORT:-8080}:80"
     volumes:
       - map-data:/srv/simplemappr/mapserver/maps:ro
+      - relief-cache:/var/cache/simplemappr-relief
       - runtime-output:/var/lib/simplemappr
       - app-tmp:/srv/simplemappr/public/tmp
       - app-uploads:/srv/simplemappr/public/uploads
@@ -78,6 +80,7 @@ services:
       start_period: 10s
     restart: unless-stopped
 volumes:
+  relief-cache:
   asset-cache:
   map-data:
   runtime-output:

@@ -22,7 +22,7 @@ SOCIAL_ENV_KEYS = tuple('SIMPLEMAPPR_' + provider + suffix
                         for provider in SOCIAL_PROVIDERS for suffix in ('_CLIENT_ID', '_CLIENT_SECRET'))
 ENV_KEYS = {'SIMPLEMAPPR_OWNER_USERNAME', 'SIMPLEMAPPR_OWNER_PASSWORD_HASH', 'SIMPLEMAPPR_DB_PASSWORD',
             'SIMPLEMAPPR_DB_ROOT_PASSWORD', 'SIMPLEMAPPR_PORT', 'SIMPLEMAPPR_ASSET_PROFILE',
-            'SIMPLEMAPPR_IMAGE', 'SIMPLEMAPPR_ENV', 'SIMPLEMAPPR_URL', 'SIMPLEMAPPR_ASSET_CACHE', *SOCIAL_ENV_KEYS}
+            'SIMPLEMAPPR_IMAGE', 'SIMPLEMAPPR_DETAILED_RELIEF', 'SIMPLEMAPPR_ENV', 'SIMPLEMAPPR_URL', 'SIMPLEMAPPR_ASSET_CACHE', *SOCIAL_ENV_KEYS}
 REQUIRED_ENV = {'SIMPLEMAPPR_OWNER_USERNAME', 'SIMPLEMAPPR_OWNER_PASSWORD_HASH',
                 'SIMPLEMAPPR_DB_PASSWORD', 'SIMPLEMAPPR_DB_ROOT_PASSWORD'}
 DUMP = ('export MYSQL_PWD="$MARIADB_ROOT_PASSWORD"; exec mariadb-dump --user=root '
@@ -126,6 +126,8 @@ def parse_env(data):
         fail('Deployment owner hash must be bcrypt.')
     if values.get('SIMPLEMAPPR_ASSET_PROFILE', PROFILES[0]) not in PROFILES:
         fail('Deployment asset profile is unsupported.')
+    if values.get('SIMPLEMAPPR_DETAILED_RELIEF', '0') not in ('0', '1'):
+        fail('Detailed relief must be 0 or 1.')
     if values.get('SIMPLEMAPPR_ENV', 'development') not in ('development', 'production', 'testing'):
         fail('Deployment environment is unsupported.')
     if 'SIMPLEMAPPR_PORT' in values:
@@ -268,6 +270,8 @@ def app_identity(context, values):
     for key in (*SOCIAL_ENV_KEYS, 'SIMPLEMAPPR_URL'):
         if app_env.get(key, '') != values.get(key, ''):
             fail('Supplied social sign-in settings or canonical URL do not match the running source application.')
+    if app_env.get('SIMPLEMAPPR_DETAILED_RELIEF', '0') != values.get('SIMPLEMAPPR_DETAILED_RELIEF', '0'):
+        fail('Supplied detailed relief setting does not match the running source application.')
     profile = app_env.get('SIMPLEMAPPR_ASSET_PROFILE', PROFILES[0])
     if profile not in PROFILES:
         fail('Running source application has an unsupported asset profile.')

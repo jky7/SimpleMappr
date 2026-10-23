@@ -3,6 +3,15 @@ namespace SimpleMappr;
 
 final class DatasetCredits
 {
+    public const DETAILED_RELIEF = [
+        'name'=>'ASTER GDEM shaded relief',
+        'credit'=>'NASA/METI; NASA EOSDIS GIBS',
+        'source'=>'https://www.earthdata.nasa.gov/data/catalog/lpcloud-astgtm-003',
+        'citation'=>'https://doi.org/10.5067/ASTER/ASTGTM.003',
+        'license'=>'Publicly available NASA data',
+        'licenseUrl'=>'https://www.earthdata.nasa.gov/engage/open-data-services-and-software/policies/data-use-policy',
+        'changes'=>'GIBS greyscale shaded relief tiles are mosaicked, resampled and reprojected for close map views. Source elevations are approximately 30 metres; imagery is at most approximately 38 metres per pixel at the equator. Coverage and terrain artifacts follow ASTER GDEM.',
+    ];
     public const DATASETS = [
         'ecoregions'=>[
             'layers'=>['ecoregions','ecoregionLabels'],
@@ -46,7 +55,7 @@ final class DatasetCredits
             $author=$id==='hotspots'?'Hoffman et al. (2016)':$dataset['credit'];
             $text[]=$dataset['name'].'; '.$author.'; '.$dataset['license'];
         }
-        $text[]='Styled/reprojected'.(isset($datasets['hotspots'])?'; hotspots filtered':'').'.';
+        if (array_diff(array_keys($datasets),['detailedRelief'])) { $text[]='Styled/reprojected'.(isset($datasets['hotspots'])?'; hotspots filtered':'').'.'; }
         $text[]='Sources, licenses and changes: '.self::url();
         return explode("\n",wordwrap(implode("\n",$text),max(1,(int)floor(($width-16)/6)),"\n",true));
     }
