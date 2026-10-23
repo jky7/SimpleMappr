@@ -170,6 +170,7 @@ abstract class OgcService extends Mappr
 
     private function prepareDetailedServiceRelief(): void
     {
+        if (str_contains(strtolower($this->parameters['FORMAT'] ?? ''),'svg')) { return; }
         $modern=version_compare($this->parameters['VERSION'],'1.3.0','>=');
         $crs=strtoupper($this->parameters[$modern?'CRS':'SRS'] ?? '');
         if (!in_array($crs,explode(' ',self::SERVICE_SRS),true)) { return; }
