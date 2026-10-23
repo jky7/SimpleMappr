@@ -1474,7 +1474,7 @@ abstract class Mappr
         $mask->data=$this->shapes['base']['path'];$mask->setProjection('EPSG:4326');$mask->metadata->set('ows_enable_request','!*');
         $maskClass=new \classObj($mask);$maskStyle=new \styleObj($maskClass);$maskStyle->color->setRGB(255,255,255);
         $layer=new \layerObj($this->map_obj);$layer->name='internal_detailed_relief';$layer->type=MS_LAYER_RASTER;$layer->status=MS_DEFAULT;
-        $layer->data=$path;$layer->setProjection('EPSG:3857');$layer->setProcessing('RESAMPLE=BILINEAR');$layer->updateFromString('LAYER MASK internal_detailed_relief_land END');
+        $layer->data=$path;$layer->setProjection('EPSG:3857');$layer->addProcessing('RESAMPLE=BILINEAR');$layer->updateFromString('LAYER MASK internal_detailed_relief_land END');
         $layer->metadata->set('ows_enable_request','!*');
         $order=[];$detail=$layer->index;
         for ($i=0;$i<$detail;$i++) { $order[]=$i;if ($this->map_obj->getLayer($i)->name==='reliefgrey') { $order[]=$detail; } }
