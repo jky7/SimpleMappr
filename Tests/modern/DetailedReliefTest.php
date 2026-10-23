@@ -39,6 +39,7 @@ final class DetailedReliefTest extends TestCase
         $bytes=$this->jpeg();
         self::assertTrue(ReliefTileCache::valid($bytes));
         self::assertFalse(ReliefTileCache::valid(substr($bytes,0,300)));
+        self::assertFalse(ReliefTileCache::valid(substr($bytes,0,-2)));
         self::assertFalse(ReliefTileCache::valid(str_repeat('a',ReliefTileCache::MAX_BYTES+1)));
         self::assertFalse(ReliefTileCache::valid('<ServiceException/>'));
         $image=imagecreatetruecolor(10,10);ob_start();imagejpeg($image);$small=ob_get_clean();imagedestroy($image);

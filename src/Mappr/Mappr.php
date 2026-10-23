@@ -1476,9 +1476,9 @@ abstract class Mappr
         $layer=new \layerObj($this->map_obj);$layer->name='internal_detailed_relief';$layer->type=MS_LAYER_RASTER;$layer->status=MS_DEFAULT;
         $layer->data=$path;$layer->setProjection('EPSG:3857');$layer->addProcessing('RESAMPLE=BILINEAR');$layer->updateFromString('LAYER MASK internal_detailed_relief_land END');
         $layer->metadata->set('ows_enable_request','!*');
-        $order=[];$detail=$layer->index;
-        for ($i=0;$i<$detail;$i++) { $order[]=$i;if ($this->map_obj->getLayer($i)->name==='reliefgrey') { $order[]=$detail; } }
-        $this->map_obj->setLayersDrawingOrder($order);
+        $detail=$layer->index;
+        $grey=$this->map_obj->getLayerByName('reliefgrey')->index;
+        for ($i=0;$i<$detail-$grey-1;$i++) { $this->map_obj->moveLayerUp($detail); }
         $this->detailedReliefUsed=true;$this->detailedReliefZoom=$plan['zoom'];
     }
 

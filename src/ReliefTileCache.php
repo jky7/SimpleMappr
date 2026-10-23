@@ -30,7 +30,7 @@ class ReliefTileCache
 
     public static function valid(string $bytes): bool
     {
-        if (strlen($bytes)>self::MAX_BYTES || !str_starts_with($bytes,"\xff\xd8")) { return false; }
+        if (strlen($bytes)>self::MAX_BYTES || !str_starts_with($bytes,"\xff\xd8") || !str_ends_with($bytes,"\xff\xd9")) { return false; }
         $size=@getimagesizefromstring($bytes);
         if (!$size || $size[0]!==256 || $size[1]!==256 || $size[2]!==IMAGETYPE_JPEG || ($size['channels'] ?? 0)!==3) { return false; }
         $image=@imagecreatefromstring($bytes);
