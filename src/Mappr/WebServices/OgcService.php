@@ -198,10 +198,13 @@ abstract class OgcService extends Mappr
         }
         $canonical=[];
         foreach (array_keys($this->selectedLayers) as $name) { $canonical[strtolower($name)]=$name; }
-        return array_map(static function(string $name) use($canonical): string {
+        $result=[];
+        foreach (preg_split('/[\s,]+/',trim($names)) as $name) {
             $local=preg_replace('/^.*:/','',$name);
-            return $canonical[strtolower($local)] ?? $local;
-        },preg_split('/[\s,]+/',trim($names)));
+            if ($this->service==='WMS' && strcasecmp($local,$this->map_obj->name)===0) { array_push($result,...array_values($canonical)); }
+            else { $result[]=$canonical[strtolower($local)] ?? $local; }
+        }
+        return array_values(array_unique($result));
     }
 
     private function exception(string $message): string

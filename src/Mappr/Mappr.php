@@ -1445,7 +1445,9 @@ abstract class Mappr
         $scale=$width===null && $this->_isResize()?max(1,(int)$this->request->download_factor):1;
         $width ??= $this->map_obj->width;$height ??= $this->map_obj->height;
         $lines=DatasetCredits::lines($datasets,(int)floor($width/$scale));
-        $requiredHeight=(count($lines)*13+24)*$scale;
+        $embeddedScalebar=$this->request->download && ($this->request->options['scalebar'] ?? false) && $this->request->output!=='svg';
+        $reservedBottom=($embeddedScalebar?36:($this->request->watermark?12:0))*$scale;
+        $requiredHeight=(count($lines)*13+24)*$scale+$reservedBottom;
         if ($width<160*$scale || $height<$requiredHeight) { throw new \InvalidArgumentException('Required ecological data credits need at least '.(160*$scale).' pixels of width and '.$requiredHeight.' pixels of height.'); }
         foreach ($lines as $index=>$text) {
             $layer=new \layerObj($this->map_obj);
@@ -1455,7 +1457,7 @@ abstract class Mappr
             $label=new \labelObj();$label->font='arial';$label->encoding='UTF-8';$label->size=7*$scale;$label->position=MS_XY;
             $label->color->setRGB(0,0,0);$label->outlinecolor->setRGB(255,255,255);$label->outlinewidth=2*$scale;$label->force=MS_TRUE;$label->partials=MS_TRUE;
             $class->addLabel($label);
-            $point=new \pointObj();$point->setXY(8*$scale,$height-(10+(count($lines)-1-$index)*13)*$scale);
+            $point=new \pointObj();$point->setXY(8*$scale,$height-$reservedBottom-(10+(count($lines)-1-$index)*13)*$scale);
             $line=new \lineObj();$line->add($point);$shape=new \shapeObj(MS_SHAPE_POINT);$shape->add($line);$layer->addFeature($shape);
         }
         DatasetCredits::headers($datasets);

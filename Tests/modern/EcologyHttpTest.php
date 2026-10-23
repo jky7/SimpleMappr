@@ -97,6 +97,28 @@ final class EcologyHttpTest extends TestCase
         [$status,$body]=$this->request('/data-credits');self::assertSame(200,$status);self::assertStringContainsString('17 outer-limit records omitted',$body);self::assertStringContainsString('independent coordinates',$body);
     }
 
+    public function testWmsRootLayerGroupCannotBypassEcologicalCredits(): void
+    {
+        foreach (['simplemappr','SIMPLEMAPPR'] as $name) {
+            $query=['SERVICE'=>'WMS','VERSION'=>'1.1.1','REQUEST'=>'GetMap','LAYERS'=>$name,'SRS'=>'EPSG:4326','BBOX'=>'-180,-90,180,90','WIDTH'=>120,'HEIGHT'=>80,'FORMAT'=>'image/png'];
+            $xml='<sld:GetMap xmlns:sld="http://www.opengis.net/sld" xmlns:ogc="http://www.opengis.net/ogc" service="WMS" version="1.1.1"><sld:StyledLayerDescriptor version="1.0.0"><sld:NamedLayer><sld:Name>'.$name.'</sld:Name><sld:NamedStyle><sld:Name>default</sld:Name></sld:NamedStyle></sld:NamedLayer></sld:StyledLayerDescriptor><sld:BoundingBox srsName="EPSG:4326"><ogc:LowerCorner>-180 -90</ogc:LowerCorner><ogc:UpperCorner>180 90</ogc:UpperCorner></sld:BoundingBox><sld:Output><sld:Size><sld:Width>120</sld:Width><sld:Height>80</sld:Height></sld:Size><sld:Format>image/png</sld:Format></sld:Output></sld:GetMap>';
+            foreach ([['/wms?'.http_build_query($query),null],['/wms',$xml]] as [$path,$post]) {
+                [$status,$body,$headers]=$this->request($path,$post);self::assertSame(400,$status,$name);self::assertStringContainsString('data credits',$body);self::assertStringContainsString('xml',$headers);
+            }
+            foreach ([256,600] as $width) {
+                $query['WIDTH']=$width;$query['HEIGHT']=$width;
+                $positiveXml=str_replace(['<sld:Width>120','<sld:Height>80'],['<sld:Width>'.$width,'<sld:Height>'.$width],$xml);
+                foreach ([['/wms?'.http_build_query($query),null],['/wms',$positiveXml]] as [$path,$post]) {
+                    [$status,$body,$headers]=$this->request($path,$post);self::assertSame(200,$status,$name);self::assertSame([$width,$width],array_slice(getimagesizefromstring($body),0,2));self::assertStringContainsString('/licenses/by-sa/4.0/',$headers);self::assertStringContainsString('/licenses/by/4.0/',$headers);
+                }
+            }
+        }
+        foreach (['all','"simplemappr"'] as $name) {
+            $query=['SERVICE'=>'WMS','VERSION'=>'1.1.1','REQUEST'=>'GetMap','LAYERS'=>$name,'SRS'=>'EPSG:4326','BBOX'=>'-180,-90,180,90','WIDTH'=>120,'HEIGHT'=>80,'FORMAT'=>'image/png'];
+            [$status,$body]=$this->request('/wms?'.http_build_query($query));self::assertSame(400,$status,$name);self::assertNotFalse(simplexml_load_string($body));
+        }
+    }
+
     public function testOwsLayerCasingCannotBypassRequiredCredits(): void
     {
         foreach (['CONSERVATION','Conservation','ECOREGIONS','Ecoregions'] as $name) {
