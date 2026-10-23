@@ -33,7 +33,7 @@ final class DetailedReliefHttpTest extends TestCase
             [$status,$body]=$this->request('/application.json',$this->document());self::assertSame(200,$status,$body);
             $map=json_decode($body,true,512,JSON_THROW_ON_ERROR);
             self::assertSame('NASA/METI ASTER GDEM via NASA GIBS',$map['relief_source']['name']);
-            self::assertSame(12,$map['relief_source']['zoom']);self::assertEqualsWithDelta(38.22,$map['relief_source']['pixel_metres_at_equator'],0.01);
+            self::assertSame(11,$map['relief_source']['zoom']);self::assertEqualsWithDelta(76.44,$map['relief_source']['pixel_metres_at_equator'],0.01);
             [$status,$bytes]=$this->request($map['mapOutputImage']);self::assertSame(200,$status);
             $this->assertDetailedPixels($bytes,600,300);$images[]=hash('sha256',$bytes);
         }
