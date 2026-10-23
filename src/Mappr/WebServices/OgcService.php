@@ -196,7 +196,12 @@ abstract class OgcService extends Mappr
             $xml=ImportData::xml($this->postXml);
             foreach ($xml->getElementsByTagNameNS('*','Query') as $query) { $names.=' '.$query->getAttribute('typeNames').' '.$query->getAttribute('typeName'); }
         }
-        return array_map(fn(string $name): string=>preg_replace('/^.*:/','',$name),preg_split('/[\s,]+/',trim($names)));
+        $canonical=[];
+        foreach (array_keys($this->selectedLayers) as $name) { $canonical[strtolower($name)]=$name; }
+        return array_map(static function(string $name) use($canonical): string {
+            $local=preg_replace('/^.*:/','',$name);
+            return $canonical[strtolower($local)] ?? $local;
+        },preg_split('/[\s,]+/',trim($names)));
     }
 
     private function exception(string $message): string

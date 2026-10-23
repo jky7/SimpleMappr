@@ -97,6 +97,25 @@ final class EcologyHttpTest extends TestCase
         [$status,$body]=$this->request('/data-credits');self::assertSame(200,$status);self::assertStringContainsString('17 outer-limit records omitted',$body);self::assertStringContainsString('independent coordinates',$body);
     }
 
+    public function testOwsLayerCasingCannotBypassRequiredCredits(): void
+    {
+        foreach (['CONSERVATION','Conservation','ECOREGIONS','Ecoregions'] as $name) {
+            $parameters=['SERVICE'=>'WMS','VERSION'=>'1.1.1','REQUEST'=>'GetMap','LAYERS'=>$name,'SRS'=>'EPSG:4326','BBOX'=>'-180,-90,180,90','WIDTH'=>120,'HEIGHT'=>80,'FORMAT'=>'image/png'];
+            $xml='<sld:GetMap xmlns:sld="http://www.opengis.net/sld" xmlns:ogc="http://www.opengis.net/ogc" service="WMS" version="1.1.1"><sld:StyledLayerDescriptor version="1.0.0"><sld:NamedLayer><sld:Name>'.$name.'</sld:Name><sld:NamedStyle><sld:Name>default</sld:Name></sld:NamedStyle></sld:NamedLayer></sld:StyledLayerDescriptor><sld:BoundingBox srsName="EPSG:4326"><ogc:LowerCorner>-180 -90</ogc:LowerCorner><ogc:UpperCorner>180 90</ogc:UpperCorner></sld:BoundingBox><sld:Output><sld:Size><sld:Width>120</sld:Width><sld:Height>80</sld:Height></sld:Size><sld:Format>image/png</sld:Format></sld:Output></sld:GetMap>';
+            foreach ([['/wms?'.http_build_query($parameters),null],['/wms',$xml]] as [$path,$post]) {
+                [$status,$body,$headers]=$this->request($path,$post);self::assertSame(400,$status,$name);self::assertStringContainsString('xml',$headers,$name);self::assertStringContainsString('data credits',$body,$name);
+            }
+            $parameters['WIDTH']=256;$parameters['HEIGHT']=256;
+            [$status,$body,$headers]=$this->request('/wms?'.http_build_query($parameters));self::assertSame(200,$status,$name);self::assertNotFalse(imagecreatefromstring($body));self::assertStringContainsString('rel="license"',$headers,$name);self::assertStringContainsString('/data-credits',$headers,$name);
+            $query=['SERVICE'=>'WFS','VERSION'=>'2.0.0','REQUEST'=>'GetFeature','TYPENAMES'=>$name,'COUNT'=>1,'PROPERTYNAME'=>'NAME'];
+            $property=strtolower($name)==='ecoregions'?'ECO_NAME':'NAME';$query['PROPERTYNAME']=$property;
+            $featureXml='<wfs:GetFeature xmlns:wfs="http://www.opengis.net/wfs/2.0" service="WFS" version="2.0.0" count="1"><wfs:Query typeNames="'.$name.'"><wfs:PropertyName>'.$property.'</wfs:PropertyName></wfs:Query></wfs:GetFeature>';
+            foreach ([['/wfs?'.http_build_query($query),null],['/wfs',$featureXml]] as [$path,$post]) {
+                [$status,$body,$headers]=$this->request($path,$post);self::assertSame(200,$status,$name.' '.substr($body,0,200));self::assertStringContainsString('rel="license"',$headers,$name);self::assertStringContainsString('/data-credits',$headers,$name);self::assertCount(1,simplexml_load_string($body)->xpath('//*[local-name()="member"]'));
+            }
+        }
+    }
+
     public function testEcologicalMapsKeepAReadableMinimumAndOrdinaryMapsKeepTheirExistingRange(): void
     {
         $parameters=['SERVICE'=>'WMS','VERSION'=>'1.1.1','REQUEST'=>'GetMap','LAYERS'=>'conservation','SRS'=>'EPSG:4326','BBOX'=>'-180,-90,180,90','WIDTH'=>120,'HEIGHT'=>80,'FORMAT'=>'image/png'];
