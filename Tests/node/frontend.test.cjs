@@ -69,6 +69,15 @@ test('failed Undo and Redo previews leave their destinations available for retry
  e.p.mapRedo();e.respond(c);e.$('#mapOutputImage').trigger('error');
  const count=e.requests.length;e.p.mapRedo();assert.equal(e.requests.length,count+1);assert.equal(e.request().get('bbox_map'),c);e.render(c);
 });
+test('Undo and Redo restore expanded preview width without losing their destinations',t=>{
+ const e=viewportEditor(t),bbox='-90,-60,-30,10';
+ Object.defineProperty(e.w.document.documentElement,'clientWidth',{value:1400});
+ e.$('body').append('<div id="mapToolsCollapse"><a href="#">Toggle settings</a></div><div id="mapTools"></div><div id="map"></div>');e.p.bindPanelToggle();
+ e.p.showMap();e.render(bbox);e.$('#mapToolsCollapse a').trigger('click');assert.equal(e.request().get('width'),'1372');e.render(bbox);
+ e.p.mapUndo();assert.equal(e.request().get('width'),'900');e.render(bbox);
+ const count=e.requests.length;e.p.mapRedo();assert.equal(e.requests.length,count+1);assert.equal(e.request().get('width'),'1372');e.render(bbox);
+ e.p.mapUndo();assert.equal(e.request().get('width'),'900');
+});
 test('a pending preview records submitted data without losing later draft edits',t=>{
  const e=viewportEditor(t);
  e.$('#form-mapper').append('<textarea name="coords[0][data]">0,0</textarea>');
@@ -105,6 +114,13 @@ test('HTTP failures release spinner, expose text error, preserve form',t=>{
  assert.equal(e.$('#m-mapSaveTitle').val(),'keep me');
  assert.equal(e.$('.mapper-message-error').text(),'<script>untrusted</script>');
  assert.equal(e.$('.mapper-message-error script').length,0);
+});
+test('failed region selection releases the spinner and reports a useful error',t=>{
+ const e=finish(t,editor());let request;e.p.vars.fillColor={r:150,g:150,b:150};
+ e.$.ajax=options=>(request=options,{});e.p.aQuery({data:e.p});
+ request.error({responseJSON:{error:'Selection failed. Please try again.'}},'error');
+ assert.equal(e.p.vars.spinner.css('display'),'none');
+ assert.equal(e.$('.mapper-message-error').text(),'Selection failed. Please try again.');
 });
 test('a new render aborts the old request and ignores its response',t=>{
  const e=finish(t,editor());let calls=[],aborted=0;e.$.ajax=o=>(calls.push(o),{abort(){aborted++;}});
