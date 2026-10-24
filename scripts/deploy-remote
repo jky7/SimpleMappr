@@ -1,0 +1,16 @@
+#!/usr/bin/env bash
+# Deploy from this computer: connect to the server, pull the release branch there, and run scripts/deploy.
+#
+#   scripts/deploy-remote [--force] [--dry-run]
+#
+# Host, checkout directory and branch come from SIMPLEMAPPR_DEPLOY_HOST (jky.io), SIMPLEMAPPR_DEPLOY_DIR
+# (simplemappr, relative to the remote home) and SIMPLEMAPPR_DEPLOY_BRANCH (master). The pull happens here
+# first so a changed scripts/deploy is the version that runs.
+set -euo pipefail
+host=${SIMPLEMAPPR_DEPLOY_HOST:-jky.io}
+dir=${SIMPLEMAPPR_DEPLOY_DIR:-simplemappr}
+branch=${SIMPLEMAPPR_DEPLOY_BRANCH:-master}
+printf -v quoted_dir '%q' "$dir"
+printf -v quoted_branch '%q' "$branch"
+printf -v quoted_args ' %q' "$@"
+exec ssh "$host" "cd $quoted_dir && git fetch -q origin $quoted_branch && { git checkout -q $quoted_branch 2>/dev/null || git checkout -q -B $quoted_branch origin/$quoted_branch; } && git merge -q --ff-only origin/$quoted_branch && exec scripts/deploy --no-pull --branch $quoted_branch$quoted_args"

@@ -144,6 +144,19 @@ Apache marks `/public/build/` assets (content-hashed) `immutable` for a year and
 
 `RenderCache` keeps finished JSON previews (map, legend, scalebar) in the disposable `render-cache` volume at `/var/cache/simplemappr-render`. The key is the whole request (minus the clock and random download token) plus the dataset profile, relief flag, public URL, and the size/mtime of source, config and dataset files, so a deploy or dataset change starts a fresh cache. A hit copies the cached bytes into a new `TemporaryImage`, so guest and owner previews keep their own random names and access checks. Downloads, SVG and TIFF are never cached, and a detailed-relief render that fell back to the overview is not stored. Entries expire after 24 hours and the cache is trimmed to 256 MiB by least recent use. Responses carry `X-Render-Cache: hit|miss`. Set `SIMPLEMAPPR_RENDER_CACHE=0` to disable it. The volume is optional and not backed up.
 
+## Deploying updates
+
+`scripts/deploy` on the server pulls the release branch (fast-forward only), builds the image tagged with the commit, checks that it starts as `www-data`, recreates the app, runs HTTP checks inside the container and rolls back to the previous image if they fail. The site stays up during the build. When files under `views/` changed it stops the app first and moves the compiled Twig directories aside, so no request can recompile a stale template and OPcache never holds one. Anything it cannot verify as compiled Twig is left alone, and preview images are never touched.
+
+```sh
+scripts/deploy              # on the server
+scripts/deploy --dry-run    # pull, build and verify only; the running site is untouched
+scripts/deploy --force      # redeploy the commit that is already running
+scripts/deploy-remote       # from your computer: connect, pull there, deploy
+```
+
+`scripts/deploy-remote` reads `SIMPLEMAPPR_DEPLOY_HOST` (default `jky.io`), `SIMPLEMAPPR_DEPLOY_DIR` (`simplemappr`) and `SIMPLEMAPPR_DEPLOY_BRANCH` (`master`). Copy it somewhere on your `PATH`, for example `install -m 755 scripts/deploy-remote ~/.local/bin/deploy-simplemappr`. It pulls on the server first, so a changed `scripts/deploy` is the version that runs. Each run keeps the previous `.env` (mode 0600) in `~/.local/state/simplemappr-deploy`; only the image line is rewritten and no credential is printed. Old image tags and `.twig-before-deploy-*` directories are not pruned automatically.
+
 ## Release checks and updates
 
 The pinned browser container runs Chromium and Firefox, all eight downloads, mixed documents, reload, failed requests/images/downloads and recovery. It checks 375px layout, keyboard controls and WCAG 2 A/AA plus 2.1 A/AA with Axe. Owner UI tests accept a separate mode 0600 synthetic credential file; recording starts after login. Raw traces are staged privately, sanitized with known-secret checks, and published only after sanitization succeeds.
