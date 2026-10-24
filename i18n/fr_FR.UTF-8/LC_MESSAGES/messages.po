@@ -1509,8 +1509,8 @@ msgstr "22 octobre 2026"
 msgid "Improvements: Drag the map to pan; the view updates when you let go."
 msgstr "Améliorations: Faites glisser la carte pour la déplacer ; la vue se met à jour quand vous relâchez."
 
-msgid "Improvements: Detailed grey and colour terrain at close zoom, from NASA/METI ASTER elevation data."
-msgstr "Améliorations: Relief gris et en couleur détaillé à fort zoom, à partir des données d'altitude NASA/METI ASTER."
+msgid "Improvements: Detailed grey and colour terrain at close zoom, from NASA/METI ASTER elevation data, and detailed Landsat imagery for Blue Marble."
+msgstr "Améliorations: Relief gris et en couleur détaillé à fort zoom, à partir des données d'altitude NASA/METI ASTER, et images Landsat détaillées pour Blue Marble."
 
 msgid "Improvements: Shaded relief, Blue Marble, RESOLVE Ecoregions 2017 and Biodiversity Hotspots 2016.1 layers are back, with the credits their licences require."
 msgstr "Améliorations: Les couches de relief ombré, Blue Marble, écorégions RESOLVE 2017 et points chauds de biodiversité 2016.1 sont de retour, avec les crédits exigés par leurs licences."
@@ -1536,8 +1536,8 @@ msgstr "Améliorations: SimpleMappr fonctionne de nouveau avec les versions actu
 msgid "Read the map data credits and licenses"
 msgstr "Consultez les crédits et licences des données cartographiques"
 
-msgid "Natural Earth layers are public domain. Blue Marble imagery is credited to NASA Visible Earth. Close-view grey and colour relief uses NASA/METI ASTER GDEM through NASA EOSDIS GIBS when enabled. RESOLVE ecoregions and biodiversity hotspots have separate attribution and licensing requirements. %credits_link% before publishing maps that use ecological layers."
-msgstr "Les couches Natural Earth sont dans le domaine public. Les images Blue Marble sont attribuées à NASA Visible Earth. Le relief gris et en couleur détaillé utilise NASA/METI ASTER GDEM par NASA EOSDIS GIBS lorsqu'il est activé. Les écorégions RESOLVE et les points chauds de biodiversité ont leurs propres exigences d'attribution et de licence. %credits_link% avant de publier des cartes qui utilisent les couches écologiques."
+msgid "Natural Earth layers are public domain. Blue Marble imagery is credited to NASA Visible Earth. Close-view grey and colour relief uses NASA/METI ASTER GDEM, and close-view Blue Marble uses NASA/USGS Global WELD Landsat imagery, through NASA EOSDIS GIBS when enabled. RESOLVE ecoregions and biodiversity hotspots have separate attribution and licensing requirements. %credits_link% before publishing maps that use ecological layers."
+msgstr "Les couches Natural Earth sont dans le domaine public. Les images Blue Marble sont attribuées à NASA Visible Earth. Le relief gris et en couleur détaillé utilise NASA/METI ASTER GDEM, et Blue Marble détaillé utilise les images Landsat Global WELD de NASA/USGS, par NASA EOSDIS GIBS lorsqu'ils sont activés. Les écorégions RESOLVE et les points chauds de biodiversité ont leurs propres exigences d'attribution et de licence. %credits_link% avant de publier des cartes qui utilisent les couches écologiques."
 
 #: views/about.html
 msgid "If you publish a map made here, please cite:"

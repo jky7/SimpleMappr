@@ -57,6 +57,23 @@ final class DetailedReliefHttpTest extends TestCase
         $this->assertDetailedPixels($wms,600,300);self::assertStringContainsString('/data-credits',$headers);
     }
 
+    public function testBlueMarbleGainsLandsatLandAndFlatWater(): void
+    {
+        if (!isset(Mappr::getShapefileConfig()['blueMarble'])) { self::markTestSkipped('Requires the installed Blue Marble overview.'); }
+        $document=array_replace($this->document(),['bbox_map'=>'-122.6,37.7,-122.2,37.9','layers'=>['blueMarble'=>'on']]);
+        [$status,$body]=$this->request('/application.json',$document);self::assertSame(200,$status,$body);
+        $map=json_decode($body,true,512,JSON_THROW_ON_ERROR);
+        self::assertSame('NASA/USGS Global WELD Landsat via NASA GIBS',$map['relief_source']['name']);
+        [$status,$bytes]=$this->request($map['mapOutputImage']);self::assertSame(200,$status);
+        $this->assertDetailedPixels($bytes,600,300);
+        $image=imagecreatefromstring($bytes);$water=0;
+        for ($y=20;$y<220;$y+=4) { for ($x=20;$x<580;$x+=4) { if ((imagecolorat($image,$x,$y)&0xffffff)===(DetailedRelief::WATER[0]<<16|DetailedRelief::WATER[1]<<8|DetailedRelief::WATER[2])) { $water++; } } }
+        imagedestroy($image);self::assertGreaterThan(500,$water,'Bay and ocean use the flat Blue Marble water colour.');
+        $query=['SERVICE'=>'WMS','REQUEST'=>'GetMap','VERSION'=>'1.1.1','LAYERS'=>'blueMarble','SRS'=>'EPSG:4326','BBOX'=>'-122.6,37.7,-122.2,37.9','WIDTH'=>600,'HEIGHT'=>300,'FORMAT'=>'image/png'];
+        [$status,$wms,$headers]=$this->request('/wms?'.http_build_query($query));self::assertSame(200,$status,substr($wms,0,300));
+        $this->assertDetailedPixels($wms,600,300);self::assertStringContainsString('/data-credits',$headers);
+    }
+
     public function testRasterAndOfficeDownloadsKeepDetailedPixelsAndSourceCredits(): void
     {
         foreach (['png','tif','docx','pptx'] as $format) {

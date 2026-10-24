@@ -12,6 +12,15 @@ final class DatasetCredits
         'licenseUrl'=>'https://www.earthdata.nasa.gov/engage/open-data-services-and-software/policies/data-use-policy',
         'changes'=>'GIBS greyscale shaded relief tiles are mosaicked, resampled and reprojected for close map views; for colour relief, GIBS colour index tiles are decoded to elevation, repainted with soft elevation tints and shaded by the grey relief. Source elevations are approximately 30 metres; imagery is at most approximately 38 metres per pixel at the equator. Coverage and terrain artifacts follow ASTER GDEM.',
     ];
+    public const DETAILED_IMAGERY = [
+        'name'=>'Global WELD Landsat imagery',
+        'credit'=>'NASA/USGS; NASA EOSDIS GIBS',
+        'source'=>'https://www.earthdata.nasa.gov/data/catalog/lpcloud-gweldyr-003',
+        'citation'=>'https://doi.org/10.5067/MEaSUREs/GWELD/GWELDYR.003',
+        'license'=>'Publicly available NASA data',
+        'licenseUrl'=>'https://www.earthdata.nasa.gov/engage/open-data-services-and-software/policies/data-use-policy',
+        'changes'=>'GIBS true-colour tiles of the circa 2000 annual composite are mosaicked, resampled and reprojected for close Blue Marble views, clipped to Natural Earth land, with water drawn in Blue Marble\'s ocean colour. Imagery is at most approximately 38 metres per pixel at the equator.',
+    ];
     public const DATASETS = [
         'ecoregions'=>[
             'layers'=>['ecoregions','ecoregionLabels'],
@@ -55,7 +64,7 @@ final class DatasetCredits
             $author=$id==='hotspots'?'Hoffman et al. (2016)':$dataset['credit'];
             $text[]=$dataset['name'].'; '.$author.'; '.$dataset['license'];
         }
-        if (array_diff(array_keys($datasets),['detailedRelief'])) { $text[]='Styled/reprojected'.(isset($datasets['hotspots'])?'; hotspots filtered':'').'.'; }
+        if (array_diff(array_keys($datasets),['detailedRelief','detailedImagery'])) { $text[]='Styled/reprojected'.(isset($datasets['hotspots'])?'; hotspots filtered':'').'.'; }
         $text[]='Sources, licenses and changes: '.self::url();
         return explode("\n",wordwrap(implode("\n",$text),max(1,(int)floor(($width-16)/6)),"\n",true));
     }

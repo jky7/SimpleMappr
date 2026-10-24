@@ -1496,7 +1496,7 @@ abstract class Mappr
 
     protected function addDetailedRelief(array $layers,?array $bounds=null,?string $projection=null,?int $width=null,?int $height=null): void
     {
-        $bases=array_values(array_intersect(['reliefgrey','relief'],$layers));
+        $bases=array_values(array_intersect(['reliefgrey','relief','blueMarble'],$layers));
         if (!$bases || $this->request->output==='svg' || !\SimpleMappr\DetailedRelief::enabled()) { return; }
         $extent=$this->map_obj->extent;
         $bounds ??= [$extent->minx,$extent->miny,$extent->maxx,$extent->maxy];
@@ -1528,26 +1528,28 @@ abstract class Mappr
         }
         $plan=\SimpleMappr\DetailedRelief::plan([min($xs),min($ys),max($xs),max($ys)],$width ?? $this->map_obj->width,$height ?? $this->map_obj->height);
         if ($plan===null) { return; }
-        $colour=in_array('relief',$bases,true);
+        $colour=in_array('relief',$bases,true);$imagery=in_array('blueMarble',$bases,true);
+        $sources=array_merge(array_intersect(['reliefgrey','relief'],$bases)?['grey']:[],$colour?['index']:[],$imagery?['landsat']:[]);
         $this->detailedRelief=new \SimpleMappr\DetailedRelief();
-        $paths=$this->detailedRelief->prepare($plan,$colour?['grey','index']:['grey']);
-        if ($paths['grey']===null || ($colour && $paths['index']===null)) { $this->detailedReliefDegraded=true; }
-        if ($paths['grey']===null) { return; }
+        $paths=$this->detailedRelief->prepare($plan,$sources);
+        if (in_array(null,$paths,true)) { $this->detailedReliefDegraded=true; }
+        if (!array_filter($paths)) { return; }
         $mask=new \layerObj($this->map_obj);$mask->name='internal_detailed_relief_land';$mask->type=MS_LAYER_POLYGON;$mask->status=MS_OFF;
         $mask->setProjection('EPSG:4326');$mask->metadata->set('ows_enable_request','!*');
         $maskClass=new \classObj($mask);$maskStyle=new \styleObj($maskClass);$maskStyle->color->setRGB(255,255,255);
-        $land=new \shapefileObj($this->shapes['base']['path'],-1);
+        $land=new \shapefileObj($this->shapes['base']['path'],-1);$waters=[];
         foreach (\SimpleMappr\DetailedRelief::geographicClips($plan) as [$west,$south,$east,$north]) {
-            $clip=\shapeObj::fromWKT("POLYGON(($west $south,$east $south,$east $north,$west $north,$west $south))");
+            $clip=\shapeObj::fromWKT("POLYGON(($west $south,$east $south,$east $north,$west $north,$west $south))");$water=$clip;
             for ($index=0;$index<$land->numshapes;$index++) {
                 $shape=$land->getShape($index)->intersection($clip);
-                if ($shape!==null && $shape->numlines>0) { $mask->addFeature($shape); }
+                if ($shape!==null && $shape->numlines>0) { $mask->addFeature($shape);$water=$water?->difference($shape); }
             }
+            if ($water!==null && $water->numlines>0) { $waters[]=$water; }
         }
-        if (in_array('reliefgrey',$bases,true)) {
+        if (in_array('reliefgrey',$bases,true) && $paths['grey']!==null) {
             $this->placeDetailLayers('reliefgrey',[$this->detailRaster('internal_detailed_relief',$paths['grey'],'')]);
         }
-        if ($colour && $paths['index']!==null) {
+        if ($colour && $paths['grey']!==null && $paths['index']!==null) {
             // Elevation tints shaded by the detailed terrain (soft light, then a light multiply), with crisp water on top.
             $detail=[
                 $this->detailRaster('internal_detailed_tint',$paths['index'],''),
@@ -1564,6 +1566,20 @@ abstract class Mappr
                 $detail[]=$layer;
             }
             $this->placeDetailLayers('relief',$detail);
+        }
+        if ($imagery && $paths['landsat']!==null) {
+            // Landsat on land over one flat Blue Marble ocean colour: Landsat water is patchy and ends offshore.
+            $detail=[];
+            foreach (['water'=>$waters,'imagery'=>null,'imagery_lakes'=>$this->shapes['lakes']['path'] ?? null] as $name=>$data) {
+                if ($name==='imagery') { $detail[]=$this->detailRaster('internal_detailed_imagery',$paths['landsat'],'');continue; }
+                if (!$data) { continue; }
+                $layer=new \layerObj($this->map_obj);$layer->name='internal_detailed_'.$name;$layer->type=MS_LAYER_POLYGON;$layer->status=MS_DEFAULT;
+                $layer->setProjection('EPSG:4326');$layer->metadata->set('ows_enable_request','!*');
+                if (is_string($data)) { $layer->data=$data; } else { foreach ($data as $shape) { $layer->addFeature($shape); } }
+                (new \styleObj(new \classObj($layer)))->color->setRGB(...\SimpleMappr\DetailedRelief::WATER);
+                $detail[]=$layer;
+            }
+            $this->placeDetailLayers('blueMarble',$detail);
         }
         // Only claim (and credit) the detailed relief when something was actually drawn from it.
         if ($this->detailedReliefLayers) { $this->detailedReliefUsed=true;$this->detailedReliefZoom=$plan['zoom']; }
@@ -1594,7 +1610,8 @@ abstract class Mappr
     protected function addDataCredits(array $layers,?int $width=null,?int $height=null): void
     {
         $datasets=DatasetCredits::selected($layers);
-        if ($this->detailedReliefUsed) { $datasets['detailedRelief']=DatasetCredits::DETAILED_RELIEF; }
+        if (array_intersect(['reliefgrey','relief'],array_keys($this->detailedReliefLayers))) { $datasets['detailedRelief']=DatasetCredits::DETAILED_RELIEF; }
+        if (isset($this->detailedReliefLayers['blueMarble'])) { $datasets['detailedImagery']=DatasetCredits::DETAILED_IMAGERY; }
         if (!$datasets) { return; }
         $scale=$width===null && $this->_isResize()?max(1,(int)$this->request->download_factor):1;
         $width ??= $this->map_obj->width;$height ??= $this->map_obj->height;
