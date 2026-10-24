@@ -137,6 +137,7 @@ class Router
         });
 
         $router->get('/about', function () {
+            $this->_tabRequestOnly('about');
             Header::setHeader("html");
             Header::cacheable(300);
             Session::selectLocale();
@@ -158,6 +159,7 @@ class Router
         }, ['after' => 'logAPI']);
 
         $router->get('/apidoc', function () {
+            $this->_tabRequestOnly('apidoc');
             Header::setHeader('html');
             Session::selectLocale();
             $config = ['openapi' => $this->_klass("Controller\OpenApi")->index()];
@@ -223,6 +225,7 @@ class Router
         });
 
         $router->get('/feedback', function () {
+            $this->_tabRequestOnly('feedback');
             $locale = Session::selectLocale();
             $config = [
                 'locale' => $locale,
@@ -237,6 +240,7 @@ class Router
         }, ['before' => 'check_role_administrator']);
 
         $router->get('/help', function () {
+            $this->_tabRequestOnly('help');
             $config = [
                 'locale' => Session::selectLocale()
             ];
@@ -593,6 +597,7 @@ class Router
         $twig->addExtension(new TranslationExtension($translator));
         $twig->addGlobal('environment', ENVIRONMENT);
         $twig->addGlobal('base', SiteUrl::path());
+        $twig->addGlobal('pages_stylesheet', Assets::pageStylesheet());
 
         $qlocale = "?locale={$locale}";
 
@@ -615,6 +620,22 @@ class Router
         }
 
         return $twig;
+    }
+
+    /**
+     * The About, API, Feedback and Help fragments are tab panels the editor loads over XHR. Opened
+     * directly (a link or bookmark), send the visitor to the editor on that tab instead of a bare,
+     * unstyled fragment.
+     *
+     * @param string $tab Tab name, matching the fragment URL
+     *
+     * @return void
+     */
+    private function _tabRequestOnly($tab)
+    {
+        header('Vary: X-Requested-With', false);
+        if (strtolower($_SERVER['HTTP_X_REQUESTED_WITH'] ?? '') === 'xmlhttprequest') { return; }
+        Session::redirect(SiteUrl::path().'/?locale='.rawurlencode(Session::selectLocale()['locale']).'#tabs='.$tab);
     }
 
     /**

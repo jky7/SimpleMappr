@@ -6,18 +6,13 @@
 <meta name="author" content="David P. Shorthouse" />
 {% endblock meta %}
 
-{% block stylesheet %}
-    {% include "fragments/fragment.stylesheet.html" %}
-{% endblock stylesheet%}
-
-{% block pageheader %}
-{% include "fragments/fragment.pageheader.simple.html" %}
-{% endblock pageheader %}
-
 {% block content %}
-<div id="wrapper">
-  <p id="error-message" class="ui-widget-header">The page you requested was not found, visit <a href="{{ og_url }}">{{ og_url }}</a> to renew your browsing.</p>
-</div>
+<main class="page page-narrow">
+  <div class="card">
+    <h1>Not Found</h1>
+    <div class="card-body"><p id="error-message">The page you requested was not found, visit <a href="{{ og_url }}">{{ og_url }}</a> to renew your browsing.</p></div>
+  </div>
+</main>
 {% endblock content %}
 
 {% block footer %}{% endblock footer %}

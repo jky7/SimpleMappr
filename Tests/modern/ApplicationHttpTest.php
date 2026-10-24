@@ -5,11 +5,11 @@ use PHPUnit\Framework\Attributes\DataProvider;
 
 final class ApplicationHttpTest extends TestCase
 {
-    private function request(string $path, ?array $document = null): array
+    private function request(string $path, ?array $document = null, array $headers = []): array
     {
         $base = rtrim(getenv('SIMPLEMAPPR_TEST_URL') ?: 'http://127.0.0.1', '/');
         $curl = curl_init($base.$path);
-        curl_setopt_array($curl, [CURLOPT_RETURNTRANSFER => true, CURLOPT_TIMEOUT => 20]);
+        curl_setopt_array($curl, [CURLOPT_RETURNTRANSFER => true, CURLOPT_TIMEOUT => 20, CURLOPT_HTTPHEADER => $headers]);
         if ($document !== null) {
             curl_setopt_array($curl, [CURLOPT_POST => true, CURLOPT_POSTFIELDS => http_build_query($document)]);
         }
@@ -42,6 +42,46 @@ final class ApplicationHttpTest extends TestCase
         [$status, , $body] = $this->request('/?locale=fr_FR');
         self::assertSame(200, $status);
         self::assertStringContainsString('Aperçu', $body);
+    }
+
+    #[DataProvider('standalonePages')]
+    public function testEveryStandalonePageLoadsTheSharedStylesheetAndHeader(string $path, int $status): void
+    {
+        [$code, $type, $body] = $this->request($path);
+        self::assertSame($status, $code, $path);
+        self::assertMatchesRegularExpression('#<link rel="stylesheet" href="/public/build/pages-css\.[0-9a-f]{12}\.css">#', $body, $path);
+        self::assertStringContainsString('<h1 id="site-title"', $body, $path);
+        self::assertStringNotContainsString('style="max-width', $body, 'layout belongs in the stylesheet, not inline');
+        preg_match('#href="(/public/build/pages-css\.[0-9a-f]{12}\.css)"#', $body, $match);
+        [$cssStatus, $cssType] = $this->request($match[1]);
+        self::assertSame(200, $cssStatus);
+        self::assertStringStartsWith('text/css', $cssType);
+    }
+
+    public static function standalonePages(): array
+    {
+        return [['/login', 200], ['/data-credits', 200], ['/no-such-page', 404]];
+    }
+
+    public function testTabFragmentsStayBareForTheEditorAndSendDirectVisitsToTheEditorTab(): void
+    {
+        $base = rtrim(getenv('SIMPLEMAPPR_TEST_URL') ?: 'http://127.0.0.1', '/');
+        foreach (['about', 'help', 'feedback', 'apidoc'] as $tab) {
+            [$status, , $fragment] = $this->request('/'.$tab, null, ['X-Requested-With: XMLHttpRequest']);
+            self::assertSame(200, $status, $tab);
+            self::assertStringNotContainsString('<html', $fragment, $tab);
+            $curl = curl_init($base.'/'.$tab.'?locale=fr_FR');
+            curl_setopt_array($curl, [CURLOPT_RETURNTRANSFER => true, CURLOPT_TIMEOUT => 20]);
+            curl_exec($curl);
+            self::assertSame(303, curl_getinfo($curl, CURLINFO_RESPONSE_CODE), $tab);
+            self::assertSame($base.'/?locale=fr_FR#tabs='.$tab, curl_getinfo($curl, CURLINFO_REDIRECT_URL), $tab);
+        }
+        [$status, , $editor] = $this->request('/?locale=fr_FR');
+        self::assertSame(200, $status);
+        self::assertMatchesRegularExpression('#<link rel="stylesheet" href="/public/build/editor-css\.[0-9a-f]{12}\.css">#', $editor);
+        foreach (['help', 'about', 'feedback', 'apidoc'] as $tab) {
+            self::assertStringContainsString('href="'.$tab.'?locale=fr_FR"', $editor, 'the editor tab the redirect targets exists');
+        }
     }
 
     public function testSiteTitleLinksToTheEditorRootOnTheEditorAndErrorPages(): void

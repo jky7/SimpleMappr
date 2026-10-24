@@ -1,9 +1,9 @@
 <div itemscope itemtype="http://schema.org/WebApplication" id="header" class="clearfix">
 <h1 id="site-title" itemprop="name"><a href="{{ base }}/">SimpleMapp<span>r</span></a></h1>
 <div id="site-tagline" itemprop="description">{{ "create free point maps for publications and presentations"|trans }}</div>
-<meta itemprop="url" content="{{ og_url }}" />
-<meta itemprop="image" content="{{ og_logo }}" />
-<div id="site-languages">
+{% if og_url %}<meta itemprop="url" content="{{ og_url }}" />
+{% endif %}{% if og_logo %}<meta itemprop="image" content="{{ og_logo }}" />
+{% endif %}<div id="site-languages">
 </div>
 
 <div id="site-session">

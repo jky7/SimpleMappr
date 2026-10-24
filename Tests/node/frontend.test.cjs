@@ -370,3 +370,12 @@ function signedInEditor(t,hash){
 test('a signed-in user starts on the default Preview tab and the URL tab is left to the restore',t=>{
  for(const hash of ['','foo=bar','tabs=0','tabs=2'])assert.deepEqual(signedInEditor(t,hash),[],hash);
 });
+test('a tab named in the URL hash opens that tab whatever position the role gives it',t=>{
+ for(const [hash,expected] of [['tabs=help',2],['tabs=about',3],['tabs=3',3],['tabs=nope',0],['tabs=',0]]){
+  const e=finish(t,editor());e.$.fn.slider=function(){return this;};
+  e.$('body').append('<div id="mapTools"><ul><li><a href="#m0">m</a></li></ul><div id="m0"></div></div><div id="tabs"><ul class="navigation"><li><a href="#p0">P</a></li><li><a href="#p1">Q</a></li><li><a href="help?locale=en_US">Help</a></li><li><a href="about?locale=en_US">About</a></li></ul><div id="p0"></div><div id="p1"></div></div>');
+  e.$.ajax=()=>{const xhr={abort(){},done(){return xhr;},fail(){return xhr;},always(){return xhr;}};return xhr;};
+  e.w.location.hash=hash;e.p.bindTabs();
+  assert.equal(e.$('#tabs').tabs('option','active'),expected,hash);
+ }
+});

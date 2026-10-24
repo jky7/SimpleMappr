@@ -1,10 +1,14 @@
 {% extends "base.html" %}
 {% block content %}
-<main style="margin:2rem;font-family:sans-serif;line-height:1.5">
+<main class="page page-fluid">
+<div class="card">
 <h1>{{ map_title }}</h1>
-<p>This map was explicitly shared by its owner. This view is read-only.</p>
-<img src="{{ share_path }}.png" alt="{{ map_title }}" style="max-width:100%;height:auto">
-<p><a href="{{ share_path }}.svg">SVG</a> · <a href="{{ share_path }}.json">GeoJSON</a> · <a href="{{ share_path }}.kml">KML</a></p>
-<p><a href="{{ base }}/">Open your own map editor</a></p>
+<div class="card-body">
+<p class="muted">This map was explicitly shared by its owner. This view is read-only.</p>
+<img class="shared-map" src="{{ share_path }}.png" alt="{{ map_title }}">
+<p class="actions"><a class="button" href="{{ share_path }}.svg">SVG</a> <a class="button" href="{{ share_path }}.json">GeoJSON</a> <a class="button" href="{{ share_path }}.kml">KML</a></p>
+</div>
+<p class="card-footer"><a href="{{ base }}/">Open your own map editor</a></p>
+</div>
 </main>
 {% endblock %}

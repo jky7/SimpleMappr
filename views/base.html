@@ -8,11 +8,12 @@
 {% endblock meta %}
 <title>SimpleMappr{{ title }}</title>
 {% block stylesheet %}
+{{ pages_stylesheet|raw }}
 {% endblock %}
 {% endblock head %}
 </head>
 <body>
-{% block pageheader %}{% endblock %}
+{% block pageheader %}{% include "fragments/fragment.pageheader.simple.html" %}{% endblock %}
 {% block content %}{% endblock content %}
 {% block footer %}{% endblock footer %}
 </body>

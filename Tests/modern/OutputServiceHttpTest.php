@@ -3,13 +3,14 @@ use PHPUnit\Framework\TestCase;
 
 final class OutputServiceHttpTest extends TestCase
 {
-    private function request(string $path, ?array $data = null, ?string $xml = null): array
+    private function request(string $path, ?array $data = null, ?string $xml = null, array $headers = []): array
     {
         $base = rtrim(getenv('SIMPLEMAPPR_TEST_URL') ?: 'http://127.0.0.1', '/');
         $curl = curl_init($base.$path);
         curl_setopt_array($curl, [CURLOPT_RETURNTRANSFER=>true,CURLOPT_TIMEOUT=>30]);
         if ($data !== null) { curl_setopt_array($curl,[CURLOPT_POST=>true,CURLOPT_POSTFIELDS=>http_build_query($data)]); }
-        if ($xml !== null) { curl_setopt_array($curl,[CURLOPT_POST=>true,CURLOPT_POSTFIELDS=>$xml,CURLOPT_HTTPHEADER=>['Content-Type: application/xml']]); }
+        if ($xml !== null) { curl_setopt_array($curl,[CURLOPT_POST=>true,CURLOPT_POSTFIELDS=>$xml]); $headers[] = 'Content-Type: application/xml'; }
+        curl_setopt($curl, CURLOPT_HTTPHEADER, $headers);
         $body = curl_exec($curl);
         self::assertNotFalse($body, curl_error($curl));
         return [curl_getinfo($curl,CURLINFO_RESPONSE_CODE),curl_getinfo($curl,CURLINFO_CONTENT_TYPE),$body];
@@ -29,7 +30,8 @@ final class OutputServiceHttpTest extends TestCase
         self::assertSame('3.0.0',$spec['openapi']);
         self::assertArrayHasKey('multipart/form-data',$spec['paths']['/api']['post']['requestBody']['content']);
         self::assertArrayHasKey('image/png',$spec['paths']['/api']['get']['responses'][200]['content']);
-        [$status,$type,$body]=$this->request('/apidoc');
+        // The editor's API tab loads this fragment over XHR; a direct visit redirects to that tab.
+        [$status,$type,$body]=$this->request('/apidoc',null,null,['X-Requested-With: XMLHttpRequest']);
         self::assertSame(200,$status,substr($body,0,300));
         self::assertStringStartsWith('text/html',$type);
         self::assertStringContainsString('Remote imports accept public HTTP',$body);

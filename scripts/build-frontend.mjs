@@ -34,7 +34,7 @@ for(const [name,source]of [['jquery',await readFile('node_modules/jquery/dist/jq
  const digest=sha(code),file=`${name}.${digest.slice(0,12)}.js`;
  await writeFile(`${output}/${file}`,code);manifest.assets[name]={file,sha256:digest,bytes:Buffer.byteLength(code),gzipBytes:gzipSync(code).length};
 }
-for(const [name,contents]of [['editor-css','@import "../public/stylesheets/raw/fonts.css";\n@import "../node_modules/jquery-ui/themes/base/all.css";\n@import "../public/stylesheets/raw/styles.css";\n@import "../public/stylesheets/raw/editor-responsive.css";']]){
+for(const [name,contents]of [['editor-css','@import "../public/stylesheets/raw/fonts.css";\n@import "../node_modules/jquery-ui/themes/base/all.css";\n@import "../public/stylesheets/raw/styles.css";\n@import "../public/stylesheets/raw/editor-responsive.css";'],['pages-css','@import "../public/stylesheets/raw/fonts.css";\n@import "../public/stylesheets/raw/pages.css";']]){
  const css=await build({stdin:{contents,resolveDir:path.join(process.cwd(),'scripts'),loader:'css',sourcefile:name+'.css'},bundle:true,minify:true,write:false,outdir:output,assetNames:'images/[name]-[hash]',loader:{'.png':'file','.gif':'file','.jpg':'file','.svg':'file','.woff2':'file'}});
  for(const item of css.outputFiles){
   let file=path.relative(path.resolve(output),item.path);const digest=sha(item.contents);

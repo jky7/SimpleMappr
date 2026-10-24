@@ -1,26 +1,32 @@
 {% extends "base.html" %}
 {% block content %}
-<main style="max-width:30rem;margin:3rem auto;font-family:sans-serif;line-height:1.5">
-<h1>SimpleMappr {{ "Sign In"|trans }}</h1>
+<main class="page page-narrow">
+<div class="card">
+<h1>{{ "Sign In"|trans }}</h1>
+<div class="card-body">
 {% if login_error %}<p role="alert">{{ login_error }}</p>{% endif %}
 {% if login_enabled %}
 {% for provider in social_providers %}
 <form action="{{ base }}/auth/{{ provider.id }}/start" method="post">
 <input type="hidden" name="_csrf" value="{{ csrf_token }}">
-<p><button type="submit">Continue with {{ provider.name }}</button></p>
+<button class="block" type="submit">Continue with {{ provider.name }}</button>
 </form>
 {% endfor %}
 {% if local_login_enabled %}
-{% if social_providers %}<h2>{{ "Local owner"|trans }}</h2>{% endif %}
+{% if social_providers %}<h2 class="divider"><span>{{ "Local owner"|trans }}</span></h2>{% endif %}
 <form action="{{ base }}/session" method="post">
 <input type="hidden" name="_csrf" value="{{ csrf_token }}">
 <input type="hidden" name="locale" value="{{ locale }}">
-<p><label for="username">{{ "Username"|trans }}</label><br><input id="username" name="username" autocomplete="username" required maxlength="50"></p>
-<p><label for="password">{{ "Password"|trans }}</label><br><input id="password" name="password" type="password" autocomplete="current-password" required></p>
-<button type="submit">{{ "Sign In"|trans }}</button>
+<label for="username">{{ "Username"|trans }}</label>
+<input id="username" name="username" autocomplete="username" required maxlength="50">
+<label for="password">{{ "Password"|trans }}</label>
+<input id="password" name="password" type="password" autocomplete="current-password" required>
+<button class="block primary" type="submit">{{ "Sign In"|trans }}</button>
 </form>
 {% endif %}
 {% else %}<p>{{ "Saving is available after the deployment owner is configured."|trans }}</p>{% endif %}
-<p><a href="{{ base }}/">{{ "Return to the map editor"|trans }}</a></p>
+</div>
+<p class="card-footer"><a href="{{ base }}/">{{ "Return to the map editor"|trans }}</a></p>
+</div>
 </main>
 {% endblock %}
