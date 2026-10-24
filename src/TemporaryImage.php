@@ -6,7 +6,27 @@ final class TemporaryImage
     private const PRIVATE_DIRECTORY = '/var/lib/simplemappr/previews';
     private const LIFETIME = 3600;
 
+    private static array $written = [];
+
     public static function write(\imageObj $image, \mapObj $map, string $extension = 'png'): array
+    {
+        return self::store($extension, static fn (string $path) => $image->save($path, $map));
+    }
+
+    public static function writeFile(string $source, string $extension = 'png'): array
+    {
+        return self::store($extension, static function (string $path) use ($source) {
+            if (!copy($source, $path)) { throw new \RuntimeException('Preview storage is unavailable.'); }
+        });
+    }
+
+    /** Paths written during this request, keyed by the URL returned to the caller. */
+    public static function written(): array
+    {
+        return self::$written;
+    }
+
+    private static function store(string $extension, callable $save): array
     {
         if (!in_array($extension, ['png','jpg','svg','tif'], true)) { throw new \InvalidArgumentException('Unsupported temporary image format.'); }
         $owner = Session::currentUser();
@@ -15,13 +35,14 @@ final class TemporaryImage
         $directory = $owner ? self::PRIVATE_DIRECTORY : ROOT.'/public/tmp';
         if (!is_dir($directory) && !mkdir($directory, 0700, true) && !is_dir($directory)) { throw new \RuntimeException('Preview storage is unavailable.'); }
         $path = $directory.'/'.$name;
-        $image->save($path, $map);
+        $save($path);
         if ($owner) {
             chmod($path, 0600);
             file_put_contents(self::PRIVATE_DIRECTORY.'/'.$token.'.json', json_encode(['uid'=>(int)$owner->uid,'expires'=>time()+self::LIFETIME,'filename'=>$name]), LOCK_EX);
             $url = MAPPR_URL.'/_preview/'.$token.'.'.$extension;
         } else { $url = MAPPR_MAPS_URL.$name; }
         self::cleanExpired();
+        self::$written[$url] = $path;
         return ['path'=>$path,'url'=>$url];
     }
 

@@ -30,6 +30,7 @@ services:
       SIMPLEMAPPR_ENV: ${SIMPLEMAPPR_ENV:-production}
       SIMPLEMAPPR_URL: ${SIMPLEMAPPR_URL:-}
       SIMPLEMAPPR_ASSET_PROFILE: ${SIMPLEMAPPR_ASSET_PROFILE:-minimal-vector-v1}
+      SIMPLEMAPPR_RENDER_CACHE: ${SIMPLEMAPPR_RENDER_CACHE:-1}
       SIMPLEMAPPR_DB_HOST: db
       SIMPLEMAPPR_DB_NAME: simplemappr
       SIMPLEMAPPR_DB_USER: simplemappr
@@ -69,6 +70,7 @@ services:
     volumes:
       - map-data:/srv/simplemappr/mapserver/maps:ro
       - relief-cache:/var/cache/simplemappr-relief
+      - render-cache:/var/cache/simplemappr-render
       - runtime-output:/var/lib/simplemappr
       - app-tmp:/srv/simplemappr/public/tmp
       - app-uploads:/srv/simplemappr/public/uploads
@@ -84,6 +86,7 @@ services:
     restart: unless-stopped
 volumes:
   relief-cache:
+  render-cache:
   asset-cache:
   map-data:
   runtime-output:

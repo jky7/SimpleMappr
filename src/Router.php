@@ -132,11 +132,13 @@ class Router
 
         $router->get('/data-credits', function () {
             Header::setHeader('html');
+            Header::cacheable(300);
             return $this->_twig()->render('data-credits.html', ['datasets'=>DatasetCredits::DATASETS+['detailedRelief'=>DatasetCredits::DETAILED_RELIEF]]);
         });
 
         $router->get('/about', function () {
             Header::setHeader("html");
+            Header::cacheable(300);
             Session::selectLocale();
             $citations = new Citation();
             $config = [
@@ -169,14 +171,12 @@ class Router
 
         $router->post('/application', function () {
             //headers are set in Mappr\Application class
-            $klass = $this->_klass("Mappr\Application\Application");
-            return $klass->execute()->createOutput();
+            return \SimpleMappr\Mappr\Application\Application::respond();
         });
 
         $router->post('/application.json', function () {
             //headers are set in Mappr\Application class
-            $klass = $this->_klass("Mappr\Application\Application");
-            return $klass->execute()->createOutput();
+            return \SimpleMappr\Mappr\Application\Application::respond();
         });
 
         $router->get('/citation.rss', function () {

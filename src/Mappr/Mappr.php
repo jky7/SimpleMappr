@@ -108,6 +108,7 @@ abstract class Mappr
     private ?\SimpleMappr\DetailedRelief $detailedRelief = null;
     private ?\SimpleMappr\WrappedRasterSource $wrappedRasterSource = null;
     protected bool $detailedReliefUsed = false;
+    protected bool $detailedReliefDegraded = false;
     protected ?int $detailedReliefZoom = null;
 
     /**
@@ -1489,7 +1490,7 @@ abstract class Mappr
         if ($plan===null) { return; }
         $this->detailedRelief=new \SimpleMappr\DetailedRelief();
         $path=$this->detailedRelief->prepare($plan);
-        if ($path===null) { return; }
+        if ($path===null) { $this->detailedReliefDegraded=true; return; }
         $mask=new \layerObj($this->map_obj);$mask->name='internal_detailed_relief_land';$mask->type=MS_LAYER_POLYGON;$mask->status=MS_OFF;
         $mask->setProjection('EPSG:4326');$mask->metadata->set('ows_enable_request','!*');
         $maskClass=new \classObj($mask);$maskStyle=new \styleObj($maskClass);$maskStyle->color->setRGB(255,255,255);
