@@ -1549,9 +1549,6 @@ msgstr "Logiciel"
 msgid "Accessed %date%."
 msgstr "Consulté le %date%."
 
-msgid "This version is based on the original application:"
-msgstr "Cette version est fondée sur l'application originale :"
-
 #: views/help.html
 msgid "scroll wheel"
 msgstr "molette de la souris"
@@ -1564,3 +1561,10 @@ msgstr "faire glisser la carte"
 
 msgid "Pan the map; the view updates when you let go"
 msgstr "Déplacer la carte ; la vue se met à jour quand vous relâchez"
+
+#: views/about.html
+msgid "based on SimpleMappr by David P. Shorthouse (2010)"
+msgstr "d'après SimpleMappr de David P. Shorthouse (2010)"
+
+msgid "The original application:"
+msgstr "L'application originale :"
