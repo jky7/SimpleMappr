@@ -87,21 +87,24 @@ final class ApplicationHttpTest extends TestCase
     public function testOwnerLoginHasItsOwnUnlistedNoindexPageAndLoginOffersOnlyProviders(): void
     {
         $base = rtrim(getenv('SIMPLEMAPPR_TEST_URL') ?: 'http://127.0.0.1', '/');
+        $ownerPath = getenv('SIMPLEMAPPR_OWNER_LOGIN_PATH') ?: '/owner';
         [$status, , $login] = $this->request('/login');
         self::assertSame(200, $status);
         self::assertStringNotContainsString('name="username"', $login);
         self::assertStringNotContainsString('name="password"', $login);
         foreach (['/login', '/'] as $path) {
             [, , $page] = $this->request($path);
-            self::assertDoesNotMatchRegularExpression('#href="[^"]*/admin"#', $page, $path.' must not link to the owner login');
+            self::assertStringNotContainsString($ownerPath.'"', $page, $path.' must not link to the owner login');
         }
-        $curl = curl_init($base.'/admin');
+        [$status] = $this->request('/admin');
+        self::assertSame(404, $status, 'the old /admin path is gone');
+        $curl = curl_init($base.$ownerPath);
         curl_setopt_array($curl, [CURLOPT_RETURNTRANSFER => true, CURLOPT_HEADER => true, CURLOPT_TIMEOUT => 20]);
         $raw = curl_exec($curl);
         $code = curl_getinfo($curl, CURLINFO_RESPONSE_CODE);
         $body = substr($raw, curl_getinfo($curl, CURLINFO_HEADER_SIZE));
         if ($code === 404) {
-            self::assertStringNotContainsString('name="password"', $body, 'without a configured owner /admin is an ordinary 404');
+            self::assertStringNotContainsString('name="password"', $body, 'without a configured owner the owner path is an ordinary 404');
             self::markTestSkipped('No local owner is configured in this deployment.');
         }
         self::assertSame(200, $code);

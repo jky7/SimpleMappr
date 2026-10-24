@@ -277,8 +277,8 @@ class Router
             unset($_SESSION['social_login_error']);
             return $this->_twig()->render('login.html', ['login_error'=>$error]);
         });
-        // The local owner's recovery login: unlinked, noindex, and a plain 404 unless an owner is configured.
-        $router->get('/admin', function () {
+        // The local owner's recovery login (OwnerLogin::path()): unlinked, noindex, and a plain 404 unless an owner is configured.
+        $router->get(OwnerLogin::path(), function () {
             if (!Session::localConfigured()) { return $this->_renderError(404); }
             if (Session::currentUser()) { Session::redirect(SiteUrl::path().'/'.Session::makeLocaleParam($_SESSION['locale'] ?? 'en_US')); }
             return $this->_ownerLogin(null);

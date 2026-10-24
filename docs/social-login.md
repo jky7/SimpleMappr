@@ -69,7 +69,7 @@ docker compose exec app scripts/check-config
 
 Use the normal build command first if you have not built the image that includes social sign-in. Open **Sign in** at the configured base URL. You should see buttons only for the providers you enabled.
 
-Complete a real sign-in with each provider and confirm that **My Maps** can save and reopen a map. Also confirm that the local owner login (at `/admin`) still opens the owner's existing maps. Automated tests against a local fake provider verify the application flow and token checks. They do not prove that your real provider registration, credentials, consent, or callback settings work.
+Complete a real sign-in with each provider and confirm that **My Maps** can save and reopen a map. Also confirm that the local owner login (see [Sign in as the local owner](private-deployment.md#sign-in-as-the-local-owner)) still opens the owner's existing maps. Automated tests against a local fake provider verify the application flow and token checks. They do not prove that your real provider registration, credentials, consent, or callback settings work.
 
 The app container needs outbound HTTPS access to Google for token exchange and signing keys, and to `github.com` and `api.github.com` for the GitHub exchange and authenticated profile. It does not call repository APIs or Google data APIs.
 
