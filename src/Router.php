@@ -48,7 +48,6 @@ use Symfony\Component\Translation\Translator;
 use Symfony\Component\Translation\Loader\PoFileLoader;
 use SimpleMappr\Constants\AcceptedMarkers;
 use SimpleMappr\Constants\AcceptedProjections;
-use SimpleMappr\Controller\Citation;
 use SimpleMappr\Controller\User;
 use SimpleMappr\Mappr\Mappr;
 
@@ -141,11 +140,7 @@ class Router
             Header::setHeader("html");
             Header::cacheable(300);
             Session::selectLocale();
-            $citations = new Citation();
-            $config = [
-                'citations' => $citations->index()
-            ];
-            return $this->_twig()->render("about.html", $config);
+            return $this->_twig()->render("about.html");
         });
 
         $router->options('/api', function () {
