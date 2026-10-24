@@ -152,10 +152,9 @@ Apache marks `/public/build/` assets (content-hashed) `immutable` for a year and
 scripts/deploy              # on the server
 scripts/deploy --dry-run    # pull, build and verify only; the running site is untouched
 scripts/deploy --force      # redeploy the commit that is already running
-scripts/deploy-remote       # from your computer: connect, pull there, deploy
 ```
 
-`scripts/deploy-remote` reads `SIMPLEMAPPR_DEPLOY_HOST` (default `jky.io`), `SIMPLEMAPPR_DEPLOY_DIR` (`simplemappr`) and `SIMPLEMAPPR_DEPLOY_BRANCH` (`master`). Copy it somewhere on your `PATH`, for example `install -m 755 scripts/deploy-remote ~/.local/bin/deploy-simplemappr`. It pulls on the server first, so a changed `scripts/deploy` is the version that runs. Each run keeps the previous `.env` (mode 0600) in `~/.local/state/simplemappr-deploy`; only the image line is rewritten and no credential is printed. Old image tags and `.twig-before-deploy-*` directories are not pruned automatically.
+From a workstation, run it over ssh after pulling there, for example `ssh HOST 'cd simplemappr && git pull -q --ff-only && scripts/deploy --no-pull'`; keep any wrapper for that outside the repository. Each run keeps the previous `.env` (mode 0600) in `~/.local/state/simplemappr-deploy`; only the image line is rewritten and no credential is printed. Old image tags and `.twig-before-deploy-*` directories are not pruned automatically.
 
 ## Release checks and updates
 
