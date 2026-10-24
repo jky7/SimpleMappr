@@ -1533,11 +1533,21 @@ msgstr "Corrections: Défaire et refaire se rétablissent après un aperçu éch
 msgid "Improvements: SimpleMappr runs again on current PHP and MapServer. It has private saved maps, share links you can revoke, data imports, downloads (PNG, SVG, TIFF, Word, PowerPoint, KML and GeoJSON) and WMS/WFS map services."
 msgstr "Améliorations: SimpleMappr fonctionne de nouveau avec les versions actuelles de PHP et de MapServer. Il offre des cartes privées enregistrées, des liens de partage révocables, l'importation de données, des téléchargements (PNG, SVG, TIFF, Word, PowerPoint, KML et GeoJSON) et des services cartographiques WMS/WFS."
 
-msgid "David P. Shorthouse created the original SimpleMappr application. You can cite it as follows."
-msgstr "David P. Shorthouse a créé l'application SimpleMappr originale. Vous pouvez la citer comme suit."
-
 msgid "Read the map data credits and licenses"
 msgstr "Consultez les crédits et licences des données cartographiques"
 
 msgid "Natural Earth layers are public domain. Blue Marble imagery is credited to NASA Visible Earth. Close-view grey relief uses NASA/METI ASTER GDEM through NASA EOSDIS GIBS when enabled. RESOLVE ecoregions and biodiversity hotspots have separate attribution and licensing requirements. %credits_link% before publishing maps that use ecological layers."
 msgstr "Les couches Natural Earth sont dans le domaine public. Les images Blue Marble sont attribuées à NASA Visible Earth. Le relief gris détaillé utilise NASA/METI ASTER GDEM par NASA EOSDIS GIBS lorsqu'il est activé. Les écorégions RESOLVE et les points chauds de biodiversité ont leurs propres exigences d'attribution et de licence. %credits_link% avant de publier des cartes qui utilisent les couches écologiques."
+
+#: views/about.html
+msgid "If you publish a map made here, please cite:"
+msgstr "Si vous publiez une carte réalisée ici, veuillez citer :"
+
+msgid "Computer software"
+msgstr "Logiciel"
+
+msgid "Accessed %date%."
+msgstr "Consulté le %date%."
+
+msgid "This version is based on the original application:"
+msgstr "Cette version est fondée sur l'application originale :"

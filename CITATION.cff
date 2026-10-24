@@ -1,0 +1,29 @@
+cff-version: 1.2.0
+message: "If you publish a map made with this software, please cite it as below, together with the original SimpleMappr it is based on."
+type: software
+title: SimpleMappr
+version: "4.0"
+date-released: 2026-10-24
+abstract: "SimpleMappr makes publication-quality point maps from pasted or imported coordinates, with regions, drawings, map layers, private saved maps and downloads. Version 4.0 is an updated, independently maintained version of David P. Shorthouse's original SimpleMappr."
+authors:
+  - family-names: Kass Youssef
+    given-names: Joseph
+repository-code: "https://github.com/jky7/SimpleMappr"
+url: "https://jky.io/simplemappr"
+license: MIT
+keywords:
+  - maps
+  - cartography
+  - point maps
+  - biodiversity
+  - MapServer
+references:
+  - type: software
+    title: "SimpleMappr, an online tool to produce publication-quality point maps"
+    authors:
+      - family-names: Shorthouse
+        given-names: David P.
+    year: 2010
+    url: "https://www.simplemappr.net"
+    repository-code: "https://github.com/dshorthouse/SimpleMappr"
+    license: MIT

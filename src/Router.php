@@ -140,7 +140,7 @@ class Router
             Header::setHeader("html");
             Header::cacheable(300);
             Session::selectLocale();
-            return $this->_twig()->render("about.html");
+            return $this->_twig()->render("about.html", ['site_url' => SiteUrl::base()]);
         });
 
         $router->options('/api', function () {
