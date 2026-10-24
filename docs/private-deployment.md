@@ -134,6 +134,10 @@ Administration supports plain-text citation references, author surname, bounded 
 
 Private preview/legend/scale files expire after one hour and require the owning session. Guest filenames contain 128 random bits and expired reads fail. Image creation periodically removes only correctly named expired generated files and their matching private metadata. It preserves unrelated files and saved maps. About and error pages do not load remote analytics or badges by default. Map rendering uses local installed data. User-requested remote imports deliberately make validated outbound HTTP requests; see [the import boundary](import-export.md).
 
+## Capacity tuning
+
+The image caps Apache at 12 prefork workers (`docker/apache-tuning.conf`), recycles each after 200 requests and disables KeepAlive, so a burst of renders queues instead of exhausting memory and idle proxy connections do not pin workers. `compose.yaml` limits the app to 2500 MB and MariaDB to 768 MB with a 256 MB InnoDB buffer pool. These suit a 2 vCPU / 4 GB host; a measured test peaked at 8 workers, the largest near 240 MB. Override per host in the ignored `.env` with `SIMPLEMAPPR_APP_MEMORY`, `SIMPLEMAPPR_DB_MEMORY` and `SIMPLEMAPPR_DB_BUFFER_POOL`. Changing worker limits needs an image rebuild. A reverse proxy in front should enable response compression (for Caddy, `encode zstd gzip`). A small swap file with low `vm.swappiness` is a safety net, not a substitute for the limits.
+
 ## Release checks and updates
 
 The pinned browser container runs Chromium and Firefox, all eight downloads, mixed documents, reload, failed requests/images/downloads and recovery. It checks 375px layout, keyboard controls and WCAG 2 A/AA plus 2.1 A/AA with Axe. Owner UI tests accept a separate mode 0600 synthetic credential file; recording starts after login. Raw traces are staged privately, sanitized with known-secret checks, and published only after sanitization succeeds.

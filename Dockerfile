@@ -37,6 +37,7 @@ RUN composer install --no-interaction --prefer-dist --no-progress
 COPY . /srv/simplemappr/
 COPY --from=frontend /build/public/build/ /srv/simplemappr/public/build/
 COPY docker/apache.conf /etc/apache2/sites-available/000-default.conf
+COPY docker/apache-tuning.conf /etc/apache2/conf-enabled/zz-tuning.conf
 COPY docker/php.ini /etc/php/8.4/mods-available/simplemappr.ini
 RUN phpenmod simplemappr \
     && mkdir -p /var/lib/simplemappr/checks /var/cache/simplemappr-relief public/tmp public/uploads \
