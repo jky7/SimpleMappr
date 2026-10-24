@@ -1169,6 +1169,13 @@ abstract class Mappr
     private function _setPan()
     {
         if (isset($this->request->pan) && $this->request->pan) {
+            if (preg_match('/^(-?\d+),(-?\d+)$/D', (string)$this->request->pan, $offset)) {
+                // Dragging the map by (dx, dy) pixels moves the view centre the opposite way.
+                $new_point = new \pointObj();
+                $new_point->setXY($this->map_obj->width/2 - (int)$offset[1], $this->map_obj->height/2 - (int)$offset[2]);
+                $this->map_obj->zoompoint(1, $new_point, $this->map_obj->width, $this->map_obj->height, $this->map_obj->extent, null);
+                return;
+            }
             switch ($this->request->pan) {
             case 'up':
                 $x_offset = 1;

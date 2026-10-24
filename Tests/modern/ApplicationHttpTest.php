@@ -121,6 +121,29 @@ final class ApplicationHttpTest extends TestCase
         self::assertSame([600, 300], array_slice(getimagesizefromstring($bytes), 0, 2));
     }
 
+    public function testPixelOffsetPanMovesTheViewTheOppositeWayAndBadOffsetsAreRejected(): void
+    {
+        $render = function (array $changes): array {
+            [$status, , $body] = $this->request('/application.json', array_replace($this->document(), ['coords' => [], 'bbox_map' => '-100,30,-60,55'], $changes));
+            self::assertSame(200, $status, $body);
+            return array_map('floatval', explode(',', json_decode($body, true, 512, JSON_THROW_ON_ERROR)['rendered_bbox']));
+        };
+        $still = $render([]);
+        $dragged = $render(['pan' => '60,0']);
+        $width = $still[2] - $still[0];
+        // Dragging the map 60 of 600 pixels to the right shows ground further west.
+        self::assertEqualsWithDelta($still[0] - $width / 10, $dragged[0], 0.2);
+        self::assertEqualsWithDelta($still[1], $dragged[1], 0.2);
+        self::assertLessThan($still[1] - 0.5, $render(['pan' => '0,-30'])[1], 'dragging the map up pulls ground from the south into view');
+        self::assertGreaterThan($still[1] + 0.5, $render(['pan' => '0,30'])[1], 'dragging the map down pulls ground from the north into view');
+        self::assertEqualsWithDelta($still[0], $render(['pan' => 'right'])[0] - 0.05 * $width, 0.3);
+        foreach (['1,2,3', '1.5,2', 'x,1', '999999,0', '--1,0'] as $pan) {
+            [$status, $type, $body] = $this->request('/application.json', array_replace($this->document(), ['pan' => $pan]));
+            self::assertSame(400, $status, $pan);
+            self::assertNotEmpty(json_decode($body, true, 512, JSON_THROW_ON_ERROR)['error']);
+        }
+    }
+
     public function testInvalidDimensionsReturnUsefulErrorAndNextRenderWorks(): void
     {
         foreach ([['width' => 900000], ['height' => 0], ['download' => 1, 'download_factor' => 100], ['output' => 'docx', 'download_factor' => 100], ['crop' => 1, 'bbox_rubberband' => '0,0,100000,100000']] as $changes) {
