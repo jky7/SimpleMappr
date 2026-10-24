@@ -69,6 +69,7 @@ class Request
         $attr->origin_map       = null;
         $attr->bbox_map         = '-180,-90,180,90';
         $attr->bbox_rubberband  = [];
+        $attr->view_rect        = '';
         $attr->pan              = false;
         $attr->layers           = [];
         $attr->graticules       = false;
@@ -122,6 +123,7 @@ class Request
         $attr->origin_map       = Utility::loadParam('origin_map', $attr->origin);
         $attr->bbox_map         = Utility::loadParam('bbox_map', '-180,-90,180,90');
         $attr->bbox_rubberband  = Utility::loadParam('bbox_rubberband', []);
+        $attr->view_rect        = Utility::loadParam('view_rect', '');
         $attr->pan              = Utility::loadParam('pan', false);
         $attr->layers           = Utility::loadParam('layers', []);
         $attr->graticules       = is_array($attr->layers) && array_key_exists('grid', $attr->layers);
@@ -215,6 +217,23 @@ class Request
             }
             if ($document->crop && (abs($selection[0] - $selection[2]) < 2 || abs($selection[1] - $selection[3]) < 2)) {
                 throw new \InvalidArgumentException('The crop must be at least two pixels wide and high.');
+            }
+        }
+        if (($document->view_rect ?? '') !== '') {
+            // "Show this rectangle of the previous view" from wheel zoom and drag: it may extend past the canvas when zooming out.
+            $view = is_string($document->view_rect) ? explode(',', $document->view_rect) : [];
+            if (count($view) !== 4 || count(array_filter($view, static fn($value) => is_numeric($value) && is_finite((float)$value))) !== 4) {
+                throw new \InvalidArgumentException('Invalid map view.');
+            }
+            [$x0, $y0, $x1, $y1] = array_map('floatval', $view);
+            $w = $x1 - $x0;
+            $h = $y1 - $y0;
+            if ($w <= 0 || $h <= 0 || $w < $document->width / 64 || $h < $document->height / 64 || $w > $document->width * 64 || $h > $document->height * 64
+                || max(abs($x0), abs($x1)) > $document->width * 128 || max(abs($y0), abs($y1)) > $document->height * 128) {
+                throw new \InvalidArgumentException('The map view must zoom by at most 64 times.');
+            }
+            if ($document->pan || $document->bbox_rubberband) {
+                throw new \InvalidArgumentException('A map view cannot be combined with a pan or a selection.');
             }
         }
         $bounds = is_string($document->bbox_map) ? explode(',', $document->bbox_map) : [];

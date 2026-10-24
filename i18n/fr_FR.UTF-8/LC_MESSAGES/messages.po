@@ -1551,3 +1551,16 @@ msgstr "Consulté le %date%."
 
 msgid "This version is based on the original application:"
 msgstr "Cette version est fondée sur l'application originale :"
+
+#: views/help.html
+msgid "scroll wheel"
+msgstr "molette de la souris"
+
+msgid "Zoom in or out around the pointer; the view updates when you stop scrolling"
+msgstr "Zoomer ou dézoomer autour du pointeur ; la vue se met à jour quand vous arrêtez de faire défiler"
+
+msgid "drag the map"
+msgstr "faire glisser la carte"
+
+msgid "Pan the map; the view updates when you let go"
+msgstr "Déplacer la carte ; la vue se met à jour quand vous relâchez"

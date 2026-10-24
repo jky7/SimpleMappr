@@ -138,6 +138,41 @@ final class ApplicationHttpTest extends TestCase
         }
     }
 
+    public function testViewRectZoomsAroundTheChosenPointInBothDirectionsAndRejectsBadViews(): void
+    {
+        $render = function (string $view): array {
+            // A 2:1 box on the 2:1 canvas, so the reported box is the visible view (no sideways padding).
+            [$status, , $body] = $this->request('/application.json', array_replace($this->document(), ['coords' => [], 'bbox_map' => '-100,30,-60,50', 'view_rect' => $view]));
+            self::assertSame(200, $status, $view.' '.$body);
+            return array_map('floatval', explode(',', json_decode($body, true, 512, JSON_THROW_ON_ERROR)['rendered_bbox']));
+        };
+        $still = $render('');
+        $width = $still[2] - $still[0];
+        $height = $still[3] - $still[1];
+        $centre = fn (array $b) => [($b[0] + $b[2]) / 2, ($b[1] + $b[3]) / 2];
+        $in = $render('150,75,450,225');
+        self::assertEqualsWithDelta($width / 2, $in[2] - $in[0], 0.3, '2x in halves the width');
+        self::assertEqualsWithDelta($centre($still)[0], $centre($in)[0], 0.3, 'around the centre the centre stays');
+        $out = $render('-300,-150,900,450');
+        self::assertEqualsWithDelta($width * 2, $out[2] - $out[0], 0.6, '2x out doubles the width');
+        self::assertEqualsWithDelta($centre($still)[1], $centre($out)[1], 0.6);
+        $corner = $render('0,0,300,150');
+        self::assertEqualsWithDelta($still[0], $corner[0], 0.3, 'zooming in at the top-left corner keeps its longitude');
+        self::assertEqualsWithDelta($still[3], $corner[3], 0.3, 'and its latitude');
+        $outCorner = $render('0,0,1200,600');
+        self::assertEqualsWithDelta($still[0], $outCorner[0], 0.6, 'zooming out at the corner keeps it too');
+        self::assertEqualsWithDelta($still[3], $outCorner[3], 0.6);
+        foreach (['1,2,3', 'x,0,10,10', '300,150,0,0', '0,0,5,2', '-100000,0,100000,300', '0,0,600,300,1'] as $bad) {
+            [$status, , $body] = $this->request('/application.json', array_replace($this->document(), ['view_rect' => $bad]));
+            self::assertSame(400, $status, $bad);
+            self::assertNotEmpty(json_decode($body, true, 512, JSON_THROW_ON_ERROR)['error']);
+        }
+        foreach (['pan' => '5,0', 'bbox_rubberband' => '10,10,10,10'] as $field => $value) {
+            [$status] = $this->request('/application.json', array_replace($this->document(), ['view_rect' => '150,75,450,225', $field => $value]));
+            self::assertSame(400, $status, 'view_rect with '.$field);
+        }
+    }
+
     public function testSiteTitleLinksToTheEditorRootOnTheEditorAndErrorPages(): void
     {
         foreach (['/', '/no-such-page'] as $path) {

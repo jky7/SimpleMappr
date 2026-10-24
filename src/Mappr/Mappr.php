@@ -1128,6 +1128,18 @@ abstract class Mappr
      */
     private function _setZoom()
     {
+        // A wheel zoom or a combined drag and zoom: show this pixel rectangle of the previous view.
+        if (!empty($this->request->view_rect) && !$this->_isResize()) {
+            [$x0, $y0, $x1, $y1] = array_map('floatval', explode(',', $this->request->view_rect));
+            // zoomRectangle requires inverted screen Y bounds, which the rectObj constructor rejects.
+            $view = new \rectObj();
+            $view->minx = $x0;
+            $view->miny = $y1;
+            $view->maxx = $x1;
+            $view->maxy = $y0;
+            $this->map_obj->zoomrectangle($view, $this->map_obj->width, $this->map_obj->height, $this->map_obj->extent, null);
+            return;
+        }
         //Zoom in
         if (isset($this->request->bbox_rubberband) && $this->request->bbox_rubberband && !$this->_isResize()) {
             $bbox_rubberband = explode(',', $this->request->bbox_rubberband);
