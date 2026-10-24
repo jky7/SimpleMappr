@@ -15,7 +15,7 @@ for(const name of ['chromium','firefox']){
  let tracing=false;
  const receipt={browser:name,status:'RUNNING',outbound};
  try{
-  await page.goto(base+'/login');
+  await page.goto(base+(process.env.SIMPLEMAPPR_OWNER_LOGIN_PATH||'/owner'));
   await page.locator('#username').fill(credentials.username);await page.locator('#password').fill(credentials.password);
   await page.getByRole('button',{name:'Sign In',exact:true}).click();await page.waitForFunction(()=>window.SimpleMappr&&window.jQuery);
   await context.tracing.start({screenshots:true,snapshots:true,sources:false});tracing=true;

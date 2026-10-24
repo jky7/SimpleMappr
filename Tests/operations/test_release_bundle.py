@@ -204,6 +204,18 @@ class BundleBoundaryTest(unittest.TestCase):
         _, active = self.restore_fixture({'SIMPLEMAPPR_DETAILED_RELIEF': '1'})
         self.assertEqual(active['SIMPLEMAPPR_DETAILED_RELIEF'], '1')
 
+    def test_owner_login_path_is_validated_preserved_and_checked_against_runtime(self):
+        values = bundle.parse_env(bundle.replace_values(ENV, {'SIMPLEMAPPR_OWNER_LOGIN_PATH': '/owner-4f9c2a1b'}))
+        self.assertEqual(values['SIMPLEMAPPR_OWNER_LOGIN_PATH'], '/owner-4f9c2a1b')
+        self.inspect_source(values, values)
+        for bad in ('/Owner', '/ab', '/two/segments', 'owner', '/owner.php'):
+            with self.assertRaises(bundle.OperationError, msg=bad):
+                bundle.parse_env(bundle.replace_values(ENV, {'SIMPLEMAPPR_OWNER_LOGIN_PATH': bad}))
+        with self.assertRaisesRegex(bundle.OperationError, 'owner login path does not match'):
+            self.inspect_source(values, bundle.parse_env(ENV))
+        _, active = self.restore_fixture({'SIMPLEMAPPR_OWNER_LOGIN_PATH': '/owner-4f9c2a1b'})
+        self.assertEqual(active['SIMPLEMAPPR_OWNER_LOGIN_PATH'], '/owner-4f9c2a1b')
+
     def test_backup_requires_running_social_credentials_and_canonical_url(self):
         supplied = bundle.parse_env(bundle.replace_values(ENV, SOCIAL))
         self.assertEqual(self.inspect_source(supplied, supplied)[0], 'sha256:' + 'a' * 64)

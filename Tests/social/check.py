@@ -294,7 +294,7 @@ class Fixture:
         return flow
 
     def local_login(self, browser):
-        browser.page('/login')
+        browser.page('/owner')
         status, headers, _ = browser.request('/session', 'POST', fields={'_csrf': browser.csrf, 'username': 'fixture-owner', 'password': self.owner_password})
         require(status == 303 and headers['Location'] == '/', 'Local owner login')
         browser.page('/')
@@ -539,7 +539,7 @@ def prefix_checks(fixture):
     try:
         fixture.start_app({'SIMPLEMAPPR_URL': base})
         browser = Browser(base)
-        page, _ = browser.page()
+        page, _ = browser.page('/owner')
         require('action="/simplemappr/session"' in page, 'Prefixed local owner form')
         status, headers, _ = browser.request('/session', 'POST', fields={
             '_csrf': browser.csrf, 'username': 'fixture-owner', 'password': fixture.owner_password})

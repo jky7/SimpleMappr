@@ -277,6 +277,13 @@ class Router
             unset($_SESSION['social_login_error']);
             return $this->_twig()->render('login.html', ['login_error'=>$error]);
         });
+        // The local owner's recovery login (OwnerLogin::path()): unlinked, noindex, and a plain 404 unless an owner is configured.
+        $router->get(OwnerLogin::path(), function () {
+            if (!Session::localConfigured()) { return $this->_renderError(404); }
+            if (Session::currentUser()) { Session::redirect(SiteUrl::path().'/'.Session::makeLocaleParam($_SESSION['locale'] ?? 'en_US')); }
+            return $this->_ownerLogin(null);
+        });
+
         $router->post('/auth/{provider:(?:google|github)}/start', function ($provider) {
             $this->_privateHeaders();
             header('Referrer-Policy: no-referrer');
@@ -357,7 +364,7 @@ class Router
         $router->post('/session', function () {
             if (Session::login($_POST)) { Session::redirect(SiteUrl::path().'/'.Session::makeLocaleParam($_SESSION['locale'] ?? 'en_US')); }
             http_response_code(401);
-            return $this->_twig()->render('login.html', ['login_enabled'=>Session::configured(), 'login_error'=>'The username or password was not accepted.']);
+            return $this->_ownerLogin('The username or password was not accepted.');
         });
 
         $router->group(['before' => 'check_role_user'], function ($router) {
@@ -474,6 +481,13 @@ class Router
             Header::setHeader('json'); $this->_privateHeaders();
             echo json_encode(['error' => $e->getCode() === 503 ? $e->getMessage() : 'Map rendering failed. Check the map settings and installed data.']);
         } finally { Session::closeSession(); }
+    }
+
+    private function _ownerLogin($error): string
+    {
+        Header::setHeader('html');
+        $this->_privateHeaders();
+        return $this->_twig()->render('owner.html', ['login_error'=>$error]);
     }
 
     private function _privateHeaders(): void

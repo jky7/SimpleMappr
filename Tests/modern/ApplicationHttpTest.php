@@ -84,6 +84,39 @@ final class ApplicationHttpTest extends TestCase
         }
     }
 
+    public function testOwnerLoginHasItsOwnUnlistedNoindexPageAndLoginOffersOnlyProviders(): void
+    {
+        $base = rtrim(getenv('SIMPLEMAPPR_TEST_URL') ?: 'http://127.0.0.1', '/');
+        $ownerPath = getenv('SIMPLEMAPPR_OWNER_LOGIN_PATH') ?: '/owner';
+        [$status, , $login] = $this->request('/login');
+        self::assertSame(200, $status);
+        self::assertStringNotContainsString('name="username"', $login);
+        self::assertStringNotContainsString('name="password"', $login);
+        foreach (['/login', '/'] as $path) {
+            [, , $page] = $this->request($path);
+            self::assertStringNotContainsString($ownerPath.'"', $page, $path.' must not link to the owner login');
+        }
+        [$status] = $this->request('/admin');
+        self::assertSame(404, $status, 'the old /admin path is gone');
+        $curl = curl_init($base.$ownerPath);
+        curl_setopt_array($curl, [CURLOPT_RETURNTRANSFER => true, CURLOPT_HEADER => true, CURLOPT_TIMEOUT => 20]);
+        $raw = curl_exec($curl);
+        $code = curl_getinfo($curl, CURLINFO_RESPONSE_CODE);
+        $body = substr($raw, curl_getinfo($curl, CURLINFO_HEADER_SIZE));
+        if ($code === 404) {
+            self::assertStringNotContainsString('name="password"', $body, 'without a configured owner the owner path is an ordinary 404');
+            self::markTestSkipped('No local owner is configured in this deployment.');
+        }
+        self::assertSame(200, $code);
+        self::assertStringContainsString('name="username"', $body);
+        self::assertStringContainsString('name="password"', $body);
+        self::assertStringContainsString('action="/session"', $body);
+        self::assertStringContainsString('<meta name="robots" content="noindex, nofollow, noarchive">', $body);
+        self::assertMatchesRegularExpression('/^X-Robots-Tag: noindex, nofollow\r$/mi', $raw);
+        self::assertMatchesRegularExpression('/^Cache-Control: .*no-store/mi', $raw);
+        self::assertMatchesRegularExpression('#<link rel="stylesheet" href="/public/build/pages-css\.[0-9a-f]{12}\.css">#', $body);
+    }
+
     public function testSiteTitleLinksToTheEditorRootOnTheEditorAndErrorPages(): void
     {
         foreach (['/', '/no-such-page'] as $path) {

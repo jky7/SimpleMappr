@@ -6,6 +6,7 @@ require ROOT.'/src/SiteUrl.php';
 require ROOT.'/src/DetailedRelief.php';
 require ROOT.'/src/HttpException.php';
 require ROOT.'/src/SocialLoginConfig.php';
+require ROOT.'/src/OwnerLogin.php';
 try {
     if (!in_array(ENVIRONMENT,['development','production','testing'],true)) { throw new RuntimeException('Unknown SIMPLEMAPPR_ENV.'); }
     SimpleMappr\DetailedRelief::enabled();
@@ -13,5 +14,6 @@ try {
     if (!is_file(SimpleMappr\AssetProfiles::configuration())) { throw new RuntimeException('Selected dataset configuration is missing.'); }
     SimpleMappr\SiteUrl::base(['HTTP_HOST'=>'localhost']);
     SimpleMappr\SocialLoginConfig::validate();
+    SimpleMappr\OwnerLogin::path();
     echo "Deployment configuration verified\n";
 } catch(Throwable $error){fwrite(STDERR,$error->getMessage()."\n");exit(1);}
