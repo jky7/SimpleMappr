@@ -31,6 +31,8 @@ The Dockerfile pins the Debian base digest and package snapshot. Keep `/usr/loca
 
 Use a normal `022` file-creation mask for Git checkout and Docker builds. Docker preserves source permissions; a checkout created under `077` can leave PHP files unreadable to Apache even while native health passes. Keep deployment credentials mode `0600` separately. Before replacing the running app, verify application startup as `www-data`, then check the actual HTTP login page after replacement.
 
+Apache worker limits live in `docker/apache-tuning.conf` (baked into the image); container memory limits and the InnoDB buffer pool are `compose.yaml` defaults overridable from `.env`. Do not raise `MaxRequestWorkers` without checking per-worker memory on the full-map profile. See docs/private-deployment.md.
+
 Production Twig templates are cached in the persistent `public/tmp` volume with automatic reload disabled. Retire only verified compiled Twig cache directories when deploying changed templates; preserve preview images and other temporary files. A fresh-container test does not cover upgrades with an existing template cache. Confirm the new controls appear on the hosted page after deployment.
 
 ## Application port

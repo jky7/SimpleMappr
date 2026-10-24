@@ -9,6 +9,8 @@ services:
       MARIADB_ROOT_PASSWORD: ${SIMPLEMAPPR_DB_ROOT_PASSWORD:?Run scripts/configure-local-owner first}
     volumes:
       - database:/var/lib/mysql
+    command: ["--innodb-buffer-pool-size=${SIMPLEMAPPR_DB_BUFFER_POOL:-268435456}"]
+    mem_limit: ${SIMPLEMAPPR_DB_MEMORY:-768m}
     healthcheck:
       test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
       interval: 5s
@@ -60,6 +62,7 @@ services:
       database-init:
         condition: service_completed_successfully
     environment: *application-environment
+    mem_limit: ${SIMPLEMAPPR_APP_MEMORY:-2500m}
     ports:
       - "127.0.0.1:${SIMPLEMAPPR_PORT:-8080}:80"
     volumes:
