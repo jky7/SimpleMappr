@@ -39,7 +39,7 @@ Inter is the only text font. The editor bundles the pinned `@fontsource-variable
 
 Every standalone HTML page extends `views/base.html`, which loads the small `pages-css` bundle (`public/stylesheets/raw/pages.css`) and the simple header by default; only the editor overrides both. Keep layout in that stylesheet, never inline, and give new pages the `.page`/`.card` structure (a template test enforces both). The About, API, Feedback and Help tab fragments are XHR-only: a direct visit gets a 303 to `/?locale=…#tabs=NAME` and the hash restore accepts tab names because numeric positions shift with the signed-in role.
 
-Deploy with `scripts/deploy` (on the host) or `scripts/deploy-remote` (from a workstation) rather than editing `SIMPLEMAPPR_IMAGE` by hand; `Tests/operations/test_deploy.py` covers the swap order, template retirement and rollback with a fake docker.
+Deploy with `scripts/deploy` on the host rather than editing `SIMPLEMAPPR_IMAGE` by hand; `Tests/operations/test_deploy.py` covers the swap order, template retirement and rollback with a fake docker.
 
 Production Twig templates are cached in the persistent `public/tmp` volume with automatic reload disabled. Retire only verified compiled Twig cache directories when deploying changed templates; preserve preview images and other temporary files. A fresh-container test does not cover upgrades with an existing template cache. Confirm the new controls appear on the hosted page after deployment.
 

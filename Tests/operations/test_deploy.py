@@ -177,34 +177,5 @@ class DeployTest(unittest.TestCase):
         self.assertIn('Deployed', result.stdout)
 
 
-class RemoteWrapperTest(unittest.TestCase):
-    def run_wrapper(self, *args, **env):
-        tmp = Path(tempfile.mkdtemp())
-        self.addCleanup(shutil.rmtree, tmp, True)
-        ssh = tmp / 'ssh'
-        ssh.write_text('#!/bin/sh\nprintf "%s\\n" "$@" > "$FAKE_SSH_LOG"\n')
-        ssh.chmod(0o755)
-        log = tmp / 'ssh.log'
-        environment = {**os.environ, 'PATH': '%s:%s' % (tmp, os.environ['PATH']), 'FAKE_SSH_LOG': str(log), **env}
-        for name in ('SIMPLEMAPPR_DEPLOY_HOST', 'SIMPLEMAPPR_DEPLOY_DIR', 'SIMPLEMAPPR_DEPLOY_BRANCH'):
-            if name not in env:
-                environment.pop(name, None)
-        subprocess.run([str(ROOT / 'scripts/deploy-remote'), *args], env=environment, check=True)
-        return log.read_text().splitlines()
-
-    def test_pulls_on_the_server_then_runs_the_freshly_pulled_script(self):
-        host, command = self.run_wrapper('--force')
-        self.assertEqual(host, 'jky.io')
-        self.assertTrue(command.startswith('cd simplemappr && git fetch -q origin master'))
-        self.assertIn('git merge -q --ff-only origin/master', command)
-        self.assertTrue(command.endswith('exec scripts/deploy --no-pull --branch master --force'))
-
-    def test_host_directory_and_branch_are_configurable_and_arguments_stay_quoted(self):
-        host, command = self.run_wrapper('--dry-run', SIMPLEMAPPR_DEPLOY_HOST='other', SIMPLEMAPPR_DEPLOY_DIR='my maps', SIMPLEMAPPR_DEPLOY_BRANCH='release')
-        self.assertEqual(host, 'other')
-        self.assertTrue(command.startswith('cd my\\ maps && git fetch -q origin release'))
-        self.assertTrue(command.endswith('--branch release --dry-run'))
-
-
 if __name__ == '__main__':
     unittest.main()
