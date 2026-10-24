@@ -1,0 +1,44 @@
+name: Publish release
+# Run from the Actions tab on a master commit whose checks passed. It sets the version and date in CITATION.cff
+# and the About citation, commits that to master, tags it and publishes the GitHub release, which Zenodo archives.
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: Version to release, for example 4.1
+        required: true
+permissions:
+  contents: read
+concurrency:
+  group: publish-release
+  cancel-in-progress: false
+jobs:
+  publish:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      contents: write
+    env:
+      VERSION: ${{ inputs.version }}
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: master
+          fetch-depth: 0
+      - name: Require an unused version and passing checks on master
+        run: |
+          [[ $VERSION =~ ^[0-9]+\.[0-9]+(\.[0-9]+)?$ ]] || { echo "::error::Version must look like 4.1 or 4.1.2"; exit 1; }
+          if git rev-parse -q --verify "refs/tags/v$VERSION" >/dev/null; then echo "::error::v$VERSION already exists"; exit 1; fi
+          sha=$(git rev-parse HEAD)
+          result=$(gh run list --workflow release.yml --commit "$sha" --event push --limit 1 --json status,conclusion -q '.[0] | "\(.status) \(.conclusion)"')
+          [ "$result" = "completed success" ] || { echo "::error::Private release checks on master ${sha:0:7} are '${result:-missing}', not passed"; exit 1; }
+      - name: Set the version and date
+        run: scripts/set-release-version "$VERSION" "$(date -u +%F)"
+      - name: Commit, tag and publish the release
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git commit -am "Release $VERSION"
+          git push origin HEAD:master
+          gh release create "v$VERSION" --target "$(git rev-parse HEAD)" --title "SimpleMappr $VERSION" --generate-notes

@@ -60,7 +60,7 @@
 {% set months_fr = ['janvier', 'février', 'mars', 'avril', 'mai', 'juin', 'juillet', 'août', 'septembre', 'octobre', 'novembre', 'décembre'] %}
 {% set accessed = locale == 'fr_FR' ? ("now"|date("j")) ~ ' ' ~ months_fr["now"|date("n") - 1] ~ ' ' ~ ("now"|date("Y")) : "now"|date("F j, Y") %}
 <p>{{ "If you publish a map made here, please cite:"|trans }}</p>
-<p class="citation">Kass Youssef, Joseph. 2026. SimpleMappr (version 4.0) [{{ "Computer software"|trans }}], {{ "based on SimpleMappr by David P. Shorthouse (2010)"|trans }}. {{ site_url }}. https://doi.org/10.5281/zenodo.23626207. {{ "Accessed %date%."|trans({"%date%": accessed}) }}</p>
+<p class="citation">Kass Youssef, Joseph. 2026. SimpleMappr (version 4.0) [{{ "Computer software"|trans }}], {{ "based on SimpleMappr by David P. Shorthouse (2010)"|trans }}. {{ site_url }}. https://doi.org/10.5281/zenodo.23626206. {{ "Accessed %date%."|trans({"%date%": accessed}) }}</p>
 <p>{{ "The original application:"|trans }}</p>
 <p class="citation">Shorthouse, David P. 2010. SimpleMappr, an online tool to produce publication-quality point maps. https://www.simplemappr.net.</p>
 
