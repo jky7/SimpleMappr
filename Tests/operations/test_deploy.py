@@ -199,6 +199,11 @@ class RemoteWrapperTest(unittest.TestCase):
         self.assertIn('git merge -q --ff-only origin/master', command)
         self.assertTrue(command.endswith('exec scripts/deploy --no-pull --branch master --force'))
 
+    def test_a_bare_invocation_passes_no_empty_argument(self):
+        _, command = self.run_wrapper()
+        self.assertTrue(command.endswith('exec scripts/deploy --no-pull --branch master'), command)
+        self.assertNotIn("''", command)
+
     def test_host_directory_and_branch_are_configurable_and_arguments_stay_quoted(self):
         host, command = self.run_wrapper('--dry-run', SIMPLEMAPPR_DEPLOY_HOST='other', SIMPLEMAPPR_DEPLOY_DIR='my maps', SIMPLEMAPPR_DEPLOY_BRANCH='release')
         self.assertEqual(host, 'other')
