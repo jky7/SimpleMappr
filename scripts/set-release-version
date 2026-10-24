@@ -1,0 +1,26 @@
+#!/usr/bin/env bash
+# Set the released version and date in CITATION.cff and the About page citation.
+#
+#   scripts/set-release-version VERSION DATE      e.g. scripts/set-release-version 4.1 2026-11-02
+#
+# The About citation names the version and its year; Zenodo's all-versions DOI stays the same across releases.
+set -euo pipefail
+cd "$(dirname "$(realpath "${BASH_SOURCE[0]}")")/.."
+
+die() { echo "set-release-version: $*" >&2; exit 1; }
+[ $# -eq 2 ] || die "usage: scripts/set-release-version VERSION YYYY-MM-DD"
+version=$1 date=$2
+[[ $version =~ ^[0-9]+\.[0-9]+(\.[0-9]+)?$ ]] || die "version must look like 4.1 or 4.1.2"
+[[ $date =~ ^[0-9]{4}-[0-9]{2}-[0-9]{2}$ ]] || die "date must be YYYY-MM-DD"
+year=${date:0:4}
+
+# Each pattern must match exactly one line, so a reworded file fails loudly instead of releasing stale text.
+replace() { # file, line pattern (ERE), sed expression
+    [ "$(grep -cE "$2" "$1")" = 1 ] || die "expected exactly one line matching '$2' in $1"
+    sed -i -E "$3" "$1"
+}
+replace CITATION.cff '^version: ' "s/^version: .*/version: \"$version\"/"
+replace CITATION.cff '^date-released: ' "s/^date-released: .*/date-released: $date/"
+replace views/about.html 'Kass Youssef, Joseph\. [0-9]{4}\. SimpleMappr \(version [0-9.]+\)' \
+    "s/(Kass Youssef, Joseph\.) [0-9]{4}\. SimpleMappr \(version [0-9.]+\)/\1 $year. SimpleMappr (version $version)/"
+echo "Set version $version, released $date"

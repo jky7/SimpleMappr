@@ -4,6 +4,7 @@ type: software
 title: SimpleMappr
 version: "4.0"
 date-released: 2026-10-24
+doi: 10.5281/zenodo.23626206
 abstract: "SimpleMappr makes publication-quality point maps from pasted or imported coordinates, with regions, drawings, map layers, private saved maps and downloads. Version 4.0 is an updated, independently maintained version of David P. Shorthouse's original SimpleMappr."
 authors:
   - family-names: Kass Youssef
