@@ -50,7 +50,7 @@ namespace SimpleMappr\Constants;
 final class AcceptedProjections
 {
     /**
-     * Acceptable projections in PROJ format, with over switch
+     * Acceptable projections in PROJ format
      *
      * @var array $projections
      */
@@ -61,26 +61,26 @@ final class AcceptedProjections
         'esri:102009' => [
             'extent' => [-170, 5, -40, 85],
             'name' => 'North America Lambert',
-            'proj' => '+proj=lcc +lat_1=20 +lat_2=60 +lat_0=40 +lon_0=-96 +x_0=0 +y_0=0 +ellps=GRS80 +datum=NAD83 +units=m +over +no_defs'],
+            'proj' => '+proj=lcc +lat_1=20 +lat_2=60 +lat_0=40 +lon_0=-96 +x_0=0 +y_0=0 +ellps=GRS80 +datum=NAD83 +units=m +no_defs'],
         'esri:102015' => [
             'extent' => [-90, -60, -30, 20],
             'name' => 'South America Lambert',
-            'proj' => '+proj=lcc +lat_1=-5 +lat_2=-42 +lat_0=-32 +lon_0=-60 +x_0=0 +y_0=0 +ellps=aust_SA +units=m +over +no_defs'],
+            'proj' => '+proj=lcc +lat_1=-5 +lat_2=-42 +lat_0=-32 +lon_0=-60 +x_0=0 +y_0=0 +ellps=aust_SA +units=m +no_defs'],
         'esri:102014' => [
             'extent' => [-30, 25, 50, 75],
             'name' => 'Europe Lambert',
-            'proj' => '+proj=lcc +lat_1=43 +lat_2=62 +lat_0=30 +lon_0=10 +x_0=0 +y_0=0 +ellps=intl +units=m +over +no_defs'],
+            'proj' => '+proj=lcc +lat_1=43 +lat_2=62 +lat_0=30 +lon_0=10 +x_0=0 +y_0=0 +ellps=intl +units=m +no_defs'],
         'esri:102012' => [
             'extent' => [25, -10, 180, 80],
             'name' => 'Asia Lambert',
-            'proj' => '+proj=lcc +lat_1=30 +lat_2=62 +lat_0=0 +lon_0=105 +x_0=0 +y_0=0 +ellps=WGS84 +datum=WGS84 +units=m +over +no_defs'],
+            'proj' => '+proj=lcc +lat_1=30 +lat_2=62 +lat_0=0 +lon_0=105 +x_0=0 +y_0=0 +ellps=WGS84 +datum=WGS84 +units=m +no_defs'],
         'esri:102024' => [
             'extent' => [-25, -40, 60, 40],
             'name' => 'Africa Lambert',
-            'proj' => '+proj=lcc +lat_1=20 +lat_2=-23 +lat_0=0 +lon_0=25 +x_0=0 +y_0=0 +ellps=WGS84 +datum=WGS84 +units=m +over +no_defs'],
+            'proj' => '+proj=lcc +lat_1=20 +lat_2=-23 +lat_0=0 +lon_0=25 +x_0=0 +y_0=0 +ellps=WGS84 +datum=WGS84 +units=m +no_defs'],
         'epsg:3112'   => [
             'name' => 'Australia Lambert',
-            'proj' => '+proj=lcc +lat_1=-18 +lat_2=-36 +lat_0=0 +lon_0=134 +x_0=0 +y_0=0 +ellps=GRS80 +towgs84=0,0,0,0,0,0,0 +units=m +over +no_defs'],
+            'proj' => '+proj=lcc +lat_1=-18 +lat_2=-36 +lat_0=0 +lon_0=134 +x_0=0 +y_0=0 +ellps=GRS80 +towgs84=0,0,0,0,0,0,0 +units=m +no_defs'],
         'epsg:102017' => [
             'extent' => [-180, 45, 180, 89.9],
             'name' => 'North Pole Azimuthal',

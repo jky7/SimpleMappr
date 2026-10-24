@@ -106,6 +106,7 @@ abstract class Mappr
     protected $map_obj;
 
     private ?\SimpleMappr\DetailedRelief $detailedRelief = null;
+    private ?\SimpleMappr\WrappedRasterSource $wrappedRasterSource = null;
     protected bool $detailedReliefUsed = false;
     protected ?int $detailedReliefZoom = null;
 
@@ -1441,6 +1442,18 @@ abstract class Mappr
         }
     }
 
+    protected function wrapRasterLayers(array $layers,string $projection): void
+    {
+        if (!preg_match('/(?:^|\s)\+proj=lcc(?:\s|$)/',$projection) || !preg_match('/(?:^|\s)\+lon_0=([-+0-9.eE]+)(?:\s|$)/',$projection,$origin)) { return; }
+        foreach ($layers as $name) {
+            $layer=$this->map_obj->getLayerByName($name);
+            if (!$layer || $layer->type!==MS_LAYER_RASTER) { continue; }
+            $this->wrappedRasterSource ??= new \SimpleMappr\WrappedRasterSource();
+            $source=$this->wrappedRasterSource->prepare($layer->data,(float)$origin[1]);
+            if ($source!==null) { $layer->data=$source['path'];$layer->setProjection($source['projection']); }
+        }
+    }
+
     protected function addDetailedRelief(array $layers,?array $bounds=null,?string $projection=null,?int $width=null,?int $height=null): void
     {
         if (!in_array('reliefgrey',$layers,true) || $this->request->output==='svg' || !\SimpleMappr\DetailedRelief::enabled()) { return; }
@@ -1581,6 +1594,7 @@ abstract class Mappr
     {
         if (isset($this->request->projection)) {
             $this->_reproject($this->request->projection);
+            $this->wrapRasterLayers(array_keys($this->request->layers),$this->map_obj->getProjection());
             $this->addDetailedRelief(array_keys($this->request->layers));
             $this->addDataCredits(array_keys($this->request->layers));
             $this->_addLegendScalebar();
