@@ -131,7 +131,7 @@ button[disabled], button[disabled]:hover, button[disabled]:active{color:#666 !im
 #mapImage{position:relative;}
 #mapOutput{height:450px;}
 #mapOutputImage{background-color:#fff;cursor:grab;}
-#mapOutput.mapper-panning{overflow:hidden;background-color:#fff;}
+#mapOutput.mapper-panned{overflow:hidden;background-color:#fff;}
 #mapOutput.mapper-panning #mapOutputImage{cursor:grabbing;user-select:none;}
 #mapControls{position:absolute;width:60px;height:60px;background-color:transparent;z-index:4;top:5px;left:5px;}
 #mapControls .controls{position:absolute;}
