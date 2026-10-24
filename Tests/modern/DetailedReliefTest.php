@@ -173,6 +173,29 @@ final class DetailedReliefTest extends TestCase
         }
     }
 
+    public function testLandsatMosaicSkipsBlankTilesAndHidesNoDataPixels(): void
+    {
+        $directory=sys_get_temp_dir().'/relief-landsat-'.bin2hex(random_bytes(8));mkdir($directory);
+        try {
+            $plan=['zoom'=>1,'x0'=>0,'x1'=>1,'y0'=>0,'y1'=>0];
+            self::assertSame(['0,0'=>'landsat-1-0-0.jpeg','1,0'=>'landsat-1-1-0.jpeg'],DetailedRelief::tileNames($plan,'landsat'));
+            $image=imagecreatetruecolor(256,256);imagefilledrectangle($image,0,0,127,255,imagecolorallocate($image,90,120,60));
+            imagejpeg($image,$directory.'/landsat-1-0-0.jpeg',95);imagedestroy($image);
+            $image=imagecreatetruecolor(256,256);imagejpeg($image,$directory.'/landsat-1-1-0.jpeg');imagedestroy($image);
+            $vrt=DetailedRelief::mosaic($plan,$directory,hrtime(true)/1e9+5,'landsat');
+            self::assertStringNotContainsString('landsat-1-1-0.jpeg',$vrt);
+            file_put_contents($directory.'/mosaic.vrt',$vrt);
+            $process=proc_open(['gdal_translate','-q','-of','PNG',$directory.'/mosaic.vrt',$directory.'/mosaic.png'],[['file','/dev/null','r'],['file','/dev/null','a'],['file','/dev/null','a']],$pipes);
+            self::assertIsResource($process);self::assertSame(0,proc_close($process));
+            $image=imagecreatefrompng($directory.'/mosaic.png');
+            self::assertSame(0,imagecolorsforindex($image,imagecolorat($image,40,40))['alpha']);
+            self::assertSame(127,imagecolorsforindex($image,imagecolorat($image,220,40))['alpha'],'Black no-data pixels inside a tile are transparent.');
+            self::assertSame(127,imagecolorsforindex($image,imagecolorat($image,300,40))['alpha']);imagedestroy($image);
+            (new ReliefTileCache())->publish($directory,'landsat-2-0-0.jpeg',$this->jpeg(),[]);
+            self::assertFileExists($directory.'/landsat-2-0-0.jpeg');
+        } finally { foreach (glob($directory.'/*') as $path) { unlink($path); }rmdir($directory); }
+    }
+
     /** A 256x256 palette PNG in the published key's colour order, blank (index 0) until $draw paints it. */
     private function indexPng(?callable $draw=null,?array $palette=null): string
     {

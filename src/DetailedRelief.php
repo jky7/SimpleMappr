@@ -9,8 +9,11 @@ final class DetailedRelief
     public const MAX_NORTHING = 17821911.959436886;
     public const SOURCE = 'https://gibs.earthdata.nasa.gov/wmts/epsg3857/best/ASTER_GDEM_Greyscale_Shaded_Relief/default/GoogleMapsCompatible_Level12';
     public const INDEX_SOURCE = 'https://gibs.earthdata.nasa.gov/wmts/epsg3857/best/ASTER_GDEM_Color_Index/default/GoogleMapsCompatible_Level12';
-    // Grey shaded relief tiles keep their original cache names; elevation index tiles are prefixed PNGs beside them.
-    public const SOURCES = ['grey'=>['url'=>self::SOURCE,'prefix'=>'','extension'=>'jpeg'],'index'=>['url'=>self::INDEX_SOURCE,'prefix'=>'index-','extension'=>'png']];
+    public const LANDSAT_SOURCE = 'https://gibs.earthdata.nasa.gov/wmts/epsg3857/best/Landsat_WELD_CorrectedReflectance_TrueColor_Global_Annual/default/2000-12-01/GoogleMapsCompatible_Level12';
+    // Grey shaded relief tiles keep their original cache names; the other sources are prefixed beside them.
+    public const SOURCES = ['grey'=>['url'=>self::SOURCE,'prefix'=>'','extension'=>'jpeg'],'index'=>['url'=>self::INDEX_SOURCE,'prefix'=>'index-','extension'=>'png'],'landsat'=>['url'=>self::LANDSAT_SOURCE,'prefix'=>'landsat-','extension'=>'jpeg']];
+    // Blue Marble's flat ocean colour, used for all water under the detailed imagery.
+    public const WATER = [10,10,51];
     // Elevation tints (metres => RGB) for the colour relief, close to Natural Earth's cross-blended hypsometric tints.
     public const TINTS = [[0,[166,196,152]],[300,[190,209,164]],[700,[214,216,178]],[1200,[226,214,184]],[1800,[218,198,170]],[2400,[205,190,176]],[3000,[226,222,220]],[4000,[246,246,246]]];
     private ?string $directory = null;
@@ -157,7 +160,7 @@ final class DetailedRelief
         } finally { flock($lock,LOCK_UN);fclose($lock); }
         $paths=[];
         foreach ($sources as $source) {
-            $vrt=$source==='index'?self::tintMosaic($plan,$this->directory,$deadline):self::mosaic($plan,$this->directory,$deadline);
+            $vrt=$source==='index'?self::tintMosaic($plan,$this->directory,$deadline):self::mosaic($plan,$this->directory,$deadline,$source);
             $paths[$source]=null;
             if ($vrt===null) { continue; }
             $path=$this->directory.'/'.$source.'.vrt';
@@ -167,12 +170,13 @@ final class DetailedRelief
         return $paths;
     }
 
-    public static function mosaic(array $plan,string $directory,float $deadline): ?string
+    /** RGBA mosaic of JPEG tiles. Grey relief is opaque; Landsat's black no-data pixels become transparent. */
+    public static function mosaic(array $plan,string $directory,float $deadline,string $source='grey'): ?string
     {
-        $tiles=[];
-        foreach (self::tileNames($plan) as $position=>$name) {
+        $tiles=[];$landsat=$source==='landsat';
+        foreach (self::tileNames($plan,$source) as $position=>$name) {
             if (hrtime(true)/1e9>=$deadline) { throw new \RuntimeException('Detailed relief timed out. Please retry.',503); }
-            if (!self::emptyTile($directory.'/'.$name)) { $tiles[$position]=$name; }
+            if (!self::emptyTile($directory.'/'.$name,$landsat?0:0x585858)) { $tiles[$position]=$name; }
         }
         if (!$tiles) { return null; }
         $columns=$plan['x1']-$plan['x0']+1;$rows=$plan['y1']-$plan['y0']+1;
@@ -183,20 +187,22 @@ final class DetailedRelief
             $xml.='<VRTRasterBand dataType="Byte" band="'.$band.'"><ColorInterp>'.['Red','Green','Blue','Alpha'][$band-1].'</ColorInterp>';
             foreach ($tiles as $position=>$name) {
                 [$x,$y]=array_map('intval',explode(',',$position));
-                $source=$band===4?'ComplexSource':'SimpleSource';
-                $xml.='<'.$source.'><SourceFilename relativeToVRT="1">'.$name.'</SourceFilename><SourceBand>'.min($band,3).'</SourceBand><SrcRect xOff="0" yOff="0" xSize="256" ySize="256"/><DstRect xOff="'.(($x-$plan['x0'])*256).'" yOff="'.(($y-$plan['y0'])*256).'" xSize="256" ySize="256"/>'.($band===4?'<ScaleOffset>255</ScaleOffset><ScaleRatio>0</ScaleRatio>':'').'</'.$source.'>';
+                $element=$band===4?'ComplexSource':'SimpleSource';
+                $alpha=$landsat?'<LUT>0:0,6:0,7:255,255:255</LUT>':'<ScaleOffset>255</ScaleOffset><ScaleRatio>0</ScaleRatio>';
+                $xml.='<'.$element.'><SourceFilename relativeToVRT="1">'.$name.'</SourceFilename><SourceBand>'.($band===4?($landsat?1:3):$band).'</SourceBand><SrcRect xOff="0" yOff="0" xSize="256" ySize="256"/><DstRect xOff="'.(($x-$plan['x0'])*256).'" yOff="'.(($y-$plan['y0'])*256).'" xSize="256" ySize="256"/>'.($band===4?$alpha:'').'</'.$element.'>';
             }
             $xml.='</VRTRasterBand>';
         }
         return $xml.'</VRTDataset>';
     }
 
-    public static function emptyTile(string $path): bool
+    /** A JPEG tile whose every pixel is the source's blank colour (grey relief's flat sea, Landsat's black). */
+    public static function emptyTile(string $path,int $blank=0x585858): bool
     {
         $image=@imagecreatefromjpeg($path);
         if (!$image) { throw new \RuntimeException('Detailed relief cache contains an invalid tile.',503); }
         try {
-            for ($y=0;$y<256;$y++) { for ($x=0;$x<256;$x++) { if ((imagecolorat($image,$x,$y)&0xffffff)!==0x585858) { return false; } } }
+            for ($y=0;$y<256;$y++) { for ($x=0;$x<256;$x++) { if ((imagecolorat($image,$x,$y)&0xffffff)!==$blank) { return false; } } }
             return true;
         } finally { imagedestroy($image); }
     }

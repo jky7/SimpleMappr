@@ -77,7 +77,7 @@ class ReliefTileCache
             while ($names || $active) {
                 if (hrtime(true)/1e9>=$deadline) { throw new \RuntimeException('Relief download timed out.'); }
                 while ($names && count($active)<4) {
-                    $name=array_shift($names);$source=DetailedRelief::SOURCES[str_starts_with($name,'index-')?'index':'grey'];
+                    $name=array_shift($names);$source=DetailedRelief::SOURCES[str_starts_with($name,'index-')?'index':(str_starts_with($name,'landsat-')?'landsat':'grey')];
                     [$z,$x,$y]=array_map('intval',explode('-',substr(pathinfo($name,PATHINFO_FILENAME),strlen($source['prefix']))));
                     $handle=curl_init($source['url'].'/'.$z.'/'.$y.'/'.$x.'.'.$source['extension']);
                     $state=(object)['name'=>$name,'body'=>'','headers'=>0];
@@ -99,7 +99,7 @@ class ReliefTileCache
 
     public function publish(string $directory,string $name,string $bytes,array $protected): void
     {
-        if (!preg_match('/^(?:(?:[0-9]|1[0-2])-[0-9]+-[0-9]+\.jpeg|index-(?:[0-9]|1[0-2])-[0-9]+-[0-9]+\.png)$/D',$name) || !self::validTile($name,$bytes)) { throw new \InvalidArgumentException('Invalid relief tile.'); }
+        if (!preg_match('/^(?:(?:landsat-)?(?:[0-9]|1[0-2])-[0-9]+-[0-9]+\.jpeg|index-(?:[0-9]|1[0-2])-[0-9]+-[0-9]+\.png)$/D',$name) || !self::validTile($name,$bytes)) { throw new \InvalidArgumentException('Invalid relief tile.'); }
         $files=[];$total=0;
         foreach (array_merge(glob($directory.'/*.jpeg'),glob($directory.'/*.png')) as $path) {
             if (is_link($path)) { throw new \RuntimeException('Unsafe relief cache.'); }

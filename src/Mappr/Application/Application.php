@@ -133,9 +133,18 @@ class Application extends Mappr
           'scalebar_url'        => $this->scalebar_url,
           'bad_points'          => $this->getBadPoints(),
           'bad_drawings'        => $this->getBadDrawings(),
-          'relief_source'       => $this->detailedReliefUsed ? ['name'=>'NASA/METI ASTER GDEM via NASA GIBS','zoom'=>$this->detailedReliefZoom,'pixel_metres_at_equator'=>2*\SimpleMappr\DetailedRelief::HALF_WORLD/(256*(1<<$this->detailedReliefZoom)),'coverage'=>'Land between 83 degrees south and north; overview fills uncovered areas.'] : null
+          'relief_source'       => $this->detailedReliefUsed ? ['name'=>implode('; ',$this->detailSources(0)),'zoom'=>$this->detailedReliefZoom,'pixel_metres_at_equator'=>2*\SimpleMappr\DetailedRelief::HALF_WORLD/(256*(1<<$this->detailedReliefZoom)),'coverage'=>implode(' ',$this->detailSources(1)).' The overview fills uncovered areas.'] : null
         ];
 
         return $output;
+    }
+
+    /** Name (0) or coverage (1) of each detailed source drawn on this map. */
+    private function detailSources(int $field): array
+    {
+        $sources=[];
+        if (array_intersect(['reliefgrey','relief'],array_keys($this->detailedReliefLayers))) { $sources[]=['NASA/METI ASTER GDEM via NASA GIBS','Relief covers land between 83 degrees south and north.']; }
+        if (isset($this->detailedReliefLayers['blueMarble'])) { $sources[]=['NASA/USGS Global WELD Landsat via NASA GIBS','Imagery covers land, circa 2000.']; }
+        return array_column($sources,$field);
     }
 }

@@ -205,7 +205,7 @@ abstract class OgcService extends Mappr
             }
             foreach ($names as $name) {
                 $layers[]=$name;$styles[]=$style;
-                foreach ($this->detailedReliefLayers[strtolower($name)] ?? [] as $detail) { $layers[]=$detail;$styles[]=''; }
+                foreach (array_change_key_case($this->detailedReliefLayers)[strtolower($name)] ?? [] as $detail) { $layers[]=$detail;$styles[]=''; }
             }
         }
         $this->detailedServiceLayers=implode(',',$layers);$this->detailedServiceStyles=implode(',',$styles);

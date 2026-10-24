@@ -1215,7 +1215,7 @@ msgstr ""
 msgid "Improvements: Drag the map to pan; the view updates when you let go."
 msgstr ""
 
-msgid "Improvements: Detailed grey and colour terrain at close zoom, from NASA/METI ASTER elevation data."
+msgid "Improvements: Detailed grey and colour terrain at close zoom, from NASA/METI ASTER elevation data, and detailed Landsat imagery for Blue Marble."
 msgstr ""
 
 msgid "Improvements: Shaded relief, Blue Marble, RESOLVE Ecoregions 2017 and Biodiversity Hotspots 2016.1 layers are back, with the credits their licences require."
@@ -1242,7 +1242,7 @@ msgstr ""
 msgid "Read the map data credits and licenses"
 msgstr ""
 
-msgid "Natural Earth layers are public domain. Blue Marble imagery is credited to NASA Visible Earth. Close-view grey and colour relief uses NASA/METI ASTER GDEM through NASA EOSDIS GIBS when enabled. RESOLVE ecoregions and biodiversity hotspots have separate attribution and licensing requirements. %credits_link% before publishing maps that use ecological layers."
+msgid "Natural Earth layers are public domain. Blue Marble imagery is credited to NASA Visible Earth. Close-view grey and colour relief uses NASA/METI ASTER GDEM, and close-view Blue Marble uses NASA/USGS Global WELD Landsat imagery, through NASA EOSDIS GIBS when enabled. RESOLVE ecoregions and biodiversity hotspots have separate attribution and licensing requirements. %credits_link% before publishing maps that use ecological layers."
 msgstr ""
 
 #: views/about.html
