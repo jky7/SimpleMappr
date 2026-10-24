@@ -1625,8 +1625,10 @@ abstract class Mappr
             $layer->name='dataset_credit_'.$index;
             $layer->type=MS_LAYER_POINT;$layer->status=MS_DEFAULT;$layer->transform=MS_FALSE;$layer->sizeunits=MS_PIXELS;
             $class=new \classObj($layer);$class->setText($text);
-            $label=new \labelObj();$label->font='inter';$label->encoding='UTF-8';$label->size=7*$scale;$label->position=MS_XY;
-            $label->color->setRGB(0,0,0);$label->outlinecolor->setRGB(255,255,255);$label->outlinewidth=2*$scale;$label->force=MS_TRUE;$label->partials=MS_TRUE;
+            $label=new \labelObj();$label->font='inter';$label->encoding='UTF-8';$label->size=7.5*$scale;$label->position=MS_XY;
+            $label->color->setRGB(0,0,0);$label->force=MS_TRUE;$label->partials=MS_TRUE;
+            // A translucent box instead of a halo: a stroked halo spikes on Inter's sharp corners and swamps small text.
+            $label->updateFromString('LABEL STYLE GEOMTRANSFORM "labelpoly" COLOR 255 255 255 OPACITY 80 END END');
             $class->addLabel($label);
             $point=new \pointObj();$point->setXY(8*$scale,$height-$reservedBottom-(10+(count($lines)-1-$index)*13)*$scale);
             $line=new \lineObj();$line->add($point);$shape=new \shapeObj(MS_SHAPE_POINT);$shape->add($line);$layer->addFeature($shape);
