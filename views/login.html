@@ -5,25 +5,14 @@
 <h1>{{ "Sign In"|trans }}</h1>
 <div class="card-body">
 {% if login_error %}<p role="alert">{{ login_error }}</p>{% endif %}
-{% if login_enabled %}
+{% if social_providers %}
 {% for provider in social_providers %}
 <form action="{{ base }}/auth/{{ provider.id }}/start" method="post">
 <input type="hidden" name="_csrf" value="{{ csrf_token }}">
 <button class="block" type="submit">Continue with {{ provider.name }}</button>
 </form>
 {% endfor %}
-{% if local_login_enabled %}
-{% if social_providers %}<h2 class="divider"><span>{{ "Local owner"|trans }}</span></h2>{% endif %}
-<form action="{{ base }}/session" method="post">
-<input type="hidden" name="_csrf" value="{{ csrf_token }}">
-<input type="hidden" name="locale" value="{{ locale }}">
-<label for="username">{{ "Username"|trans }}</label>
-<input id="username" name="username" autocomplete="username" required maxlength="50">
-<label for="password">{{ "Password"|trans }}</label>
-<input id="password" name="password" type="password" autocomplete="current-password" required>
-<button class="block primary" type="submit">{{ "Sign In"|trans }}</button>
-</form>
-{% endif %}
+{% elseif login_enabled %}<p>{{ "No sign-in providers are configured."|trans }}</p>
 {% else %}<p>{{ "Saving is available after the deployment owner is configured."|trans }}</p>{% endif %}
 </div>
 <p class="card-footer"><a href="{{ base }}/">{{ "Return to the map editor"|trans }}</a></p>

@@ -119,6 +119,10 @@ docker compose -p simplemappr-restored \
 
 Rollback means restoring a backup created while the earlier compatible image was actually running. Keep that earlier image and its corresponding backup before upgrading. A bundle's image identity cannot be silently changed to select an older runtime. Test login, reopened map state and an export in the isolated earlier-image clone before changing an active deployment.
 
+## Sign in as the local owner
+
+The owner signs in at `/admin` (under the deployment prefix, for example `https://jky.io/simplemappr/admin`). Nothing links to it, it asks search engines not to index it, and it is a plain 404 unless an owner is configured. The public `/login` page offers only Google and GitHub, so an owner-only deployment shows a short message there. Bookmark `/admin`; it is also the recovery login if a provider is misconfigured. Failed attempts are limited to 10 per 15 minutes per client address as the app sees it; behind a reverse proxy that is the proxy, so a burst of bad attempts from anywhere locks the form for everyone for 15 minutes.
+
 ## Rotate the local owner password
 
 ```sh

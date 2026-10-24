@@ -41,7 +41,7 @@ class Client:
         return response.status, response.read()
 
     def login(self, credentials, succeeds=True):
-        status, body = self.request('/login')
+        status, body = self.request('/admin')
         assert status == 200, 'Login form failed'
         token = re.search(rb'name="_csrf" value="([a-f0-9]+)"', body)
         assert token, 'Login form CSRF field missing'
