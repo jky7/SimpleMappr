@@ -173,6 +173,24 @@ final class ApplicationHttpTest extends TestCase
         }
     }
 
+    public function testEveryZoomReportsTheVisibleViewEvenWhenTheBoxDidNotFitTheCanvas(): void
+    {
+        $render = function (array $changes): array {
+            // 40 by 25 degrees on a 2:1 canvas: the server pads the view sideways to fit.
+            [$status, , $body] = $this->request('/application.json', array_replace($this->document(), ['coords' => [], 'bbox_map' => '-100,30,-60,55'], $changes));
+            self::assertSame(200, $status, $body);
+            return array_map('floatval', explode(',', json_decode($body, true, 512, JSON_THROW_ON_ERROR)['rendered_bbox']));
+        };
+        self::assertSame([-100.0, 30.0, -60.0, 55.0], $render([]), 'without a zoom the requested box is reported as before');
+        foreach (['wheel view' => ['view_rect' => '150,75,450,225'], 'zoom in button' => ['zoom_in' => 1], 'zoom out button' => ['zoom_out' => 1],
+                  'double-click' => ['bbox_rubberband' => '300,150,300,150'], 'selection' => ['bbox_rubberband' => '100,50,500,250']] as $label => $zoom) {
+            $box = $render($zoom);
+            self::assertEqualsWithDelta(2.0, ($box[2] - $box[0]) / ($box[3] - $box[1]), 0.02, $label.' reports the 2:1 view the canvas shows');
+            $again = $render(['bbox_map' => implode(',', $box)]);
+            foreach ($box as $i => $value) { self::assertEqualsWithDelta($value, $again[$i], 0.05 * ($box[2] - $box[0]) / 600 * 10, $label.' is stable when echoed back'); }
+        }
+    }
+
     public function testSiteTitleLinksToTheEditorRootOnTheEditorAndErrorPages(): void
     {
         foreach (['/', '/no-such-page'] as $path) {
