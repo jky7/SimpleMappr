@@ -6,7 +6,7 @@ class ReliefTileCache
     public const MAX_BYTES=262144;
     public const BUDGET=1073741824;
 
-    public function fill(array $plan,string $directory=DetailedRelief::CACHE): void
+    public function fill(array $plan,string $directory=DetailedRelief::CACHE,array $sources=['grey']): void
     {
         DetailedRelief::validatePlan($plan);$deadline=hrtime(true)/1e9+14.5;
         if (!is_dir($directory) || is_link($directory)) { throw new \RuntimeException('Relief cache is unavailable.'); }
@@ -18,10 +18,12 @@ class ReliefTileCache
                 usleep(10000);
             }
             foreach (glob($directory.'/.partial-*') as $path) { unlink($path); }
-            $names=array_values(array_unique(DetailedRelief::tileNames($plan)));$missing=[];
+            $names=[];
+            foreach (array_unique($sources) as $source) { array_push($names,...array_values(DetailedRelief::tileNames($plan,$source))); }
+            $names=array_values(array_unique($names));$missing=[];
             foreach ($names as $name) {
                 $path=$directory.'/'.$name;
-                if (is_file($path) && !is_link($path) && filesize($path)<=self::MAX_BYTES && self::valid(file_get_contents($path))) { touch($path); }
+                if (is_file($path) && !is_link($path) && filesize($path)<=self::MAX_BYTES && self::validTile($name,file_get_contents($path))) { touch($path); }
                 else { $missing[]=$name; }
             }
             $this->download($missing,$directory,$names,$deadline);
@@ -38,6 +40,36 @@ class ReliefTileCache
         imagedestroy($image);return true;
     }
 
+    /** Validate a tile by the kind its name says it is. */
+    public static function validTile(string $name,string $bytes): bool
+    {
+        return str_starts_with($name,'index-')?self::validIndex($bytes):self::valid($bytes);
+    }
+
+    /**
+     * An elevation index tile is a 256x256 palette PNG. Land tiles carry the published key's palette in order;
+     * open-ocean tiles are blank (every pixel index 0) whatever their palette.
+     */
+    public static function validIndex(string $bytes): bool
+    {
+        if (strlen($bytes)>self::MAX_BYTES || !str_starts_with($bytes,"\x89PNG\r\n\x1a\n")) { return false; }
+        $size=@getimagesizefromstring($bytes);
+        if (!$size || $size[0]!==256 || $size[1]!==256 || $size[2]!==IMAGETYPE_PNG) { return false; }
+        $image=@imagecreatefromstring($bytes);
+        if (!$image) { return false; }
+        try {
+            if (imageistruecolor($image) || imagecolorstotal($image)!==256) { return false; }
+            $blank=true;
+            for ($y=0;$y<256 && $blank;$y++) { for ($x=0;$x<256;$x++) { if (imagecolorat($image,$x,$y)!==0) { $blank=false;break; } } }
+            if ($blank) { return true; }
+            foreach (DetailedRelief::colorIndex() as $index=>$entry) {
+                $colour=imagecolorsforindex($image,$index);
+                if ([$colour['red'],$colour['green'],$colour['blue']]!==$entry['rgb']) { return false; }
+            }
+            return true;
+        } finally { imagedestroy($image); }
+    }
+
     protected function download(array $names,string $directory,array $protected,float $deadline): void
     {
         $multi=curl_multi_init();$active=[];
@@ -45,8 +77,9 @@ class ReliefTileCache
             while ($names || $active) {
                 if (hrtime(true)/1e9>=$deadline) { throw new \RuntimeException('Relief download timed out.'); }
                 while ($names && count($active)<4) {
-                    $name=array_shift($names);[$z,$x,$y]=array_map('intval',explode('-',pathinfo($name,PATHINFO_FILENAME)));
-                    $handle=curl_init(DetailedRelief::SOURCE.'/'.$z.'/'.$y.'/'.$x.'.jpeg');
+                    $name=array_shift($names);$source=DetailedRelief::SOURCES[str_starts_with($name,'index-')?'index':'grey'];
+                    [$z,$x,$y]=array_map('intval',explode('-',substr(pathinfo($name,PATHINFO_FILENAME),strlen($source['prefix']))));
+                    $handle=curl_init($source['url'].'/'.$z.'/'.$y.'/'.$x.'.'.$source['extension']);
                     $state=(object)['name'=>$name,'body'=>'','headers'=>0];
                     curl_setopt_array($handle,[CURLOPT_PROTOCOLS_STR=>'https',CURLOPT_FOLLOWLOCATION=>false,CURLOPT_PROXY=>'',CURLOPT_SSL_VERIFYPEER=>true,CURLOPT_SSL_VERIFYHOST=>2,CURLOPT_CONNECTTIMEOUT_MS=>3000,CURLOPT_TIMEOUT_MS=>max(1,(int)(($deadline-hrtime(true)/1e9)*1000)),CURLOPT_USERAGENT=>'SimpleMappr detailed relief',CURLOPT_HEADERFUNCTION=>static function($handle,string $line) use($state):int{$state->headers+=strlen($line);return $state->headers<=16384?strlen($line):0;},CURLOPT_WRITEFUNCTION=>static function($handle,string $chunk) use($state):int{if(strlen($state->body)+strlen($chunk)>self::MAX_BYTES){return 0;}$state->body.=$chunk;return strlen($chunk);}]);
                     curl_multi_add_handle($multi,$handle);$active[spl_object_id($handle)]=[$handle,$state];
@@ -55,7 +88,7 @@ class ReliefTileCache
                 if ($status!==CURLM_OK) { throw new \RuntimeException('Relief download failed.'); }
                 while ($info=curl_multi_info_read($multi)) {
                     $handle=$info['handle'];[, $state]=$active[spl_object_id($handle)];
-                    if ($info['result']!==CURLE_OK || curl_getinfo($handle,CURLINFO_RESPONSE_CODE)!==200 || !self::valid($state->body)) { throw new \RuntimeException('Relief source returned an invalid tile.'); }
+                    if ($info['result']!==CURLE_OK || curl_getinfo($handle,CURLINFO_RESPONSE_CODE)!==200 || !self::validTile($state->name,$state->body)) { throw new \RuntimeException('Relief source returned an invalid tile.'); }
                     $this->publish($directory,$state->name,$state->body,$protected);
                     curl_multi_remove_handle($multi,$handle);unset($active[spl_object_id($handle)]);
                 }
@@ -66,9 +99,9 @@ class ReliefTileCache
 
     public function publish(string $directory,string $name,string $bytes,array $protected): void
     {
-        if (!preg_match('/^(?:[0-9]|1[0-2])-[0-9]+-[0-9]+\.jpeg$/D',$name) || !self::valid($bytes)) { throw new \InvalidArgumentException('Invalid relief tile.'); }
+        if (!preg_match('/^(?:(?:[0-9]|1[0-2])-[0-9]+-[0-9]+\.jpeg|index-(?:[0-9]|1[0-2])-[0-9]+-[0-9]+\.png)$/D',$name) || !self::validTile($name,$bytes)) { throw new \InvalidArgumentException('Invalid relief tile.'); }
         $files=[];$total=0;
-        foreach (glob($directory.'/*.jpeg') as $path) {
+        foreach (array_merge(glob($directory.'/*.jpeg'),glob($directory.'/*.png')) as $path) {
             if (is_link($path)) { throw new \RuntimeException('Unsafe relief cache.'); }
             $total+=filesize($path);$files[$path]=filemtime($path);
         }

@@ -42,6 +42,21 @@ final class DetailedReliefHttpTest extends TestCase
         self::assertSame(200,$status,$body);self::assertNull(json_decode($body,true)['relief_source']);
     }
 
+    public function testColourReliefGainsDetailedTerrainAndWater(): void
+    {
+        if (!isset(Mappr::getShapefileConfig()['relief'])) { self::markTestSkipped('Requires the installed colour relief overview.'); }
+        $document=array_replace($this->document(),['layers'=>['relief'=>'on']]);
+        [$status,$body]=$this->request('/application.json',$document);self::assertSame(200,$status,$body);
+        $map=json_decode($body,true,512,JSON_THROW_ON_ERROR);self::assertSame(11,$map['relief_source']['zoom']);
+        [$status,$bytes]=$this->request($map['mapOutputImage']);self::assertSame(200,$status);
+        $this->assertDetailedPixels($bytes,600,300);
+        $image=imagecreatefromstring($bytes);$colour=imagecolorsforindex($image,imagecolorat($image,300,120));imagedestroy($image);
+        self::assertNotTrue($colour['red']===$colour['green'] && $colour['green']===$colour['blue'],'Colour relief must stay tinted.');
+        $query=['SERVICE'=>'WMS','REQUEST'=>'GetMap','VERSION'=>'1.1.1','LAYERS'=>'relief','SRS'=>'EPSG:4326','BBOX'=>'6.5,45.8,6.9,46.0','WIDTH'=>600,'HEIGHT'=>300,'FORMAT'=>'image/png'];
+        [$status,$wms,$headers]=$this->request('/wms?'.http_build_query($query));self::assertSame(200,$status,substr($wms,0,300));
+        $this->assertDetailedPixels($wms,600,300);self::assertStringContainsString('/data-credits',$headers);
+    }
+
     public function testRasterAndOfficeDownloadsKeepDetailedPixelsAndSourceCredits(): void
     {
         foreach (['png','tif','docx','pptx'] as $format) {

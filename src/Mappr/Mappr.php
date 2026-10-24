@@ -110,6 +110,8 @@ abstract class Mappr
     protected bool $detailedReliefUsed = false;
     protected bool $detailedReliefDegraded = false;
     protected ?int $detailedReliefZoom = null;
+    /** Internal layers drawn for each relief layer the request selected, keyed by that layer's name. */
+    protected array $detailedReliefLayers = [];
 
     /**
      * Default extent when map first loaded
@@ -1494,7 +1496,8 @@ abstract class Mappr
 
     protected function addDetailedRelief(array $layers,?array $bounds=null,?string $projection=null,?int $width=null,?int $height=null): void
     {
-        if (!in_array('reliefgrey',$layers,true) || $this->request->output==='svg' || !\SimpleMappr\DetailedRelief::enabled()) { return; }
+        $bases=array_values(array_intersect(['reliefgrey','relief'],$layers));
+        if (!$bases || $this->request->output==='svg' || !\SimpleMappr\DetailedRelief::enabled()) { return; }
         $extent=$this->map_obj->extent;
         $bounds ??= [$extent->minx,$extent->miny,$extent->maxx,$extent->maxy];
         if (count(array_filter($bounds,static fn($value)=>is_finite((float)$value) && abs((float)$value)<=1e9))!==4) { throw new \InvalidArgumentException('The map extent is outside supported Earth coordinates.'); }
@@ -1525,9 +1528,11 @@ abstract class Mappr
         }
         $plan=\SimpleMappr\DetailedRelief::plan([min($xs),min($ys),max($xs),max($ys)],$width ?? $this->map_obj->width,$height ?? $this->map_obj->height);
         if ($plan===null) { return; }
+        $colour=in_array('relief',$bases,true);
         $this->detailedRelief=new \SimpleMappr\DetailedRelief();
-        $path=$this->detailedRelief->prepare($plan);
-        if ($path===null) { $this->detailedReliefDegraded=true; return; }
+        $paths=$this->detailedRelief->prepare($plan,$colour?['grey','index']:['grey']);
+        if ($paths['grey']===null || ($colour && $paths['index']===null)) { $this->detailedReliefDegraded=true; }
+        if ($paths['grey']===null) { return; }
         $mask=new \layerObj($this->map_obj);$mask->name='internal_detailed_relief_land';$mask->type=MS_LAYER_POLYGON;$mask->status=MS_OFF;
         $mask->setProjection('EPSG:4326');$mask->metadata->set('ows_enable_request','!*');
         $maskClass=new \classObj($mask);$maskStyle=new \styleObj($maskClass);$maskStyle->color->setRGB(255,255,255);
@@ -1539,13 +1544,51 @@ abstract class Mappr
                 if ($shape!==null && $shape->numlines>0) { $mask->addFeature($shape); }
             }
         }
-        $layer=new \layerObj($this->map_obj);$layer->name='internal_detailed_relief';$layer->type=MS_LAYER_RASTER;$layer->status=MS_DEFAULT;
-        $layer->data=$path;$layer->setProjection('EPSG:3857');$layer->addProcessing('RESAMPLE=BILINEAR');$layer->updateFromString('LAYER MASK internal_detailed_relief_land END');
+        if (in_array('reliefgrey',$bases,true)) {
+            $this->placeDetailLayers('reliefgrey',[$this->detailRaster('internal_detailed_relief',$paths['grey'],'')]);
+        }
+        if ($colour && $paths['index']!==null) {
+            // Elevation tints shaded by the detailed terrain (soft light, then a light multiply), with crisp water on top.
+            $detail=[
+                $this->detailRaster('internal_detailed_tint',$paths['index'],''),
+                $this->detailRaster('internal_detailed_tint_soft',$paths['grey'],'COMPOSITE OPACITY 85 COMPOP "soft-light" END'),
+                $this->detailRaster('internal_detailed_tint_shade',$paths['grey'],'COMPOSITE OPACITY 25 COMPOP "multiply" END'),
+            ];
+            foreach (['lakes'=>MS_LAYER_POLYGON,'rivers'=>MS_LAYER_LINE] as $water=>$type) {
+                if (!isset($this->shapes[$water]['path'])) { continue; }
+                $layer=new \layerObj($this->map_obj);$layer->name='internal_detailed_'.$water;$layer->type=$type;$layer->status=MS_DEFAULT;
+                $layer->data=$this->shapes[$water]['path'];$layer->setProjection('EPSG:4326');$layer->metadata->set('ows_enable_request','!*');
+                $style=new \styleObj(new \classObj($layer));
+                if ($type===MS_LAYER_POLYGON) { $style->color->setRGB(170,207,222);$style->outlinecolor->setRGB(110,160,182);$style->width=0.6; }
+                else { $style->color->setRGB(110,160,182);$style->width=1; }
+                $detail[]=$layer;
+            }
+            $this->placeDetailLayers('relief',$detail);
+        }
+        // Only claim (and credit) the detailed relief when something was actually drawn from it.
+        if ($this->detailedReliefLayers) { $this->detailedReliefUsed=true;$this->detailedReliefZoom=$plan['zoom']; }
+    }
+
+    /** A detailed relief raster in EPSG:3857, masked to land and hidden from service capabilities. */
+    private function detailRaster(string $name,string $path,string $settings): \layerObj
+    {
+        $layer=new \layerObj($this->map_obj);$layer->name=$name;$layer->type=MS_LAYER_RASTER;$layer->status=MS_DEFAULT;
+        $layer->data=$path;$layer->setProjection('EPSG:3857');$layer->addProcessing('RESAMPLE=BILINEAR');
+        $layer->updateFromString('LAYER '.$settings.' MASK internal_detailed_relief_land END');
         $layer->metadata->set('ows_enable_request','!*');
-        $detail=$layer->index;
-        $grey=$this->map_obj->getLayerByName('reliefgrey')->index;
-        for ($i=0;$i<$detail-$grey-1;$i++) { $this->map_obj->moveLayerUp($detail); }
-        $this->detailedReliefUsed=true;$this->detailedReliefZoom=$plan['zoom'];
+        return $layer;
+    }
+
+    /** Draw the layers, in order, directly above the relief layer they refine. */
+    private function placeDetailLayers(string $base,array $layers): void
+    {
+        // moveLayerUp changes the drawing order, not the index; appended layers still draw at their index until moved.
+        $after=$this->map_obj->getLayerByName($base)->index;
+        foreach ($layers as $layer) {
+            for ($position=$layer->index;$position>$after+1;$position--) { $this->map_obj->moveLayerUp($layer->index); }
+            $after++;
+        }
+        $this->detailedReliefLayers[$base]=array_map(static fn($layer)=>$layer->name,$layers);
     }
 
     protected function addDataCredits(array $layers,?int $width=null,?int $height=null): void

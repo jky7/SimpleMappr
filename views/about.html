@@ -21,7 +21,7 @@
 <dl>
 <dt class="update">{{ "October 24, 2026"|trans }}</dt>
 <dd>{{ "Improvements: Drag the map to pan; the view updates when you let go."|trans }}</dd>
-<dd>{{ "Improvements: Detailed grey terrain at close zoom, from NASA/METI ASTER elevation data."|trans }}</dd>
+<dd>{{ "Improvements: Detailed grey and colour terrain at close zoom, from NASA/METI ASTER elevation data."|trans }}</dd>
 <dd>{{ "Improvements: Shaded relief, Blue Marble, RESOLVE Ecoregions 2017 and Biodiversity Hotspots 2016.1 layers are back, with the credits their licences require."|trans }}</dd>
 <dd>{{ "Improvements: A cleaner look, with the Inter typeface on the page and in map labels, and restyled sign-in, credits and shared-map pages."|trans }}</dd>
 <dd>{{ "Improvements: Faster page loads and repeat previews."|trans }}</dd>
@@ -66,7 +66,7 @@
 
 <div class="header"><h2>{{ "Map data"|trans }}</h2></div>
 {% set credits_link = '<a href="' ~ base ~ '/data-credits">' ~ ("Read the map data credits and licenses"|trans) ~ '</a>' %}
-<p>{{ "Natural Earth layers are public domain. Blue Marble imagery is credited to NASA Visible Earth. Close-view grey relief uses NASA/METI ASTER GDEM through NASA EOSDIS GIBS when enabled. RESOLVE ecoregions and biodiversity hotspots have separate attribution and licensing requirements. %credits_link% before publishing maps that use ecological layers."|trans({"%credits_link%": credits_link})|raw }}</p>
+<p>{{ "Natural Earth layers are public domain. Blue Marble imagery is credited to NASA Visible Earth. Close-view grey and colour relief uses NASA/METI ASTER GDEM through NASA EOSDIS GIBS when enabled. RESOLVE ecoregions and biodiversity hotspots have separate attribution and licensing requirements. %credits_link% before publishing maps that use ecological layers."|trans({"%credits_link%": credits_link})|raw }}</p>
 
 <div class="header"><h2>{{ "Acknowledgments"|trans }}</h2></div>
 <p>Underlying shapefiles and relief are from <a href="https://www.naturalearthdata.com/">Natural Earth</a>. Rendering uses <a href="https://mapserver.org/">MapServer</a> through PHP MapScript. Blue Marble is from <a href="https://science.nasa.gov/earth/faq/">NASA Visible Earth</a>. The optional ecological layers use RESOLVE Ecoregions 2017 and Biodiversity Hotspots 2016.1. Their creators, source links, licenses and display changes are listed in <a href="{{ base }}/data-credits">map data credits</a>.</p>

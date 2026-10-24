@@ -5,8 +5,9 @@ require dirname(__DIR__).'/src/ReliefTileCache.php';
 try {
     $input=stream_get_contents(STDIN,1025);
     if (strlen($input)>1024) { throw new RuntimeException('Invalid relief plan.'); }
-    $plan=json_decode($input,true,16,JSON_THROW_ON_ERROR);
-    if (!is_array($plan)) { throw new RuntimeException('Invalid relief plan.'); }
-    (new SimpleMappr\ReliefTileCache())->fill($plan);
+    $request=json_decode($input,true,16,JSON_THROW_ON_ERROR);
+    if (!is_array($request) || !is_array($request['plan'] ?? null) || !is_array($request['sources'] ?? null) || !$request['sources']) { throw new RuntimeException('Invalid relief plan.'); }
+    foreach ($request['sources'] as $source) { if (!is_string($source) || !isset(SimpleMappr\DetailedRelief::SOURCES[$source])) { throw new RuntimeException('Invalid relief plan.'); } }
+    (new SimpleMappr\ReliefTileCache())->fill($request['plan'],SimpleMappr\DetailedRelief::CACHE,$request['sources']);
     echo "ready\n";
 } catch (Throwable $error) { fwrite(STDERR,"Detailed relief tile preparation failed.\n");exit(1); }

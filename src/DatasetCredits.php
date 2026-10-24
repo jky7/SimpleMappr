@@ -4,13 +4,13 @@ namespace SimpleMappr;
 final class DatasetCredits
 {
     public const DETAILED_RELIEF = [
-        'name'=>'ASTER GDEM shaded relief',
+        'name'=>'ASTER GDEM relief',
         'credit'=>'NASA/METI; NASA EOSDIS GIBS',
         'source'=>'https://www.earthdata.nasa.gov/data/catalog/lpcloud-astgtm-003',
         'citation'=>'https://doi.org/10.5067/ASTER/ASTGTM.003',
         'license'=>'Publicly available NASA data',
         'licenseUrl'=>'https://www.earthdata.nasa.gov/engage/open-data-services-and-software/policies/data-use-policy',
-        'changes'=>'GIBS greyscale shaded relief tiles are mosaicked, resampled and reprojected for close map views. Source elevations are approximately 30 metres; imagery is at most approximately 38 metres per pixel at the equator. Coverage and terrain artifacts follow ASTER GDEM.',
+        'changes'=>'GIBS greyscale shaded relief tiles are mosaicked, resampled and reprojected for close map views; for colour relief, GIBS colour index tiles are decoded to elevation, repainted with soft elevation tints and shaded by the grey relief. Source elevations are approximately 30 metres; imagery is at most approximately 38 metres per pixel at the equator. Coverage and terrain artifacts follow ASTER GDEM.',
     ];
     public const DATASETS = [
         'ecoregions'=>[
