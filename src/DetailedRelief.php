@@ -8,7 +8,13 @@ final class DetailedRelief
     public const MAX_TILES = 256;
     public const MAX_NORTHING = 17821911.959436886;
     public const SOURCE = 'https://gibs.earthdata.nasa.gov/wmts/epsg3857/best/ASTER_GDEM_Greyscale_Shaded_Relief/default/GoogleMapsCompatible_Level12';
+    public const INDEX_SOURCE = 'https://gibs.earthdata.nasa.gov/wmts/epsg3857/best/ASTER_GDEM_Color_Index/default/GoogleMapsCompatible_Level12';
+    // Grey shaded relief tiles keep their original cache names; elevation index tiles are prefixed PNGs beside them.
+    public const SOURCES = ['grey'=>['url'=>self::SOURCE,'prefix'=>'','extension'=>'jpeg'],'index'=>['url'=>self::INDEX_SOURCE,'prefix'=>'index-','extension'=>'png']];
+    // Elevation tints (metres => RGB) for the colour relief, close to Natural Earth's cross-blended hypsometric tints.
+    public const TINTS = [[0,[166,196,152]],[300,[190,209,164]],[700,[214,216,178]],[1200,[226,214,184]],[1800,[218,198,170]],[2400,[205,190,176]],[3000,[226,222,220]],[4000,[246,246,246]]];
     private ?string $directory = null;
+    private static ?array $colorIndex = null;
 
     public static function enabled(): bool
     {
@@ -47,13 +53,51 @@ final class DetailedRelief
         return $plan;
     }
 
-    public static function tileNames(array $plan): array
+    public static function tileNames(array $plan,string $source='grey'): array
     {
         self::validatePlan($plan);$result=[];$count=1<<$plan['zoom'];
+        if (!isset(self::SOURCES[$source])) { throw new \InvalidArgumentException('Unknown relief tile source.'); }
+        ['prefix'=>$prefix,'extension'=>$extension]=self::SOURCES[$source];
         for ($y=$plan['y0'];$y<=$plan['y1'];$y++) {
-            for ($x=$plan['x0'];$x<=$plan['x1'];$x++) { $result[$x.','.$y]=$plan['zoom'].'-'.(($x%$count+$count)%$count).'-'.$y.'.jpeg'; }
+            for ($x=$plan['x0'];$x<=$plan['x1'];$x++) { $result[$x.','.$y]=$prefix.$plan['zoom'].'-'.(($x%$count+$count)%$count).'-'.$y.'.'.$extension; }
         }
         return $result;
+    }
+
+    /** The published ASTER_GDEM_Color_Index key: palette index => [rgb, low, high, nodata]. */
+    public static function colorIndex(): array
+    {
+        if (self::$colorIndex===null) {
+            $document=json_decode(file_get_contents(dirname(__DIR__).'/config/aster-gdem-color-index.json'),true,8,JSON_THROW_ON_ERROR);
+            if (!is_array($document['entries'] ?? null) || count($document['entries'])!==256) { throw new \RuntimeException('The elevation colour key is invalid.'); }
+            self::$colorIndex=$document['entries'];
+        }
+        return self::$colorIndex;
+    }
+
+    public static function tint(float $elevation): array
+    {
+        if ($elevation<=self::TINTS[0][0]) { return self::TINTS[0][1]; }
+        for ($i=1;$i<count(self::TINTS);$i++) {
+            [$high,$to]=self::TINTS[$i];
+            if ($elevation<=$high) {
+                [$low,$from]=self::TINTS[$i-1];$t=($elevation-$low)/($high-$low);
+                return array_map(static fn($a,$b)=>(int)round($a+($b-$a)*$t),$from,$to);
+            }
+        }
+        return self::TINTS[count(self::TINTS)-1][1];
+    }
+
+    /** Palette index => [r, g, b, alpha]: each elevation band painted with its tint, index 0 (no data) transparent. */
+    public static function tintTable(): array
+    {
+        $table=[];
+        foreach (self::colorIndex() as $index=>$entry) {
+            if ($entry['nodata']) { $table[$index]=[0,0,0,0];continue; }
+            $high=$entry['high'] ?? $entry['low']+200;
+            $table[$index]=[...self::tint(($entry['low']+$high)/2),255];
+        }
+        return $table;
     }
 
     public static function geographicClips(array $plan): array
@@ -70,13 +114,19 @@ final class DetailedRelief
         return $clips;
     }
 
-    public function prepare(array $plan): ?string
+    /**
+     * Fetch (or reuse) the plan's tiles for each source and build private mosaics. Returns source => VRT path,
+     * or null for a source whose tiles are all empty (open ocean).
+     */
+    public function prepare(array $plan,array $sources=['grey']): array
     {
         self::validatePlan($plan);
+        $sources=array_values(array_unique($sources));
+        foreach ($sources as $source) { if (!isset(self::SOURCES[$source])) { throw new \InvalidArgumentException('Unknown relief tile source.'); } }
         $deadline=hrtime(true)/1e9+15;
         $process=proc_open([PHP_BINDIR.'/php',ROOT.'/scripts/cache-detailed-relief'],[['pipe','r'],['pipe','w'],['file','/dev/null','a']],$pipes);
         if (!is_resource($process)) { throw new \RuntimeException('Detailed relief is temporarily unavailable.',503); }
-        fwrite($pipes[0],json_encode($plan,JSON_THROW_ON_ERROR));fclose($pipes[0]);stream_set_blocking($pipes[1],false);
+        fwrite($pipes[0],json_encode(['plan'=>$plan,'sources'=>$sources],JSON_THROW_ON_ERROR));fclose($pipes[0]);stream_set_blocking($pipes[1],false);
         $result='';
         try {
             while (true) {
@@ -97,17 +147,24 @@ final class DetailedRelief
                 if (hrtime(true)/1e9>=$deadline) { throw new \RuntimeException('Detailed relief cache is busy. Please retry.',503); }
                 usleep(10000);
             }
-            foreach (array_unique(self::tileNames($plan)) as $name) {
-                $path=self::CACHE.'/'.$name;
-                if (hrtime(true)/1e9>=$deadline) { throw new \RuntimeException('Detailed relief timed out. Please retry.',503); }
-                if (!is_file($path) || is_link($path) || filesize($path)>ReliefTileCache::MAX_BYTES || !copy($path,$this->directory.'/'.$name)) { throw new \RuntimeException('Detailed relief cache changed. Please retry.',503); }
+            foreach ($sources as $source) {
+                foreach (array_unique(self::tileNames($plan,$source)) as $name) {
+                    $path=self::CACHE.'/'.$name;
+                    if (hrtime(true)/1e9>=$deadline) { throw new \RuntimeException('Detailed relief timed out. Please retry.',503); }
+                    if (!is_file($path) || is_link($path) || filesize($path)>ReliefTileCache::MAX_BYTES || !copy($path,$this->directory.'/'.$name)) { throw new \RuntimeException('Detailed relief cache changed. Please retry.',503); }
+                }
             }
         } finally { flock($lock,LOCK_UN);fclose($lock); }
-        $vrt=self::mosaic($plan,$this->directory,$deadline);
-        if ($vrt===null) { return null; }
-        $path=$this->directory.'/relief.vrt';
-        if (file_put_contents($path,$vrt)===false) { throw new \RuntimeException('Detailed relief storage is unavailable.',503); }
-        return $path;
+        $paths=[];
+        foreach ($sources as $source) {
+            $vrt=$source==='index'?self::tintMosaic($plan,$this->directory,$deadline):self::mosaic($plan,$this->directory,$deadline);
+            $paths[$source]=null;
+            if ($vrt===null) { continue; }
+            $path=$this->directory.'/'.$source.'.vrt';
+            if (file_put_contents($path,$vrt)===false) { throw new \RuntimeException('Detailed relief storage is unavailable.',503); }
+            $paths[$source]=$path;
+        }
+        return $paths;
     }
 
     public static function mosaic(array $plan,string $directory,float $deadline): ?string
@@ -140,6 +197,43 @@ final class DetailedRelief
         if (!$image) { throw new \RuntimeException('Detailed relief cache contains an invalid tile.',503); }
         try {
             for ($y=0;$y<256;$y++) { for ($x=0;$x<256;$x++) { if ((imagecolorat($image,$x,$y)&0xffffff)!==0x585858) { return false; } } }
+            return true;
+        } finally { imagedestroy($image); }
+    }
+
+    /** RGBA mosaic of elevation index tiles: GDAL maps each palette index to its tint, so no pixel is touched in PHP. */
+    public static function tintMosaic(array $plan,string $directory,float $deadline): ?string
+    {
+        $tiles=[];
+        foreach (self::tileNames($plan,'index') as $position=>$name) {
+            if (hrtime(true)/1e9>=$deadline) { throw new \RuntimeException('Detailed relief timed out. Please retry.',503); }
+            if (!self::emptyIndexTile($directory.'/'.$name)) { $tiles[$position]=$name; }
+        }
+        if (!$tiles) { return null; }
+        $table=self::tintTable();
+        $columns=$plan['x1']-$plan['x0']+1;$rows=$plan['y1']-$plan['y0']+1;
+        $span=2*self::HALF_WORLD/(1<<$plan['zoom']);$pixel=$span/256;
+        $left=-self::HALF_WORLD+$plan['x0']*$span;$top=self::HALF_WORLD-$plan['y0']*$span;
+        $xml='<VRTDataset rasterXSize="'.($columns*256).'" rasterYSize="'.($rows*256).'"><SRS>EPSG:3857</SRS><GeoTransform>'.$left.','.$pixel.',0,'.$top.',0,-'.$pixel.'</GeoTransform>';
+        foreach (['Red','Green','Blue','Alpha'] as $component=>$interpretation) {
+            $lut=implode(',',array_map(static fn($index,$rgba)=>$index.':'.$rgba[$component],array_keys($table),$table));
+            $xml.='<VRTRasterBand dataType="Byte" band="'.($component+1).'"><ColorInterp>'.$interpretation.'</ColorInterp>';
+            foreach ($tiles as $position=>$name) {
+                [$x,$y]=array_map('intval',explode(',',$position));
+                $xml.='<ComplexSource><SourceFilename relativeToVRT="1">'.$name.'</SourceFilename><SourceBand>1</SourceBand><SrcRect xOff="0" yOff="0" xSize="256" ySize="256"/><DstRect xOff="'.(($x-$plan['x0'])*256).'" yOff="'.(($y-$plan['y0'])*256).'" xSize="256" ySize="256"/><LUT>'.$lut.'</LUT></ComplexSource>';
+            }
+            $xml.='</VRTRasterBand>';
+        }
+        return $xml.'</VRTDataset>';
+    }
+
+    /** An index tile with no land: every pixel is palette index 0. */
+    public static function emptyIndexTile(string $path): bool
+    {
+        $image=@imagecreatefrompng($path);
+        if (!$image || imageistruecolor($image)) { throw new \RuntimeException('Detailed relief cache contains an invalid tile.',503); }
+        try {
+            for ($y=0;$y<256;$y++) { for ($x=0;$x<256;$x++) { if (imagecolorat($image,$x,$y)!==0) { return false; } } }
             return true;
         } finally { imagedestroy($image); }
     }

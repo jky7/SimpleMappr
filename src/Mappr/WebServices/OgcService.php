@@ -190,8 +190,9 @@ abstract class OgcService extends Mappr
         $this->wrapRasterLayers($this->responseLayers(),self::getProjection(strtolower($crs)));
         $this->addDetailedRelief($this->responseLayers(),$bounds,$crs,(int)$this->parameters['WIDTH'],(int)$this->parameters['HEIGHT']);
         if (!$this->detailedReliefUsed) { return; }
-        $this->map_obj->getLayerByName('internal_detailed_relief')->status=MS_ON;
-        foreach (['internal_detailed_relief','internal_detailed_relief_land'] as $name) { $this->map_obj->getLayerByName($name)->metadata->set('ows_enable_request','GetMap'); }
+        $internal=array_merge(...array_values($this->detailedReliefLayers));
+        foreach ($internal as $name) { $this->map_obj->getLayerByName($name)->status=MS_ON; }
+        foreach ([...$internal,'internal_detailed_relief_land'] as $name) { $this->map_obj->getLayerByName($name)->metadata->set('ows_enable_request','GetMap'); }
         $layers=[];$styles=[];$requestedStyles=explode(',',$this->parameters['STYLES']);
         foreach (explode(',',$this->parameters['LAYERS']) as $index=>$requested) {
             $requested=trim($requested);$style=$requestedStyles[$index] ?? '';$names=[$requested];
@@ -204,7 +205,7 @@ abstract class OgcService extends Mappr
             }
             foreach ($names as $name) {
                 $layers[]=$name;$styles[]=$style;
-                if (strcasecmp($name,'reliefgrey')===0) { $layers[]='internal_detailed_relief';$styles[]=''; }
+                foreach ($this->detailedReliefLayers[strtolower($name)] ?? [] as $detail) { $layers[]=$detail;$styles[]=''; }
             }
         }
         $this->detailedServiceLayers=implode(',',$layers);$this->detailedServiceStyles=implode(',',$styles);
