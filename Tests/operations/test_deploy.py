@@ -17,7 +17,10 @@ case "$1 $2" in
   "compose exec")
     case "$*" in
       *"-w"*) [ "$SIMPLEMAPPR_IMAGE" = "$FAKE_BAD_IMAGE" ] && echo 500 || echo 200 ;;
-      *) [ "$SIMPLEMAPPR_IMAGE" = "$FAKE_BAD_IMAGE" ] && exit 22; echo '<h1 id="site-title">SimpleMappr</h1>' ;;
+      *) [ "$SIMPLEMAPPR_IMAGE" = "$FAKE_BAD_IMAGE" ] && exit 22
+         # Like the real editor page: the header comes first and much more follows, so a reader that stops early breaks the pipe.
+         echo '<h1 id="site-title">SimpleMappr</h1>'
+         head -c 300000 /dev/zero | tr '\0' 'x' || exit 141 ;;
     esac ;;
   "image inspect") [ -n "$FAKE_NO_PREVIOUS" ] && exit 1; exit 0 ;;
   "compose up") [ "$SIMPLEMAPPR_IMAGE" = "$FAKE_UNHEALTHY_IMAGE" ] && exit 1; exit 0 ;;

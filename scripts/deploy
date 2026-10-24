@@ -136,7 +136,10 @@ smoke() {
         code=$(docker compose exec -T app curl -s -o /dev/null -w '%{http_code}' "http://127.0.0.1$path") || return 1
         [ "$code" = 200 ] || { echo "GET $path returned $code" >&2; return 1; }
     done
-    docker compose exec -T app curl -fsS http://127.0.0.1/ | grep -q 'id="site-title"'
+    # Read the whole page before searching it: with pipefail, grep -q closing the pipe early fails the exec (exit 255).
+    local page
+    page=$(docker compose exec -T app curl -fsS http://127.0.0.1/) || return 1
+    grep -q 'id="site-title"' <<<"$page" || { echo "the editor page is missing its header" >&2; return 1; }
 }
 
 swap_to() {
