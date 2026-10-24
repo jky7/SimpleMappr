@@ -56,6 +56,20 @@ final class DetailedRelief
         return $result;
     }
 
+    public static function geographicClips(array $plan): array
+    {
+        self::validatePlan($plan);$count=1<<$plan['zoom'];
+        $west=$plan['x0']/$count*360-180;$east=($plan['x1']+1)/$count*360-180;
+        $south=rad2deg(atan(sinh(pi()*(1-2*($plan['y1']+1)/$count))));
+        $north=rad2deg(atan(sinh(pi()*(1-2*$plan['y0']/$count))));
+        $clips=[];
+        for ($world=-1;$world<=1;$world++) {
+            $left=max(-180,$west-360*$world);$right=min(180,$east-360*$world);
+            if ($right>$left) { $clips[]=[$left,$south,$right,$north]; }
+        }
+        return $clips;
+    }
+
     public function prepare(array $plan): ?string
     {
         self::validatePlan($plan);

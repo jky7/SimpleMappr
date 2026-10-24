@@ -64,6 +64,17 @@ final class DetailedReliefHttpTest extends TestCase
         self::assertSame(200,$status);self::assertSame([3000,1500],array_slice(getimagesizefromstring($bytes),0,2));
     }
 
+    public function testProjectedAndRotatedViewsKeepDetailedLandPixels(): void
+    {
+        foreach ([['projection'=>'esri:102014'],['projection'=>'epsg:3395'],['projection'=>'esri:102014','rotation'=>30]] as $settings) {
+            [$status,$body]=$this->request('/application.json',array_replace($this->document(),$settings));
+            self::assertSame(200,$status,$body);$map=json_decode($body,true,512,JSON_THROW_ON_ERROR);
+            self::assertNotNull($map['relief_source']);
+            [$status,$bytes]=$this->request($map['mapOutputImage']);self::assertSame(200,$status);
+            $this->assertDetailedPixels($bytes,600,300);
+        }
+    }
+
     public function testWmsAxisOrderXmlAndCaseSelectTheSameDetailedSource(): void
     {
         $query=['SERVICE'=>'WMS','REQUEST'=>'GetMap','VERSION'=>'1.1.1','LAYERS'=>'RELIEFGREY','SRS'=>'EPSG:4326','CRS'=>'EPSG:3857','BBOX'=>'6.5,45.8,6.9,46.0','WIDTH'=>600,'HEIGHT'=>300,'FORMAT'=>'image/png'];

@@ -1471,8 +1471,16 @@ abstract class Mappr
         $path=$this->detailedRelief->prepare($plan);
         if ($path===null) { return; }
         $mask=new \layerObj($this->map_obj);$mask->name='internal_detailed_relief_land';$mask->type=MS_LAYER_POLYGON;$mask->status=MS_OFF;
-        $mask->data=$this->shapes['base']['path'];$mask->setProjection('EPSG:4326');$mask->metadata->set('ows_enable_request','!*');
+        $mask->setProjection('EPSG:4326');$mask->metadata->set('ows_enable_request','!*');
         $maskClass=new \classObj($mask);$maskStyle=new \styleObj($maskClass);$maskStyle->color->setRGB(255,255,255);
+        $land=new \shapefileObj($this->shapes['base']['path'],-1);
+        foreach (\SimpleMappr\DetailedRelief::geographicClips($plan) as [$west,$south,$east,$north]) {
+            $clip=\shapeObj::fromWKT("POLYGON(($west $south,$east $south,$east $north,$west $north,$west $south))");
+            for ($index=0;$index<$land->numshapes;$index++) {
+                $shape=$land->getShape($index)->intersection($clip);
+                if ($shape!==null && $shape->numlines>0) { $mask->addFeature($shape); }
+            }
+        }
         $layer=new \layerObj($this->map_obj);$layer->name='internal_detailed_relief';$layer->type=MS_LAYER_RASTER;$layer->status=MS_DEFAULT;
         $layer->data=$path;$layer->setProjection('EPSG:3857');$layer->addProcessing('RESAMPLE=BILINEAR');$layer->updateFromString('LAYER MASK internal_detailed_relief_land END');
         $layer->metadata->set('ows_enable_request','!*');

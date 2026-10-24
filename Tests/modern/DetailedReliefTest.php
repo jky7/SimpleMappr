@@ -34,6 +34,20 @@ final class DetailedReliefTest extends TestCase
         }
     }
 
+    public function testLandClipsSplitTheAntimeridianAndStayWithinGeographicBounds(): void
+    {
+        $clips=DetailedRelief::geographicClips(['zoom'=>12,'x0'=>4095,'x1'=>4096,'y0'=>2047,'y1'=>2048]);
+        self::assertCount(2,$clips);
+        foreach ($clips as [$west,$south,$east,$north]) {
+            self::assertGreaterThanOrEqual(-180,$west);self::assertLessThanOrEqual(180,$east);
+            self::assertLessThan(0,$south);self::assertGreaterThan(0,$north);
+            self::assertEqualsWithDelta(360/4096,$east-$west,1e-10);
+        }
+        $world=DetailedRelief::geographicClips(['zoom'=>0,'x0'=>0,'x1'=>0,'y0'=>0,'y1'=>0]);
+        self::assertCount(1,$world);
+        foreach ([-180,-85.05112878,180,85.05112878] as $index=>$value) { self::assertEqualsWithDelta($value,$world[0][$index],1e-8); }
+    }
+
     public function testTileValidationDecodesCompleteRgbJpegs(): void
     {
         $bytes=$this->jpeg();
