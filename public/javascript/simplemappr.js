@@ -470,6 +470,48 @@ var SimpleMappr = (function($, window, document) {
       });
     },
 
+    bindDragPan: function() {
+      var self = this, image = this.vars.mapOutputImage, map = this.vars.mapOutput, drag = null;
+
+      function offset(event) { return {dx: event.clientX - drag.x, dy: event.clientY - drag.y}; }
+      function finish(event, commit) {
+        if (!drag || event.pointerId !== drag.id) { return; }
+        var moved = drag.active, delta = offset(event), scale = drag.scale;
+        drag = null;
+        map.removeClass('mapper-panning').css({width: '', height: ''});
+        if (image[0].releasePointerCapture) { try { image[0].releasePointerCapture(event.pointerId); } catch (error) { /* capture already released */ } }
+        if (!moved || !commit) { self.clearPanOffset(); return; }
+        self.mapPan(Math.round(delta.dx * scale) + ',' + Math.round(delta.dy * scale));
+      }
+
+      image.on('dragstart.simplemapprPan', function(event) { event.preventDefault(); });
+      image.on('pointerdown.simplemapprPan', function(event) {
+        var e = event.originalEvent || event;
+        if (e.button !== 0 || e.pointerType === 'touch' || map.find('div.jcrop-holder').length || drag) { return; }
+        var box = image[0].getBoundingClientRect(), scale = box.width ? Number(image.attr('width')) / box.width : 1;
+        drag = {id: e.pointerId, x: e.clientX, y: e.clientY, active: false, scale: isFinite(scale) && scale > 0 ? scale : 1, width: box.width, height: box.height};
+        if (image[0].setPointerCapture) { try { image[0].setPointerCapture(e.pointerId); } catch (error) { /* pointer already gone */ } }
+      });
+      image.on('pointermove.simplemapprPan', function(event) {
+        var e = event.originalEvent || event;
+        if (!drag || e.pointerId !== drag.id) { return; }
+        var delta = offset(e);
+        // A small wobble during a click must not start a pan, so double-click zoom still works.
+        if (!drag.active && Math.abs(delta.dx) + Math.abs(delta.dy) < 4) { return; }
+        if (!drag.active) { drag.active = true; map.addClass('mapper-panning').css({width: drag.width + 'px', height: drag.height + 'px'}); }
+        image.css('transform', 'translate(' + delta.dx + 'px,' + delta.dy + 'px)');
+      });
+      image.on('pointerup.simplemapprPan', function(event) { finish(event.originalEvent || event, true); });
+      image.on('pointercancel.simplemapprPan lostpointercapture.simplemapprPan', function(event) { finish(event.originalEvent || event, false); });
+      map.on('keydown.simplemapprPan', function(event) {
+        if (drag && event.key === 'Escape') { finish({pointerId: drag.id, clientX: drag.x, clientY: drag.y}, false); }
+      });
+    },
+
+    clearPanOffset: function() {
+      this.vars.mapOutputImage.css('transform', '');
+    },
+
     mapPan: function(dir) {
       $('#pan').val(dir);
       this.resetAndBuild();
@@ -1992,6 +2034,7 @@ var SimpleMappr = (function($, window, document) {
         success: function(data) {
           if (sequence !== self.vars.renderSequence) { return; }
           if (!data || !Array.isArray(data.size) || !data.mapOutputImage) {
+            self.clearPanOffset(); $('#pan').val('');
             if (onFailed) { onFailed(); }
             self.hideSpinner(); self.showErrorMessage($('#mapper-loading-error-message').text()); return;
           }
@@ -2013,6 +2056,7 @@ var SimpleMappr = (function($, window, document) {
         },
         error: function(xhr, status) {
           if (status === 'abort' || sequence !== self.vars.renderSequence) { return; }
+          self.clearPanOffset(); $('#pan').val('');
           if (onFailed) { onFailed(); }
           self.hideSpinner();
           self.showErrorMessage((xhr.responseJSON && xhr.responseJSON.error) || $('#mapper-loading-error-message').text());
@@ -2039,11 +2083,13 @@ var SimpleMappr = (function($, window, document) {
         .css({width: data.size[0] + 'px', height: data.size[1] + 'px'})
         .one('load.simplemapprRender', function() {
           if (sequence !== self.vars.renderSequence) { return; }
+          self.clearPanOffset();
           self.loadCropSettings(load_data || {map: {bbox_rubberband: ''}}); self.hideSpinner();
           if (onRendered) { onRendered(); }
         })
         .one('error.simplemapprRender', function() {
           if (sequence !== self.vars.renderSequence) { return; }
+          self.clearPanOffset();
           if (onFailed) { onFailed(); }
           self.hideSpinner(); self.showErrorMessage($('#mapper-loading-error-message').text());
         }).attr('src', data.mapOutputImage);
@@ -2601,6 +2647,7 @@ var SimpleMappr = (function($, window, document) {
       this.bindHotkeys();
       this.bindToolbar();
       this.bindArrows();
+      this.bindDragPan();
       this.bindSettings();
       this.bindSlider();
       $('#border-slider .ui-slider-handle').attr('aria-labelledby', 'border-thickness-label');

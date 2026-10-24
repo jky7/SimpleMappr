@@ -323,3 +323,42 @@ test('a superseded history image cannot replace the rollback view',t=>{
  e.p.mapUndo();e.respond(a);e.p.mapUndo();e.requests.at(-1).error({},'error');
  assert.equal(e.$('#mapOutputImage').attr('src'),image);assert.equal(e.$('#bbox_map').val(),b);
 });
+function drag(e,type,x,y,extra={}){e.$('#mapOutputImage').trigger(e.$.Event(type,{button:0,pointerId:1,pointerType:'mouse',clientX:x,clientY:y,...extra}));}
+function tf(e){return e.$('#mapOutputImage')[0].style.transform;}
+function draggableEditor(t){const e=viewportEditor(t);e.p.bindDragPan();e.p.showMap();e.render('-90,-60,-30,10');return e;}
+test('dragging the map slides the image and sends one pixel-offset pan on release',t=>{
+ const e=draggableEditor(t),before=e.requests.length;
+ drag(e,'pointerdown',100,100);drag(e,'pointermove',130,80);
+ assert.equal(tf(e),'translate(30px,-20px)');
+ assert.equal(e.requests.length,before,'nothing is rendered while dragging');
+ drag(e,'pointerup',130,80);
+ assert.equal(e.requests.length,before+1);assert.equal(e.request().get('pan'),'30,-20');
+ assert.equal(tf(e),'translate(30px,-20px)','the image stays put until the new render arrives');
+ e.render('-95,-55,-35,15');
+ assert.equal(tf(e),'');assert.equal(e.$('#pan').val(),'');
+});
+test('a small wobble is a click and does not pan, so double-click zoom keeps working',t=>{
+ const e=draggableEditor(t),before=e.requests.length;
+ drag(e,'pointerdown',100,100);drag(e,'pointermove',102,101);drag(e,'pointerup',102,101);
+ assert.equal(e.requests.length,before);assert.equal(tf(e),'');
+});
+test('Escape cancels a drag and the image snaps back without a render',t=>{
+ const e=draggableEditor(t),before=e.requests.length;
+ drag(e,'pointerdown',100,100);drag(e,'pointermove',160,100);
+ e.$('#mapOutput').trigger(e.$.Event('keydown',{key:'Escape'}));drag(e,'pointerup',160,100);
+ assert.equal(e.requests.length,before);assert.equal(tf(e),'');
+});
+test('a failed pan render snaps the image back and does not leave a pending pan behind',t=>{
+ const e=draggableEditor(t);
+ drag(e,'pointerdown',100,100);drag(e,'pointermove',150,100);drag(e,'pointerup',150,100);
+ assert.equal(e.request().get('pan'),'50,0');e.requests.at(-1).error({},'error');
+ assert.equal(tf(e),'');assert.equal(e.$('#pan').val(),'');
+});
+test('touch pointers, other buttons and active crop or zoom tools never start a pan',t=>{
+ const e=draggableEditor(t),before=e.requests.length;
+ drag(e,'pointerdown',100,100,{pointerType:'touch'});drag(e,'pointermove',200,100,{pointerType:'touch'});drag(e,'pointerup',200,100,{pointerType:'touch'});
+ drag(e,'pointerdown',100,100,{button:2});drag(e,'pointermove',200,100);drag(e,'pointerup',200,100);
+ e.$('#mapOutput').append('<div class="jcrop-holder"></div>');
+ drag(e,'pointerdown',100,100);drag(e,'pointermove',200,100);drag(e,'pointerup',200,100);
+ assert.equal(e.requests.length,before);assert.equal(tf(e),'');
+});

@@ -193,8 +193,8 @@ class Request
                 throw new \InvalidArgumentException('The projection origin must be a longitude between -180 and 180.');
             }
         }
-        if ($document->pan && !in_array($document->pan, ['up', 'down', 'left', 'right'], true)) {
-            throw new \InvalidArgumentException('The pan direction is not supported.');
+        if ($document->pan && !in_array($document->pan, ['up', 'down', 'left', 'right'], true) && !(is_string($document->pan) && preg_match('/^-?\d{1,5},-?\d{1,5}$/D', $document->pan))) {
+            throw new \InvalidArgumentException('The pan must be a direction or a pixel offset.');
         }
         foreach (['zoom_in', 'zoom_out', 'crop', 'download', 'watermark', 'rotation', 'border_thickness'] as $field) {
             if (!is_scalar($document->{$field}) && $document->{$field} !== null) {
