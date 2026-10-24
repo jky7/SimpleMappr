@@ -130,11 +130,13 @@ final class ApplicationHttpTest extends TestCase
             self::assertStringNotContainsString('Trouvés ailleurs', $body);
             self::assertStringContainsString('/data-credits"', $body);
             self::assertStringContainsString('Kass Youssef, Joseph. 2026. SimpleMappr (version 4.0)', $body);
+            self::assertStringContainsString($locale === 'fr_FR' ? '[Logiciel], d&#039;après SimpleMappr de David P. Shorthouse (2010). ' : '[Computer software], based on SimpleMappr by David P. Shorthouse (2010). ', $body, 'the original author is named in the same citation');
+            self::assertStringContainsString($locale === 'fr_FR' ? 'L&#039;application originale :' : 'The original application:', $body);
             self::assertStringContainsString('Shorthouse, David P. 2010. SimpleMappr, an online tool to produce publication-quality point maps. https://www.simplemappr.net.', $body);
             $months = ['janvier', 'février', 'mars', 'avril', 'mai', 'juin', 'juillet', 'août', 'septembre', 'octobre', 'novembre', 'décembre'];
             $accessed = $locale === 'fr_FR' ? 'Consulté le '.date('j').' '.$months[date('n') - 1].' '.date('Y').'.' : 'Accessed '.date('F j, Y').'.';
             self::assertStringContainsString($accessed, $body, 'the access date is written in the page language');
-            self::assertMatchesRegularExpression('#\[(Computer software|Logiciel)\]\. https?://[^ ]+\. #', $body, 'the citation names this instance by its own address');
+            self::assertMatchesRegularExpression('#\(2010\)\. https?://[^ ]+\. #', $body, 'the citation names this instance by its own address');
         }
     }
 
