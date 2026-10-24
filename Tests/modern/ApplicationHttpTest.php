@@ -117,6 +117,21 @@ final class ApplicationHttpTest extends TestCase
         self::assertMatchesRegularExpression('#<link rel="stylesheet" href="/public/build/pages-css\.[0-9a-f]{12}\.css">#', $body);
     }
 
+    public function testAboutShowsCurrentUpdatesWithTheOldOnesCollapsedAndTranslated(): void
+    {
+        foreach (['en_US' => ["What's new", 'Map data', 'History'], 'fr_FR' => ['Nouveautés', 'Données de la carte', 'Histoire']] as $locale => $words) {
+            [$status, , $body] = $this->request('/about?locale='.$locale, null, ['X-Requested-With: XMLHttpRequest']);
+            self::assertSame(200, $status, $locale);
+            foreach ($words as $word) { self::assertStringContainsString(htmlspecialchars($word, ENT_QUOTES), $body, $locale); }
+            self::assertMatchesRegularExpression('#<details class="update-history">\s*<summary>[^<]+</summary>#', $body, 'old updates sit behind the History toggle');
+            self::assertLessThan(strpos($body, '<details class="update-history">'), strpos($body, $locale === 'fr_FR' ? '24 octobre 2026' : 'October 24, 2026'), 'the 2026 entries come before the toggle');
+            self::assertGreaterThan(strpos($body, '<details class="update-history">'), strpos($body, $locale === 'fr_FR' ? '8 mai, 2018' : 'May 8, 2018'), 'the 2018 entries are inside the toggle');
+            self::assertStringNotContainsString('In the Wild', $body);
+            self::assertStringNotContainsString('Trouvés ailleurs', $body);
+            self::assertStringContainsString('/data-credits"', $body);
+        }
+    }
+
     public function testSiteTitleLinksToTheEditorRootOnTheEditorAndErrorPages(): void
     {
         foreach (['/', '/no-such-page'] as $path) {

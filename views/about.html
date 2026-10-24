@@ -3,24 +3,37 @@
 #map-about p.citation{text-indent:-2em;padding-left:2em;}
 #map-about dt.update{font-weight:bold;}
 #map-about dd{margin:0 0 10px 25px;}
-#recent-updates{float:left;width:65%;}
-#live-updates{margin-left:65%;width:350px;padding:0.5em;}
-#live-updates .header{width:85%;}
-#twitter_div{margin-top:1em;}
-.twtr-tweet-text{font-size:1.5em;}
-.map-license{float:left;margin:10px 10px 5px 0;border:0px;}
+#map-about dt.update+dd{margin-top:2px;}
+#map-about dd+dd{margin-top:-6px;}
+#map-about details.update-history{margin:0 0 1em;}
+#map-about details.update-history summary{display:inline-flex;align-items:center;gap:.35em;padding:.3em .75em;font-size:.75em;color:#333;background:#f6f6f6;border:1px solid #aaa;border-radius:3px;cursor:pointer;list-style:none;}
+#map-about details.update-history summary::-webkit-details-marker{display:none;}
+#map-about details.update-history summary::after{content:"\203A";font-size:1.3em;line-height:1;transition:transform .15s;}
+#map-about details.update-history[open] summary::after{transform:rotate(90deg);}
+#map-about details.update-history summary:hover{background:#ededed;border-color:#888;}
+#map-about details.update-history dl{margin-top:.75em;}
 </style>
 <div id="map-about">
 <div id="general-about" class="panel">
 <p>{{ "Create free point maps suitable for reproduction on print media by copying and pasting geographic coordinates in layers, choosing pushpin styles, then downloading the result."|trans }}</p>
 </div>
-<div class="header"><h2>{{ "Citing"|trans }}</h2></div>
-<p>Natural Earth layers are public domain. Blue Marble imagery is credited to NASA Visible Earth. Close-view grey relief uses NASA/METI ASTER GDEM through NASA EOSDIS GIBS when enabled. RESOLVE ecoregions and biodiversity hotspots have separate attribution and licensing requirements. <a href="{{ base }}/data-credits">Read the map data credits and licenses</a> before publishing maps that use ecological layers.</p>
-<p>David P. Shorthouse created the original SimpleMappr application. You can cite it as follows.</p>
-<p>Shorthouse, David P. 2010. SimpleMappr, an online tool to produce publication-quality point maps. [Retrieved from https://www.simplemappr.net. Accessed {{ "now"|date("F d, Y") }}].</p>
-<div class="ui-helper-clearfix">
-<div id="recent-updates">
-<div class="header"><h2>{{ "Recent Updates"|trans }}</h2></div>
+<div class="header"><h2>{{ "What's new"|trans }}</h2></div>
+<dl>
+<dt class="update">{{ "October 24, 2026"|trans }}</dt>
+<dd>{{ "Improvements: Drag the map to pan; the view updates when you let go."|trans }}</dd>
+<dd>{{ "Improvements: Detailed grey terrain at close zoom, from NASA/METI ASTER elevation data."|trans }}</dd>
+<dd>{{ "Improvements: Shaded relief, Blue Marble, RESOLVE Ecoregions 2017 and Biodiversity Hotspots 2016.1 layers are back, with the credits their licences require."|trans }}</dd>
+<dd>{{ "Improvements: A cleaner look, with the Inter typeface on the page and in map labels, and restyled sign-in, credits and shared-map pages."|trans }}</dd>
+<dd>{{ "Improvements: Faster page loads and repeat previews."|trans }}</dd>
+<dd>{{ "Bug fixes: Seams in Lambert projections; the map no longer jumps back while you pan during a slow preview; signed-in users stay on their tab after a refresh."|trans }}</dd>
+<dt class="update">{{ "October 23, 2026"|trans }}</dt>
+<dd>{{ "Improvements: Sign in with Google or GitHub to save private maps."|trans }}</dd>
+<dd>{{ "Bug fixes: Undo and Redo recover from a failed preview; region fill and the map tools work again."|trans }}</dd>
+<dt class="update">{{ "October 22, 2026"|trans }}</dt>
+<dd>{{ "Improvements: SimpleMappr runs again on current PHP and MapServer. It has private saved maps, share links you can revoke, data imports, downloads (PNG, SVG, TIFF, Word, PowerPoint, KML and GeoJSON) and WMS/WFS map services."|trans }}</dd>
+</dl>
+<details class="update-history">
+<summary>{{ "History"|trans }}</summary>
 <dl>
 <dt class="update">{{ "May 8, 2018"|trans }}</dt><dd>{{ "Improvements: Added option to make oceans and lakes blue."|trans }}</dd>
 <dt class="update">{{ "February 20, 2018"|trans }}</dt><dd>{{ "Improvements: Update OpenAPI document to version 3."|trans }}</dd>
@@ -41,12 +54,17 @@
 <dt class="update">{{ "September 5, 2015"|trans }}</dt><dd>{{ "Improvements: Upgraded to MapServer 7.0.0. Regions overlay selected layers. Blank colours for Regions result in transparency. Requested by Ryan St Laurent."|trans }}</dd>
 <dt class="update">{{ "February 27, 2015"|trans }}</dt><dd>{{ "Bug fixes: Points disappear when the interface is Français. Reported by Carole Sinou."|trans }}</dd>
 </dl>
-</div>
-</div>
+</details>
+
+<div class="header"><h2>{{ "Citing"|trans }}</h2></div>
+<p>{{ "David P. Shorthouse created the original SimpleMappr application. You can cite it as follows."|trans }}</p>
+<p>Shorthouse, David P. 2010. SimpleMappr, an online tool to produce publication-quality point maps. [Retrieved from https://www.simplemappr.net. Accessed {{ "now"|date("F d, Y") }}].</p>
+
+<div class="header"><h2>{{ "Map data"|trans }}</h2></div>
+{% set credits_link = '<a href="' ~ base ~ '/data-credits">' ~ ("Read the map data credits and licenses"|trans) ~ '</a>' %}
+<p>{{ "Natural Earth layers are public domain. Blue Marble imagery is credited to NASA Visible Earth. Close-view grey relief uses NASA/METI ASTER GDEM through NASA EOSDIS GIBS when enabled. RESOLVE ecoregions and biodiversity hotspots have separate attribution and licensing requirements. %credits_link% before publishing maps that use ecological layers."|trans({"%credits_link%": credits_link})|raw }}</p>
 
 <div class="header"><h2>{{ "Acknowledgments"|trans }}</h2></div>
-{% set urls_naturalearth = '<a href="http://www.naturalearthdata.com/" target="_blank">http://www.naturalearthdata.com/</a>' %}
-{% set urls_mapserver = '<a href="http://mapserver.org" target="_blank">http://mapserver.org</a>' %}
 <p>Underlying shapefiles and relief are from <a href="https://www.naturalearthdata.com/">Natural Earth</a>. Rendering uses <a href="https://mapserver.org/">MapServer</a> through PHP MapScript. Blue Marble is from <a href="https://science.nasa.gov/earth/faq/">NASA Visible Earth</a>. The optional ecological layers use RESOLVE Ecoregions 2017 and Biodiversity Hotspots 2016.1. Their creators, source links, licenses and display changes are listed in <a href="{{ base }}/data-credits">map data credits</a>.</p>
 
 <div class="header"><h2>{{ "History"|trans }}</h2></div>
@@ -57,8 +75,6 @@
 <p class="citation">Brown, Brian. V. 2013. Automating the "Material examined" section of taxonomic papers to speed up species descriptions. <em>Zootaxa</em> 3683(3): 297. <a href="https://doi.org/10.11646/zootaxa.3683.3.8">https://doi.org/10.11646/zootaxa.3683.3.8</a>, <a href="http://phorid.net/software/">http://phorid.net/software/</a>.</p>
 <h3>Ruby 2+</h3>
 <p class="citation"><a href="https://rubygems.org/gems/simple-mappr">simple-mappr</a> Ruby gem</p>
-<p>
-</p>
 <h3>R Script</h3>
 <p class="citation"><a href="https://gist.github.com/dshorthouse/f6ed3029a696b1285f81d2688bdc7b5f">simple_mappr.r</a> Sample R script that uses the dplyr and httr packages to send requests to the SimpleMappr API and download image files to disk.</p>
 
@@ -66,12 +82,4 @@
 {% set urls_github = '<a href="https://github.com/dshorthouse/SimpleMappr">https://github.com/dshorthouse/SimpleMappr</a>' %}
 <p>{{ "The opensource, MIT-licensed code for SimpleMappr may be obtained at %urls_github%."|trans({"%urls_github%": urls_github})|raw }}</p>
 
-<div class="header"><h2>{{ "In the Wild"|trans }} ({{ citations['citations']|length }}) <a href="{{ base }}/citation.rss"><img width="16" height="16" alt="RSS Feed" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAACGklEQVQ4T53TX0hTURzA8e/d3XbnxLUlpaOkFZW0IQqJkQ8t6GHuodAX3YOi/aGQeqgnrd4iCOrVpIdhovUWIiQsoX9oPkSFPdjIbGrDJ3Pq5pzc/bk3NuWWNkI7T4dzzu9zfr8f5wg/b5a6VUV4jMBBdjZmUWkV5jvs0/8RvH6Vyoww32lXs3PDgWr0ZcdRFn+QCn9EiS9sKx8NMJ++RqHn1oaskpoeIzH6iOTk639CGmAsP4Op2oe+pBxxz2EtKPn1JSvPbqCsRvJCGvDnrljsoKD2EgUnWkA0kFmeI+pvJBOZ/QvRAKmqAaniHOm5ceTxgVyQ3u7C0tKDaCsjsxRmucuLkljahOTvgZJmbcxPfPgeusLdWNufI1r3I38JEHtyMT8g7j2K8YgbyenBcKg2dyj57S3Rvlb0die29iHQiSz7G0mF3mlI3h5IzjqKmroQjGYSI92sBu5S1HAfU00zyclXRHtb8gCCgFRxFjJp5GAAyenF0uyHTIrIg5PoTEXYrr8BJc3CHReqvJJDfjexsh6Lrzu3GOs/jxwcxnplEIOjJpdBNpPijg/orPuI9vhITo1sAaoasDQ93AAuIAdfYHZfpbDuNvLEELGnl9nV1k/2vcQHO1l737cZIFtCZf16CRNDoKroS49hdHrILIaRPw8gubyIJeWkvo+SCn/SgBnAsa2Hv/WQIISyv/EU0LvjHykIIRTafgEZntfprlNojgAAAABJRU5ErkJggg==" /></a></h2></div>
-{% for citation in citations['citations'] %}
-    <p class="citation">{{ citation.reference|striptags }}</p>
-{% endfor %}
-
 </div>
-{% if environment == "production" %}
-
-{% endif %}
