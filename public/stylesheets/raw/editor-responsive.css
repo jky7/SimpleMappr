@@ -43,7 +43,7 @@
  .ui-dialog{left:1rem!important;max-height:calc(100vh - 2rem);overflow:auto}
 }
 #site-session form{margin:0}
-#site-session button,#site-session a.login{color:#f2f2f2;background-color:#333;border:1px solid #aaa;font:1em/1.25 Arial,sans-serif!important;padding:.35em .6em;margin:0 .2em;display:inline-block;box-sizing:border-box;text-decoration:none;cursor:pointer}
+#site-session button,#site-session a.login{color:#f2f2f2;background-color:#333;border:1px solid #aaa;font:1em/1.25 Inter,system-ui,sans-serif!important;padding:.35em .6em;margin:0 .2em;display:inline-block;box-sizing:border-box;text-decoration:none;cursor:pointer}
 #site-session button:hover,#site-session a.login:hover{color:#fff;background-color:#4f4f4f;border-color:#ddd}
 button.positive{color:#3f6f13!important}
 .ui-accordion-header[role=button]{cursor:pointer}

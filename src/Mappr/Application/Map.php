@@ -133,7 +133,7 @@ class Map extends Mappr
                 $label->color->setRGB(255, 255, 255);
             } else {
                 $label->encoding = "UTF-8";
-                $label->font = "arial";
+                $label->font = "inter";
                 $label->size = 10;
                 $label->position = MS_UC;
                 $label->color->setRGB(30, 30, 30);
@@ -182,7 +182,7 @@ class Map extends Mappr
             $this->map_obj->scalebar->outlinecolor->setRGB(0, 0, 0);
             $this->map_obj->scalebar->units = MS_KILOMETERS;
             $this->map_obj->scalebar->label->encoding = "UTF-8";
-            $this->map_obj->scalebar->label->font = "arial";
+            $this->map_obj->scalebar->label->font = "inter";
             $this->map_obj->scalebar->label->size = 8;
             $this->map_obj->scalebar->label->color->setRGB(0, 0, 0);
             $this->map_obj->scalebar->status = MS_EMBED;
@@ -205,7 +205,7 @@ class Map extends Mappr
                 $this->map_obj->legend->keyspacingx = 5;
                 $this->map_obj->legend->keyspacingy = 5;
                 $this->map_obj->legend->postlabelcache = 1;
-                $this->map_obj->legend->label->font = "arial";
+                $this->map_obj->legend->label->font = "inter";
                 $this->map_obj->legend->label->encoding = "UTF-8";
                 $this->map_obj->legend->label->position = 1;
                 $this->map_obj->legend->label->size = 10;

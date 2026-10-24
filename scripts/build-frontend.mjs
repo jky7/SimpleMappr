@@ -34,8 +34,8 @@ for(const [name,source]of [['jquery',await readFile('node_modules/jquery/dist/jq
  const digest=sha(code),file=`${name}.${digest.slice(0,12)}.js`;
  await writeFile(`${output}/${file}`,code);manifest.assets[name]={file,sha256:digest,bytes:Buffer.byteLength(code),gzipBytes:gzipSync(code).length};
 }
-for(const [name,contents]of [['editor-css','@import "../node_modules/jquery-ui/themes/base/all.css";\n@import "../public/stylesheets/raw/styles.css";\n@import "../public/stylesheets/raw/editor-responsive.css";']]){
- const css=await build({stdin:{contents,resolveDir:path.join(process.cwd(),'scripts'),loader:'css',sourcefile:name+'.css'},bundle:true,minify:true,write:false,outdir:output,assetNames:'images/[name]-[hash]',loader:{'.png':'file','.gif':'file','.jpg':'file','.svg':'file'}});
+for(const [name,contents]of [['editor-css','@import "../public/stylesheets/raw/fonts.css";\n@import "../node_modules/jquery-ui/themes/base/all.css";\n@import "../public/stylesheets/raw/styles.css";\n@import "../public/stylesheets/raw/editor-responsive.css";']]){
+ const css=await build({stdin:{contents,resolveDir:path.join(process.cwd(),'scripts'),loader:'css',sourcefile:name+'.css'},bundle:true,minify:true,write:false,outdir:output,assetNames:'images/[name]-[hash]',loader:{'.png':'file','.gif':'file','.jpg':'file','.svg':'file','.woff2':'file'}});
  for(const item of css.outputFiles){
   let file=path.relative(path.resolve(output),item.path);const digest=sha(item.contents);
   if(file.endsWith('.css'))file=`${name}.${digest.slice(0,12)}.css`;
@@ -44,7 +44,7 @@ for(const [name,contents]of [['editor-css','@import "../node_modules/jquery-ui/t
  }
 }
 let licenses='SimpleMappr frontend third-party notices\n\n';
-for(const [name,file]of [['jQuery 3.7.1','node_modules/jquery/LICENSE.txt'],['jQuery UI 1.14.2','node_modules/jquery-ui/LICENSE.txt']])licenses+=name+'\n'+await readFile(file,'utf8')+'\n\n';
+for(const [name,file]of [['jQuery 3.7.1','node_modules/jquery/LICENSE.txt'],['jQuery UI 1.14.2','node_modules/jquery-ui/LICENSE.txt'],['Inter 5.3.0 (@fontsource-variable/inter, SIL OFL 1.1)','node_modules/@fontsource-variable/inter/LICENSE']])licenses+=name+'\n'+await readFile(file,'utf8')+'\n\n';
 for(const name of retained){const source=await readFile(`public/javascript/${name}`,'utf8');licenses+=name+'\n'+source.slice(0,source.indexOf('*/')+2)+'\n\n';}
 const licenseFile='licenses.'+sha(licenses).slice(0,12)+'.txt';await writeFile(`${output}/${licenseFile}`,licenses);
 manifest.assets.licenses={file:licenseFile,sha256:sha(licenses),bytes:Buffer.byteLength(licenses),gzipBytes:gzipSync(licenses).length};

@@ -680,7 +680,7 @@ abstract class Mappr
             if (isset($this->request->hide_gridlabel) && $this->request->hide_gridlabel) {
                 $label->color->setRGB(255, 255, 255);
             } else {
-                $label->font = "arial";
+                $label->font = "inter";
                 $label->encoding = "UTF-8";
                 $size = 10;
                 if ($this->_isResize() && $this->request->download_factor > 1) {
@@ -761,7 +761,7 @@ abstract class Mappr
             $this->map_obj->legend->keyspacingx = $keyspacing;
             $this->map_obj->legend->keyspacingy = $keyspacing;
             $this->map_obj->legend->postlabelcache = 1;
-            $this->map_obj->legend->label->font = "arial";
+            $this->map_obj->legend->label->font = "inter";
             $this->map_obj->legend->label->encoding = "UTF-8";
             $this->map_obj->legend->label->position = 1;
             $this->map_obj->legend->label->size = $size;
@@ -806,7 +806,7 @@ abstract class Mappr
         $this->map_obj->scalebar->color->setRGB(30, 30, 30);
         $this->map_obj->scalebar->outlinecolor->setRGB(0, 0, 0);
         $this->map_obj->scalebar->units = MS_KILOMETERS;
-        $this->map_obj->scalebar->label->font = "arial";
+        $this->map_obj->scalebar->label->font = "inter";
         $this->map_obj->scalebar->label->encoding = "UTF-8";
         $this->map_obj->scalebar->label->size = $size;
         $this->map_obj->scalebar->label->color->setRGB(0, 0, 0);
@@ -1398,7 +1398,7 @@ abstract class Mappr
     private function _createLabel($size = 8, $position = MS_UR, $encoding = "CP1252")
     {
         $label = new \labelObj();
-        $label->font = "arial";
+        $label->font = "inter";
         $label->encoding = $encoding;
         if ($this->_isResize() && $this->request->download_factor > 1) {
             $size = $this->request->download_factor*7;
@@ -1431,7 +1431,7 @@ abstract class Mappr
             $class->settext(MAPPR_URL);
 
             $label = new \labelObj();
-            $label->font = "arial";
+            $label->font = "inter";
             $label->encoding = "UTF-8";
             $label->size = 8;
             $label->position = MS_XY;
@@ -1535,7 +1535,7 @@ abstract class Mappr
             $layer->name='dataset_credit_'.$index;
             $layer->type=MS_LAYER_POINT;$layer->status=MS_DEFAULT;$layer->transform=MS_FALSE;$layer->sizeunits=MS_PIXELS;
             $class=new \classObj($layer);$class->setText($text);
-            $label=new \labelObj();$label->font='arial';$label->encoding='UTF-8';$label->size=7*$scale;$label->position=MS_XY;
+            $label=new \labelObj();$label->font='inter';$label->encoding='UTF-8';$label->size=7*$scale;$label->position=MS_XY;
             $label->color->setRGB(0,0,0);$label->outlinecolor->setRGB(255,255,255);$label->outlinewidth=2*$scale;$label->force=MS_TRUE;$label->partials=MS_TRUE;
             $class->addLabel($label);
             $point=new \pointObj();$point->setXY(8*$scale,$height-$reservedBottom-(10+(count($lines)-1-$index)*13)*$scale);
