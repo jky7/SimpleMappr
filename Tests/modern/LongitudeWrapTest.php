@@ -18,6 +18,30 @@ final class LongitudeWrapTest extends TestCase
         }
     }
 
+    public function testWmsUsesItsRequestedLambertCrsForRasterWrapping(): void
+    {
+        if (!isset(Mappr::getShapefileConfig()['reliefgrey'])) { self::markTestSkipped('Requires installed Gray Earth relief.'); }
+        $source=new projectionObj('EPSG:4326');$target=new projectionObj('EPSG:3112');
+        $extent=new rectObj(110,-50,200,10);self::assertSame(MS_SUCCESS,$extent->project($source,$target));
+        $viewport=msLoadMapFromString('MAP MAXSIZE 5000 END',ROOT,null);$viewport->setSize(900,450);$viewport->setProjection('EPSG:3112');$viewport->setExtent($extent->minx,$extent->miny,$extent->maxx,$extent->maxy);$bounds=$viewport->extent;
+        $previous=$_REQUEST;$images=[];
+        try {
+            foreach (['1.1.1','1.3.0'] as $version) {
+                $_REQUEST=['SERVICE'=>'WMS','REQUEST'=>'GetMap','VERSION'=>$version,'LAYERS'=>'reliefgrey','BBOX'=>implode(',',[$bounds->minx,$bounds->miny,$bounds->maxx,$bounds->maxy]),'WIDTH'=>900,'HEIGHT'=>450,'FORMAT'=>'image/png','SRS'=>$version==='1.1.1'?'EPSG:3112':'EPSG:4326','CRS'=>$version==='1.3.0'?'EPSG:3112':'EPSG:4326'];
+                $service=new \SimpleMappr\Mappr\WebServices\Wms();$bytes=$service->makeService()->execute()->createOutput();
+                $image=@imagecreatefromstring($bytes);self::assertNotFalse($image,substr($bytes,0,300));$images[]=hash('sha256',$bytes);
+                foreach ([-20,-30,-40] as $latitude) {
+                    $point=new pointObj(180,$latitude);self::assertSame(MS_SUCCESS,$point->project($source,$target));
+                    $x=(int)round(($point->x-$bounds->minx)/($bounds->maxx-$bounds->minx)*900);$y=(int)round(($bounds->maxy-$point->y)/($bounds->maxy-$bounds->miny)*450);
+                    $color=imagecolorsforindex($image,imagecolorat($image,$x,$y));
+                    self::assertLessThan(240,min($color['red'],$color['green'],$color['blue']),'WMS relief must cover the date line in its requested Lambert CRS.');
+                }
+                imagedestroy($image);
+            }
+            self::assertSame($images[0],$images[1]);
+        } finally { $_REQUEST=$previous; }
+    }
+
     public function testNorthAmericaReliefCoversOceanAtTheDateLine(): void
     {
         if (!isset(Mappr::getShapefileConfig()['reliefgrey'])) { self::markTestSkipped('Requires installed Gray Earth relief.'); }

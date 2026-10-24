@@ -158,7 +158,7 @@ abstract class OgcService extends Mappr
             }
             if ($this->service==='WMS' && strtolower($this->parameters['REQUEST'])==='getmap') {
                 try {
-                    $this->prepareDetailedServiceRelief();
+                    $this->prepareServiceRasterSources();
                     $this->addDataCredits($this->responseLayers(),(int)$this->parameters['WIDTH'],(int)$this->parameters['HEIGHT']);
                 } catch (\InvalidArgumentException $error) { $this->inputError=$error->getMessage(); }
                 catch (\RuntimeException $error) {
@@ -170,7 +170,7 @@ abstract class OgcService extends Mappr
         return $this;
     }
 
-    private function prepareDetailedServiceRelief(): void
+    private function prepareServiceRasterSources(): void
     {
         if (str_contains(strtolower($this->parameters['FORMAT'] ?? ''),'svg')) { return; }
         foreach ($this->responseLayers() as $name) { if (!isset($this->selectedLayers[$name])) { return; } }
@@ -187,6 +187,7 @@ abstract class OgcService extends Mappr
         $viewport->setSize((int)$this->parameters['WIDTH'],(int)$this->parameters['HEIGHT']);$viewport->setProjection($crs);
         $viewport->setExtent(...$bounds);$extent=$viewport->extent;
         $bounds=[$extent->minx,$extent->miny,$extent->maxx,$extent->maxy];
+        $this->wrapRasterLayers($this->responseLayers(),self::getProjection(strtolower($crs)));
         $this->addDetailedRelief($this->responseLayers(),$bounds,$crs,(int)$this->parameters['WIDTH'],(int)$this->parameters['HEIGHT']);
         if (!$this->detailedReliefUsed) { return; }
         $this->map_obj->getLayerByName('internal_detailed_relief')->status=MS_ON;

@@ -160,4 +160,6 @@ Only public tile indices leave the server. Coordinates, labels, account details 
 
 The cache is disposable and excluded from protected backups. Recovery preserves the feature flag and downloads tiles again as needed, so detailed relief requires internet access after recovery. The app keeps the installed asset volume read-only. NASA/METI ASTER and NASA EOSDIS GIBS credits appear on maps using the detailed source and on the public data credits page.
 
-Close views crossing the antimeridian currently omit the part outside the canonical longitude range of -180 to 180 degrees. This existing MapServer wrapping limitation also affects detailed relief.
+Lambert views join the global background across the antimeridian through temporary VRT metadata. Source imagery stays unchanged, and the wrapper also applies to raster and Office downloads and supported WMS Lambert maps. SVG retains its vector-only behavior.
+
+A separate limitation remains for geographic close views crossing the antimeridian. They currently omit the part outside the canonical longitude range of -180 to 180 degrees, including when detailed relief is enabled.
