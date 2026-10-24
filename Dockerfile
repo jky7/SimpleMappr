@@ -24,7 +24,7 @@ RUN printf 'deb [check-valid-until=no] http://snapshot.debian.org/archive/debian
     && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
         apache2 libapache2-mod-php8.4 php8.4-cli php-mapscript-ng \
         php8.4-gd php8.4-mysql php8.4-curl php8.4-mbstring php8.4-xml php8.4-zip \
-        gdal-bin gettext ca-certificates fonts-dejavu-core curl composer \
+        gdal-bin gettext ca-certificates fonts-dejavu-core fonts-inter curl composer \
     && php -r 'if (PHP_VERSION_ID < 80427) { fwrite(STDERR, "PHP 8.4.27 or newer is required for CVE-2026-109618 and CVE-2026-109619.\n"); exit(1); }' \
     && dpkg-query -W -f='${Package}\t${Version}\n' > /usr/local/share/simplemappr-packages.tsv \
     && rm -rf /var/lib/apt/lists/* \
