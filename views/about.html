@@ -83,7 +83,8 @@
 <p class="citation"><a href="https://gist.github.com/dshorthouse/f6ed3029a696b1285f81d2688bdc7b5f">simple_mappr.r</a> Sample R script that uses the dplyr and httr packages to send requests to the SimpleMappr API and download image files to disk.</p>
 
 <div class="header"><h2>{{ "Code"|trans }}</h2></div>
-{% set urls_github = '<a href="https://github.com/dshorthouse/SimpleMappr">https://github.com/dshorthouse/SimpleMappr</a>' %}
-<p>{{ "The opensource, MIT-licensed code for SimpleMappr may be obtained at %urls_github%."|trans({"%urls_github%": urls_github})|raw }}</p>
+{% set urls_github = '<a href="https://github.com/jky7/SimpleMappr">https://github.com/jky7/SimpleMappr</a>' %}
+{% set urls_original = '<a href="https://github.com/dshorthouse/SimpleMappr">https://github.com/dshorthouse/SimpleMappr</a>' %}
+<p>{{ "The open-source, MIT-licensed code for this version of SimpleMappr is at %urls_github%. The original code is archived at %urls_original%."|trans({"%urls_github%": urls_github, "%urls_original%": urls_original})|raw }}</p>
 
 </div>

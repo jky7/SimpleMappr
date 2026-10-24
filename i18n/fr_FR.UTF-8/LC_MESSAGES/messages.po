@@ -735,8 +735,8 @@ msgstr "L'API est utilisée par %urls_tropicos% de Le Missouri Botanical Garden.
 
 #: .tabs/about.php:36
 #, php-format
-msgid "The opensource, MIT-licensed code for SimpleMappr may be obtained at %urls_github%."
-msgstr "Le code pour SimpleMappr peut être obtenu à %urls_github%."
+msgid "The open-source, MIT-licensed code for this version of SimpleMappr is at %urls_github%. The original code is archived at %urls_original%."
+msgstr "Le code source libre, sous licence MIT, de cette version de SimpleMappr se trouve à %urls_github%. Le code original est archivé à %urls_original%."
 
 #: .tabs/about.php:40
 #, php-format
