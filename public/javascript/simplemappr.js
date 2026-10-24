@@ -471,45 +471,65 @@ var SimpleMappr = (function($, window, document) {
     },
 
     bindDragPan: function() {
-      var self = this, image = this.vars.mapOutputImage, map = this.vars.mapOutput, drag = null;
+      var self = this, image = this.vars.mapOutputImage, map = this.vars.mapOutput;
 
-      function offset(event) { return {dx: event.clientX - drag.x, dy: event.clientY - drag.y}; }
+      // panOffset is how far the displayed image sits from the last rendered view while a render is pending.
+      // A new drag starts from it, and finishing one sends the total, because the pending request is replaced.
+      this.vars.panOffset = {x: 0, y: 0};
+      this.vars.pointerDrag = null;
+
+      function slide(x, y) { image.css('transform', 'translate(' + x + 'px,' + y + 'px)'); }
       function finish(event, commit) {
+        var drag = self.vars.pointerDrag;
         if (!drag || event.pointerId !== drag.id) { return; }
-        var moved = drag.active, delta = offset(event), scale = drag.scale;
-        drag = null;
-        map.removeClass('mapper-panning').css({width: '', height: ''});
+        self.vars.pointerDrag = null;
+        map.removeClass('mapper-panning');
         if (image[0].releasePointerCapture) { try { image[0].releasePointerCapture(event.pointerId); } catch (error) { /* capture already released */ } }
-        if (!moved || !commit) { self.clearPanOffset(); return; }
-        self.mapPan(Math.round(delta.dx * scale) + ',' + Math.round(delta.dy * scale));
+        if (!drag.active) { return; }
+        if (!commit) { slide(drag.base.x, drag.base.y); if (!drag.base.x && !drag.base.y) { self.clearPanOffset(); } return; }
+        self.vars.panOffset = {x: drag.base.x + drag.last.x, y: drag.base.y + drag.last.y};
+        self.mapPan(Math.round(self.vars.panOffset.x * drag.scale) + ',' + Math.round(self.vars.panOffset.y * drag.scale));
       }
 
       image.on('dragstart.simplemapprPan', function(event) { event.preventDefault(); });
       image.on('pointerdown.simplemapprPan', function(event) {
         var e = event.originalEvent || event;
-        if (e.button !== 0 || e.pointerType === 'touch' || map.find('div.jcrop-holder').length || drag) { return; }
+        if (e.button !== 0 || e.pointerType === 'touch' || map.find('div.jcrop-holder').length || self.vars.pointerDrag) { return; }
         var box = image[0].getBoundingClientRect(), scale = box.width ? Number(image.attr('width')) / box.width : 1;
-        drag = {id: e.pointerId, x: e.clientX, y: e.clientY, active: false, scale: isFinite(scale) && scale > 0 ? scale : 1, width: box.width, height: box.height};
+        self.vars.pointerDrag = {id: e.pointerId, x: e.clientX, y: e.clientY, active: false, last: {x: 0, y: 0}, base: {x: self.vars.panOffset.x, y: self.vars.panOffset.y}, scale: isFinite(scale) && scale > 0 ? scale : 1, width: box.width, height: box.height};
         if (image[0].setPointerCapture) { try { image[0].setPointerCapture(e.pointerId); } catch (error) { /* pointer already gone */ } }
       });
       image.on('pointermove.simplemapprPan', function(event) {
-        var e = event.originalEvent || event;
+        var e = event.originalEvent || event, drag = self.vars.pointerDrag;
         if (!drag || e.pointerId !== drag.id) { return; }
-        var delta = offset(e);
+        var dx = e.clientX - drag.x, dy = e.clientY - drag.y;
         // A small wobble during a click must not start a pan, so double-click zoom still works.
-        if (!drag.active && Math.abs(delta.dx) + Math.abs(delta.dy) < 4) { return; }
-        if (!drag.active) { drag.active = true; map.addClass('mapper-panning').css({width: drag.width + 'px', height: drag.height + 'px'}); }
-        image.css('transform', 'translate(' + delta.dx + 'px,' + delta.dy + 'px)');
+        if (!drag.active && Math.abs(dx) + Math.abs(dy) < 4) { return; }
+        if (!drag.active) { drag.active = true; map.addClass('mapper-panning mapper-panned').css({width: drag.width + 'px', height: drag.height + 'px'}); }
+        drag.last = {x: dx, y: dy};
+        slide(drag.base.x + dx, drag.base.y + dy);
       });
       image.on('pointerup.simplemapprPan', function(event) { finish(event.originalEvent || event, true); });
       image.on('pointercancel.simplemapprPan lostpointercapture.simplemapprPan', function(event) { finish(event.originalEvent || event, false); });
       map.on('keydown.simplemapprPan', function(event) {
+        var drag = self.vars.pointerDrag;
         if (drag && event.key === 'Escape') { finish({pointerId: drag.id, clientX: drag.x, clientY: drag.y}, false); }
       });
     },
 
+    // Called when a render has replaced the image or failed. A drag already under way on the new image
+    // keeps its slide and measures from the new view; otherwise the image and its clipping frame reset.
     clearPanOffset: function() {
-      this.vars.mapOutputImage.css('transform', '');
+      var drag = this.vars.pointerDrag, image = this.vars.mapOutputImage;
+      this.vars.panOffset = {x: 0, y: 0};
+      if (drag && drag.active) {
+        drag.base = {x: 0, y: 0};
+        image.css('transform', 'translate(' + drag.last.x + 'px,' + drag.last.y + 'px)');
+        this.vars.mapOutput.css({width: image.width() + 'px', height: image.height() + 'px'});
+        return;
+      }
+      image.css('transform', '');
+      this.vars.mapOutput.removeClass('mapper-panned mapper-panning').css({width: '', height: ''});
     },
 
     mapPan: function(dir) {

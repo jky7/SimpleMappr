@@ -379,3 +379,38 @@ test('a tab named in the URL hash opens that tab whatever position the role give
   assert.equal(e.$('#tabs').tabs('option','active'),expected,hash);
  }
 });
+function slide(e,from,to){drag(e,'pointerdown',from[0],from[1]);drag(e,'pointermove',to[0],to[1]);drag(e,'pointerup',to[0],to[1]);}
+test('the preview frame keeps clipping the slid image until the new render arrives',t=>{
+ const e=draggableEditor(t);
+ slide(e,[100,100],[150,100]);
+ assert.equal(e.$('#mapOutput').hasClass('mapper-panned'),true,'released but still waiting for the render');
+ assert.equal(e.$('#mapOutput').hasClass('mapper-panning'),false,'the grab cursor ends on release');
+ assert.notEqual(e.$('#mapOutput')[0].style.width,'');
+ e.render('-95,-55,-35,15');
+ assert.equal(e.$('#mapOutput').hasClass('mapper-panned'),false);assert.equal(e.$('#mapOutput')[0].style.width,'');assert.equal(tf(e),'');
+});
+test('a second drag while the first render is pending continues from the slid image and sends the total offset',t=>{
+ const e=draggableEditor(t);
+ slide(e,[100,100],[130,100]);const first=e.requests.length;
+ drag(e,'pointerdown',100,100);drag(e,'pointermove',110,100);
+ assert.equal(tf(e),'translate(40px,0px)','no snap back to the original place');
+ drag(e,'pointerup',110,100);
+ assert.equal(e.requests.length,first+1);assert.equal(e.request().get('pan'),'40,0','measured from the last rendered view');
+});
+test('a render that arrives mid-drag keeps the slide and measures the rest from the new view',t=>{
+ const e=draggableEditor(t);
+ slide(e,[100,100],[130,100]);
+ drag(e,'pointerdown',100,100);drag(e,'pointermove',110,100);
+ e.render('-95,-55,-35,15');
+ assert.equal(tf(e),'translate(10px,0px)','the image under the pointer does not jump');
+ assert.equal(e.$('#mapOutput').hasClass('mapper-panned'),true,'still clipped while the pointer drags');
+ drag(e,'pointermove',120,100);drag(e,'pointerup',120,100);
+ assert.equal(e.request().get('pan'),'20,0');
+});
+test('Escape during a second drag returns to the pending slide and not to the original place',t=>{
+ const e=draggableEditor(t),before=e.requests.length;
+ slide(e,[100,100],[130,100]);
+ drag(e,'pointerdown',100,100);drag(e,'pointermove',160,100);
+ e.$('#mapOutput').trigger(e.$.Event('keydown',{key:'Escape'}));
+ assert.equal(tf(e),'translate(30px,0px)');assert.equal(e.requests.length,before+1);
+});
