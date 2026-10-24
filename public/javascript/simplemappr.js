@@ -2625,8 +2625,6 @@ var SimpleMappr = (function($, window, document) {
       if($('#usermaps').length > 0) {
         this.loadMapList();
         this.loadShareList();
-        // Land on My Maps after sign-in, but let a refresh keep the tab named in the URL.
-        if (!new window.URLSearchParams(window.location.hash.slice(1)).has('tabs')) { this.tabSelector(4); }
       }
     },
 

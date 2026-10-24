@@ -367,11 +367,6 @@ function signedInEditor(t,hash){
  const tabs=[];e.p.tabSelector=index=>tabs.push(index);e.p.loadMapList=()=>{};e.p.loadShareList=()=>{};
  e.p.getUserData();return tabs;
 }
-test('a signed-in user lands on My Maps when the URL names no tab',t=>{
- assert.deepEqual(signedInEditor(t,''),[4]);
- assert.deepEqual(signedInEditor(t,'foo=bar'),[4]);
-});
-test('a refresh keeps the tab named in the URL instead of jumping to My Maps',t=>{
- assert.deepEqual(signedInEditor(t,'tabs=0'),[]);
- assert.deepEqual(signedInEditor(t,'tabs=2'),[]);
+test('a signed-in user starts on the default Preview tab and the URL tab is left to the restore',t=>{
+ for(const hash of ['','foo=bar','tabs=0','tabs=2'])assert.deepEqual(signedInEditor(t,hash),[],hash);
 });
