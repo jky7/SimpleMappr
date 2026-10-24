@@ -1257,3 +1257,16 @@ msgstr ""
 
 msgid "This version is based on the original application:"
 msgstr ""
+
+#: views/help.html
+msgid "scroll wheel"
+msgstr ""
+
+msgid "Zoom in or out around the pointer; the view updates when you stop scrolling"
+msgstr ""
+
+msgid "drag the map"
+msgstr ""
+
+msgid "Pan the map; the view updates when you let go"
+msgstr ""

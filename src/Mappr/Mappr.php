@@ -1128,6 +1128,20 @@ abstract class Mappr
      */
     private function _setZoom()
     {
+        // A wheel zoom or a combined drag and zoom: show this pixel rectangle of the previous view.
+        if (!empty($this->request->view_rect) && !$this->_isResize()) {
+            [$x0, $y0, $x1, $y1] = array_map('floatval', explode(',', $this->request->view_rect));
+            // zoomRectangle requires inverted screen Y bounds, which the rectObj constructor rejects.
+            $view = new \rectObj();
+            $view->minx = $x0;
+            $view->miny = $y1;
+            $view->maxx = $x1;
+            $view->maxy = $y0;
+            $this->map_obj->zoomrectangle($view, $this->map_obj->width, $this->map_obj->height, $this->map_obj->extent, null);
+            $this->_clearExtentPadding();
+            return;
+        }
+        $zoomed = false;
         //Zoom in
         if (isset($this->request->bbox_rubberband) && $this->request->bbox_rubberband && !$this->_isResize()) {
             $bbox_rubberband = explode(',', $this->request->bbox_rubberband);
@@ -1144,6 +1158,7 @@ abstract class Mappr
                 $zoom_rect->maxy = $bbox_rubberband[1];
                 $this->map_obj->zoomrectangle($zoom_rect, $this->map_obj->width, $this->map_obj->height, $this->map_obj->extent, null);
             }
+            $zoomed = true;
         }
 
         //Auto Zoom in
@@ -1151,6 +1166,7 @@ abstract class Mappr
             $zoom_point = new \pointObj();
             $zoom_point->setXY($this->map_obj->width/2, $this->map_obj->height/2);
             $this->map_obj->zoompoint(2, $zoom_point, $this->map_obj->width, $this->map_obj->height, $this->map_obj->extent, null);
+            $zoomed = true;
         }
 
         //Zoom out
@@ -1158,7 +1174,21 @@ abstract class Mappr
             $zoom_point = new \pointObj();
             $zoom_point->setXY($this->map_obj->width/2, $this->map_obj->height/2);
             $this->map_obj->zoompoint(-2, $zoom_point, $this->map_obj->width, $this->map_obj->height, $this->map_obj->extent, null);
+            $zoomed = true;
         }
+        if ($zoomed) { $this->_clearExtentPadding(); }
+    }
+
+    /**
+     * After a zoom the whole canvas is the new view, so the padding that fitted the requested box to the canvas
+     * no longer applies; subtracting it would report a box narrower than the map shows.
+     *
+     * @return void
+     */
+    private function _clearExtentPadding()
+    {
+        $this->ox_pad = 0;
+        $this->oy_pad = 0;
     }
 
     /**

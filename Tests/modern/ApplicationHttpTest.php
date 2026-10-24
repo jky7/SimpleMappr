@@ -138,6 +138,59 @@ final class ApplicationHttpTest extends TestCase
         }
     }
 
+    public function testViewRectZoomsAroundTheChosenPointInBothDirectionsAndRejectsBadViews(): void
+    {
+        $render = function (string $view): array {
+            // A 2:1 box on the 2:1 canvas, so the reported box is the visible view (no sideways padding).
+            [$status, , $body] = $this->request('/application.json', array_replace($this->document(), ['coords' => [], 'bbox_map' => '-100,30,-60,50', 'view_rect' => $view]));
+            self::assertSame(200, $status, $view.' '.$body);
+            return array_map('floatval', explode(',', json_decode($body, true, 512, JSON_THROW_ON_ERROR)['rendered_bbox']));
+        };
+        $still = $render('');
+        $width = $still[2] - $still[0];
+        $height = $still[3] - $still[1];
+        $centre = fn (array $b) => [($b[0] + $b[2]) / 2, ($b[1] + $b[3]) / 2];
+        $in = $render('150,75,450,225');
+        self::assertEqualsWithDelta($width / 2, $in[2] - $in[0], 0.3, '2x in halves the width');
+        self::assertEqualsWithDelta($centre($still)[0], $centre($in)[0], 0.3, 'around the centre the centre stays');
+        $out = $render('-300,-150,900,450');
+        self::assertEqualsWithDelta($width * 2, $out[2] - $out[0], 0.6, '2x out doubles the width');
+        self::assertEqualsWithDelta($centre($still)[1], $centre($out)[1], 0.6);
+        $corner = $render('0,0,300,150');
+        self::assertEqualsWithDelta($still[0], $corner[0], 0.3, 'zooming in at the top-left corner keeps its longitude');
+        self::assertEqualsWithDelta($still[3], $corner[3], 0.3, 'and its latitude');
+        $outCorner = $render('0,0,1200,600');
+        self::assertEqualsWithDelta($still[0], $outCorner[0], 0.6, 'zooming out at the corner keeps it too');
+        self::assertEqualsWithDelta($still[3], $outCorner[3], 0.6);
+        foreach (['1,2,3', 'x,0,10,10', '300,150,0,0', '0,0,5,2', '-100000,0,100000,300', '0,0,600,300,1'] as $bad) {
+            [$status, , $body] = $this->request('/application.json', array_replace($this->document(), ['view_rect' => $bad]));
+            self::assertSame(400, $status, $bad);
+            self::assertNotEmpty(json_decode($body, true, 512, JSON_THROW_ON_ERROR)['error']);
+        }
+        foreach (['pan' => '5,0', 'bbox_rubberband' => '10,10,10,10'] as $field => $value) {
+            [$status] = $this->request('/application.json', array_replace($this->document(), ['view_rect' => '150,75,450,225', $field => $value]));
+            self::assertSame(400, $status, 'view_rect with '.$field);
+        }
+    }
+
+    public function testEveryZoomReportsTheVisibleViewEvenWhenTheBoxDidNotFitTheCanvas(): void
+    {
+        $render = function (array $changes): array {
+            // 40 by 25 degrees on a 2:1 canvas: the server pads the view sideways to fit.
+            [$status, , $body] = $this->request('/application.json', array_replace($this->document(), ['coords' => [], 'bbox_map' => '-100,30,-60,55'], $changes));
+            self::assertSame(200, $status, $body);
+            return array_map('floatval', explode(',', json_decode($body, true, 512, JSON_THROW_ON_ERROR)['rendered_bbox']));
+        };
+        self::assertSame([-100.0, 30.0, -60.0, 55.0], $render([]), 'without a zoom the requested box is reported as before');
+        foreach (['wheel view' => ['view_rect' => '150,75,450,225'], 'zoom in button' => ['zoom_in' => 1], 'zoom out button' => ['zoom_out' => 1],
+                  'double-click' => ['bbox_rubberband' => '300,150,300,150'], 'selection' => ['bbox_rubberband' => '100,50,500,250']] as $label => $zoom) {
+            $box = $render($zoom);
+            self::assertEqualsWithDelta(2.0, ($box[2] - $box[0]) / ($box[3] - $box[1]), 0.02, $label.' reports the 2:1 view the canvas shows');
+            $again = $render(['bbox_map' => implode(',', $box)]);
+            foreach ($box as $i => $value) { self::assertEqualsWithDelta($value, $again[$i], 0.05 * ($box[2] - $box[0]) / 600 * 10, $label.' is stable when echoed back'); }
+        }
+    }
+
     public function testSiteTitleLinksToTheEditorRootOnTheEditorAndErrorPages(): void
     {
         foreach (['/', '/no-such-page'] as $path) {

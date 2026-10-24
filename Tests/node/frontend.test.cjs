@@ -414,3 +414,58 @@ test('Escape during a second drag returns to the pending slide and not to the or
  e.$('#mapOutput').trigger(e.$.Event('keydown',{key:'Escape'}));
  assert.equal(tf(e),'translate(30px,0px)');assert.equal(e.requests.length,before+1);
 });
+function wheel(e,deltaY,x,y,extra={}){const event=new e.w.WheelEvent('wheel',{deltaY,clientX:x,clientY:y,bubbles:true,cancelable:true,...extra});e.$('#mapOutputImage')[0].dispatchEvent(event);return event;}
+function settled(e){return new Promise(resolve=>e.w.setTimeout(resolve,5));}
+function wheelEditor(t){const e=draggableEditor(t);e.p.vars.wheelSettleMs=0;e.$('#mapOutputImage').css({width:'900px',height:'450px'});
+ // jsdom has no layout: report the image box the way a browser does, moved by the translate and grown by the scale.
+ const img=e.$('#mapOutputImage')[0];img.getBoundingClientRect=()=>{const v=e.$(img).data('shownView')||{x:0,y:0,s:1};return {left:v.x,top:v.y,width:900*v.s,height:450*v.s,right:v.x+900*v.s,bottom:v.y+450*v.s};};e.$('#form-mapper').append('<input type="hidden" id="view_rect" name="view_rect">');return e;}
+test('one wheel notch up zooms 2x around the pointer in a single render',async t=>{
+ const e=wheelEditor(t),before=e.requests.length;
+ const event=wheel(e,-100,300,150);
+ assert.equal(event.defaultPrevented,true,'the page does not scroll under the map');
+ assert.equal(tf(e),'translate(-300px,-150px) scale(2)','the image scales at once around the pointer');
+ assert.equal(e.requests.length,before,'nothing is rendered until the wheel settles');
+ await settled(e);
+ assert.equal(e.requests.length,before+1);assert.equal(e.request().get('view_rect'),'150,75,600,300');assert.equal(e.request().get('pan'),'');
+});
+test('fast notches add up into one render and keep the same point under the pointer',async t=>{
+ const e=wheelEditor(t),before=e.requests.length;
+ wheel(e,-100,300,150);wheel(e,-100,300,150);wheel(e,-100,300,150);await settled(e);
+ assert.equal(e.requests.length,before+1);assert.equal(e.request().get('view_rect'),'262.5,131.25,375,187.5');
+});
+test('a notch down zooms out 2x and asks for a view larger than the old map',async t=>{
+ const e=wheelEditor(t);
+ wheel(e,100,450,225);await settled(e);
+ assert.equal(e.request().get('view_rect'),'-450,-225,1350,675');
+});
+test('trackpad crumbs below one notch put the image back without a render',async t=>{
+ const e=wheelEditor(t),before=e.requests.length;
+ wheel(e,-10,300,150,{ctrlKey:true});wheel(e,-15,300,150,{ctrlKey:true});
+ assert.notEqual(tf(e),'');await settled(e);
+ assert.equal(e.requests.length,before);assert.equal(tf(e),'');
+});
+test('a wheel zoom during a pending pan combines with it instead of jumping back',async t=>{
+ const e=wheelEditor(t);
+ slide(e,[100,100],[130,100]);assert.equal(e.request().get('pan'),'30,0');
+ wheel(e,-100,300,150);assert.equal(tf(e),'translate(-240px,-150px) scale(2)');
+ await settled(e);
+ assert.equal(e.request().get('view_rect'),'120,75,570,300');assert.equal(e.request().get('pan'),'','the pan is folded into the view, not sent twice');
+});
+test('a render that lands mid-wheel keeps the zoom under the pointer and measures from the new view',async t=>{
+ const e=wheelEditor(t);
+ slide(e,[100,100],[130,100]);e.p.vars.wheelSettleMs=1000;
+ wheel(e,-100,300,150);e.render('-95,-55,-35,15');
+ assert.equal(tf(e),'translate(-300px,-150px) scale(2)');
+ e.p.settleWheel();assert.equal(e.request().get('view_rect'),'150,75,600,300');
+});
+test('the wheel does nothing while the crop, zoom or query tool is active',async t=>{
+ const e=wheelEditor(t),before=e.requests.length;
+ e.$('#mapOutput').append('<div class="jcrop-holder"></div>');
+ const event=wheel(e,-100,300,150);await settled(e);
+ assert.equal(event.defaultPrevented,false);assert.equal(e.requests.length,before);assert.equal(tf(e),'');
+});
+test('arrow pans and other zooms clear a pending view so the server never gets both',async t=>{
+ const e=wheelEditor(t);
+ wheel(e,-100,300,150);await settled(e);assert.notEqual(e.request().get('view_rect'),'');
+ e.p.mapPan('right');assert.equal(e.request().get('view_rect'),'');assert.equal(e.request().get('pan'),'right');
+});

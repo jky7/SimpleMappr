@@ -473,12 +473,14 @@ var SimpleMappr = (function($, window, document) {
     bindDragPan: function() {
       var self = this, image = this.vars.mapOutputImage, map = this.vars.mapOutput;
 
-      // panOffset is how far the displayed image sits from the last rendered view while a render is pending.
-      // A new drag starts from it, and finishing one sends the total, because the pending request is replaced.
-      this.vars.panOffset = {x: 0, y: 0};
+      // pendingView is where the displayed image sits relative to the last rendered view while a render is pending:
+      // shifted by (x, y) CSS pixels and scaled by s around its top-left corner. Drags and wheel zooms start from it
+      // and finishing one sends the total, because the pending request is replaced.
+      this.vars.pendingView = {x: 0, y: 0, s: 1};
       this.vars.pointerDrag = null;
+      this.vars.wheelZoom = null;
+      if (this.vars.wheelSettleMs === undefined) { this.vars.wheelSettleMs = 300; }
 
-      function slide(x, y) { image.css('transform', 'translate(' + x + 'px,' + y + 'px)'); }
       function finish(event, commit) {
         var drag = self.vars.pointerDrag;
         if (!drag || event.pointerId !== drag.id) { return; }
@@ -486,17 +488,17 @@ var SimpleMappr = (function($, window, document) {
         map.removeClass('mapper-panning');
         if (image[0].releasePointerCapture) { try { image[0].releasePointerCapture(event.pointerId); } catch (error) { /* capture already released */ } }
         if (!drag.active) { return; }
-        if (!commit) { slide(drag.base.x, drag.base.y); if (!drag.base.x && !drag.base.y) { self.clearPanOffset(); } return; }
-        self.vars.panOffset = {x: drag.base.x + drag.last.x, y: drag.base.y + drag.last.y};
-        self.mapPan(Math.round(self.vars.panOffset.x * drag.scale) + ',' + Math.round(self.vars.panOffset.y * drag.scale));
+        if (!commit) { self.restoreView(drag.base); return; }
+        self.commitView({x: drag.base.x + drag.last.x, y: drag.base.y + drag.last.y, s: drag.base.s}, drag.frame);
       }
 
       image.on('dragstart.simplemapprPan', function(event) { event.preventDefault(); });
       image.on('pointerdown.simplemapprPan', function(event) {
         var e = event.originalEvent || event;
         if (e.button !== 0 || e.pointerType === 'touch' || map.find('div.jcrop-holder').length || self.vars.pointerDrag) { return; }
-        var box = image[0].getBoundingClientRect(), scale = box.width ? Number(image.attr('width')) / box.width : 1;
-        self.vars.pointerDrag = {id: e.pointerId, x: e.clientX, y: e.clientY, active: false, last: {x: 0, y: 0}, base: {x: self.vars.panOffset.x, y: self.vars.panOffset.y}, scale: isFinite(scale) && scale > 0 ? scale : 1, width: box.width, height: box.height};
+        if (self.vars.wheelZoom) { self.settleWheel(); }
+        var view = self.vars.pendingView;
+        self.vars.pointerDrag = {id: e.pointerId, x: e.clientX, y: e.clientY, active: false, last: {x: 0, y: 0}, base: {x: view.x, y: view.y, s: view.s}, frame: self.viewFrame()};
         if (image[0].setPointerCapture) { try { image[0].setPointerCapture(e.pointerId); } catch (error) { /* pointer already gone */ } }
       });
       image.on('pointermove.simplemapprPan', function(event) {
@@ -505,9 +507,9 @@ var SimpleMappr = (function($, window, document) {
         var dx = e.clientX - drag.x, dy = e.clientY - drag.y;
         // A small wobble during a click must not start a pan, so double-click zoom still works.
         if (!drag.active && Math.abs(dx) + Math.abs(dy) < 4) { return; }
-        if (!drag.active) { drag.active = true; map.addClass('mapper-panning mapper-panned').css({width: drag.width + 'px', height: drag.height + 'px'}); }
+        if (!drag.active) { drag.active = true; map.addClass('mapper-panning'); self.holdFrame(drag.frame); }
         drag.last = {x: dx, y: dy};
-        slide(drag.base.x + dx, drag.base.y + dy);
+        self.showView({x: drag.base.x + dx, y: drag.base.y + dy, s: drag.base.s});
       });
       image.on('pointerup.simplemapprPan', function(event) { finish(event.originalEvent || event, true); });
       image.on('pointercancel.simplemapprPan lostpointercapture.simplemapprPan', function(event) { finish(event.originalEvent || event, false); });
@@ -515,24 +517,96 @@ var SimpleMappr = (function($, window, document) {
         var drag = self.vars.pointerDrag;
         if (drag && event.key === 'Escape') { finish({pointerId: drag.id, clientX: drag.x, clientY: drag.y}, false); }
       });
+
+      // Scrolling over the map zooms 2x per notch around the pointer. The image scales at once and one render is
+      // sent when the wheel settles; trackpad pinches arrive as small Ctrl+wheel steps and add up the same way.
+      map[0].addEventListener('wheel', function(event) {
+        if (event.target !== image[0] || self.vars.pointerDrag || map.find('div.jcrop-holder').length) { return; }
+        event.preventDefault();
+        var wheel = self.vars.wheelZoom, unit = event.deltaMode === 1 ? 33 : (event.deltaMode === 2 ? 450 : 1);
+        if (!wheel) {
+          var view = self.vars.pendingView;
+          wheel = self.vars.wheelZoom = {delta: 0, base: {x: view.x, y: view.y, s: view.s}, frame: self.viewFrame(), anchor: {x: 0, y: 0}, timer: null};
+          self.holdFrame(wheel.frame);
+        }
+        wheel.delta = Math.max(-600, Math.min(600, wheel.delta + event.deltaY * unit));
+        var origin = self.frameOrigin();
+        wheel.anchor = {x: event.clientX - origin.x, y: event.clientY - origin.y};
+        self.showView(self.zoomedView(wheel.base, wheel.anchor, Math.pow(2, -wheel.delta / 100)));
+        window.clearTimeout(wheel.timer);
+        wheel.timer = window.setTimeout(function() { self.settleWheel(); }, self.vars.wheelSettleMs);
+      }, {passive: false});
     },
 
-    // Called when a render has replaced the image or failed. A drag already under way on the new image
-    // keeps its slide and measures from the new view; otherwise the image and its clipping frame reset.
+    settleWheel: function() {
+      var wheel = this.vars.wheelZoom;
+      if (!wheel) { return; }
+      window.clearTimeout(wheel.timer);
+      this.vars.wheelZoom = null;
+      var levels = Math.round(-wheel.delta / 100);
+      if (!levels) { this.restoreView(wheel.base); return; }
+      var view = this.zoomedView(wheel.base, wheel.anchor, Math.pow(2, levels));
+      this.showView(view);
+      this.commitView(view, wheel.frame);
+    },
+
+    // Scale a view by k around an anchor point in frame coordinates, keeping the map under the anchor fixed.
+    zoomedView: function(base, anchor, k) {
+      return {s: base.s * k, x: anchor.x - (anchor.x - base.x) * k, y: anchor.y - (anchor.y - base.y) * k};
+    },
+
+    viewFrame: function() {
+      var image = this.vars.mapOutputImage, width = image.width(), height = image.height(), scale = width ? Number(image.attr('width')) / width : 1;
+      return {width: width, height: height, scale: isFinite(scale) && scale > 0 ? scale : 1};
+    },
+
+    // Where the untransformed image's top-left corner sits on screen.
+    frameOrigin: function() {
+      var box = this.vars.mapOutputImage[0].getBoundingClientRect(), shown = this.vars.mapOutputImage.data('shownView') || {x: 0, y: 0};
+      return {x: box.left - shown.x, y: box.top - shown.y};
+    },
+
+    showView: function(view) {
+      this.vars.mapOutputImage.data('shownView', view).css('transform', 'translate(' + view.x + 'px,' + view.y + 'px)' + (view.s === 1 ? '' : ' scale(' + view.s + ')'));
+    },
+
+    holdFrame: function(frame) {
+      this.vars.mapOutput.addClass('mapper-panned').css({width: frame.width + 'px', height: frame.height + 'px'});
+    },
+
+    restoreView: function(view) {
+      if (!view.x && !view.y && view.s === 1) { this.clearPanOffset(); return; }
+      this.showView(view);
+    },
+
+    // Send the view as a pixel offset when only the position changed, or as the rectangle of the last rendered
+    // view that should fill the map when it was also zoomed.
+    commitView: function(view, frame) {
+      this.vars.pendingView = view;
+      if (view.s === 1) { this.mapPan(Math.round(view.x * frame.scale) + ',' + Math.round(view.y * frame.scale)); return; }
+      var round = function(value) { return Math.round(value * frame.scale * 100) / 100; };
+      $('#pan').val('');
+      $('#view_rect').val([round(-view.x / view.s), round(-view.y / view.s), round((frame.width - view.x) / view.s), round((frame.height - view.y) / view.s)].join(','));
+      this.resetAndBuild();
+    },
+
+    // Called when a render has replaced the image or failed. A drag or wheel zoom already under way on the new
+    // image keeps its change and measures from the new view; otherwise the image and its clipping frame reset.
     clearPanOffset: function() {
-      var drag = this.vars.pointerDrag, image = this.vars.mapOutputImage;
-      this.vars.panOffset = {x: 0, y: 0};
-      if (drag && drag.active) {
-        drag.base = {x: 0, y: 0};
-        image.css('transform', 'translate(' + drag.last.x + 'px,' + drag.last.y + 'px)');
+      var drag = this.vars.pointerDrag, wheel = this.vars.wheelZoom, image = this.vars.mapOutputImage;
+      this.vars.pendingView = {x: 0, y: 0, s: 1};
+      if ((drag && drag.active) || wheel) {
+        if (drag && drag.active) { drag.base = {x: 0, y: 0, s: 1}; this.showView({x: drag.last.x, y: drag.last.y, s: 1}); }
+        if (wheel) { wheel.base = {x: 0, y: 0, s: 1}; this.showView(this.zoomedView(wheel.base, wheel.anchor, Math.pow(2, -wheel.delta / 100))); }
         this.vars.mapOutput.css({width: image.width() + 'px', height: image.height() + 'px'});
         return;
       }
-      image.css('transform', '');
+      image.removeData('shownView').css('transform', '');
       this.vars.mapOutput.removeClass('mapper-panned mapper-panning').css({width: '', height: ''});
     },
 
     mapPan: function(dir) {
+      $('#view_rect').val('');
       $('#pan').val(dir);
       this.resetAndBuild();
     },
@@ -553,6 +627,7 @@ var SimpleMappr = (function($, window, document) {
         case "in-auto":
           zoom = $('#zoom_in');
           this.resetJbbox();
+          $('#view_rect').val('');
           zoom.val(1);
           this.showMap();
           zoom.val('');
@@ -561,6 +636,7 @@ var SimpleMappr = (function($, window, document) {
         case "out":
           zoom = $('#zoom_out');
           this.resetJbbox();
+          $('#view_rect').val('');
           zoom.val(1);
           this.showMap();
           zoom.val('');
@@ -1015,6 +1091,7 @@ var SimpleMappr = (function($, window, document) {
       x   = (e.pageX - pos.left);
       y   = (e.pageY - pos.top);
 
+      $('#view_rect').val('');
       $('#bbox_rubberband').val(x+','+y+','+x+','+y);
       this.showMap();
     },
@@ -2054,7 +2131,7 @@ var SimpleMappr = (function($, window, document) {
         success: function(data) {
           if (sequence !== self.vars.renderSequence) { return; }
           if (!data || !Array.isArray(data.size) || !data.mapOutputImage) {
-            self.clearPanOffset(); $('#pan').val('');
+            self.clearPanOffset(); $('#pan').val(''); $('#view_rect').val('');
             if (onFailed) { onFailed(); }
             self.hideSpinner(); self.showErrorMessage($('#mapper-loading-error-message').text()); return;
           }
@@ -2076,7 +2153,7 @@ var SimpleMappr = (function($, window, document) {
         },
         error: function(xhr, status) {
           if (status === 'abort' || sequence !== self.vars.renderSequence) { return; }
-          self.clearPanOffset(); $('#pan').val('');
+          self.clearPanOffset(); $('#pan').val(''); $('#view_rect').val('');
           if (onFailed) { onFailed(); }
           self.hideSpinner();
           self.showErrorMessage((xhr.responseJSON && xhr.responseJSON.error) || $('#mapper-loading-error-message').text());
@@ -2094,6 +2171,7 @@ var SimpleMappr = (function($, window, document) {
       $('#origin_map').val(data.rendered_origin == null || data.rendered_origin === false ? '' : data.rendered_origin);
       $('#rotation').val($('#rendered_rotation').val());
       $('#pan').val('');
+      $('#view_rect').val('');
     },
 
     drawMap: function(data, load_data, onRendered, onFailed) {
