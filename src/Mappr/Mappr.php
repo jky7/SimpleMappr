@@ -1466,17 +1466,24 @@ abstract class Mappr
         if ($center->project($source,$destination)!==MS_SUCCESS || !is_finite($center->x)) { return; }
         $angle=deg2rad($projection===null?(float)$this->request->rotation:0);
         $cx=($bounds[0]+$bounds[2])/2;$cy=($bounds[1]+$bounds[3])/2;
-        $xs=[];$ys=[];
+        // One shapeObj::project builds a single transformer; per-point pointObj::project rebuilt it 68 times.
+        $edge=new \lineObj();
         for ($i=0;$i<=16;$i++) {
             $fraction=$i/16;
             foreach ([[$bounds[0]+($bounds[2]-$bounds[0])*$fraction,$bounds[1]],[$bounds[0]+($bounds[2]-$bounds[0])*$fraction,$bounds[3]],[$bounds[0],$bounds[1]+($bounds[3]-$bounds[1])*$fraction],[$bounds[2],$bounds[1]+($bounds[3]-$bounds[1])*$fraction]] as [$x,$y]) {
                 $dx=$x-$cx;$dy=$y-$cy;
-                $point=new \pointObj($cx+$dx*cos($angle)-$dy*sin($angle),$cy+$dx*sin($angle)+$dy*cos($angle));
-                if ($point->project($source,$destination)!==MS_SUCCESS || !is_finite($point->x) || !is_finite($point->y)) { return; }
-                $half=\SimpleMappr\DetailedRelief::HALF_WORLD;$world=2*$half;
-                $point->x=$center->x+fmod(fmod($point->x-$center->x+$half,$world)+$world,$world)-$half;
-                $xs[]=$point->x;$ys[]=$point->y;
+                $edge->add(new \pointObj($cx+$dx*cos($angle)-$dy*sin($angle),$cy+$dx*sin($angle)+$dy*cos($angle)));
             }
+        }
+        $shape=new \shapeObj(MS_SHAPE_LINE);$shape->add($edge);
+        if ($shape->project($source,$destination)!==MS_SUCCESS || $shape->numlines!==1 || $shape->get(0)->numpoints!==$edge->numpoints) { return; }
+        $half=\SimpleMappr\DetailedRelief::HALF_WORLD;$world=2*$half;
+        $xs=[];$ys=[];
+        $projected=$shape->get(0);
+        for ($i=0;$i<$projected->numpoints;$i++) {
+            $point=$projected->get($i);
+            if (!is_finite($point->x) || !is_finite($point->y)) { return; }
+            $xs[]=$center->x+fmod(fmod($point->x-$center->x+$half,$world)+$world,$world)-$half;$ys[]=$point->y;
         }
         $plan=\SimpleMappr\DetailedRelief::plan([min($xs),min($ys),max($xs),max($ys)],$width ?? $this->map_obj->width,$height ?? $this->map_obj->height);
         if ($plan===null) { return; }
