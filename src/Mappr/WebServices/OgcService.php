@@ -15,6 +15,9 @@ abstract class OgcService extends Mappr
     private array $parameters = [];
     private string $postXml = '';
     private ?string $inputError = null;
+    private int $errorStatus = 400;
+    private ?string $detailedServiceLayers = null;
+    private string $detailedServiceStyles = '';
 
     public function __construct(array $layers = [])
     {
@@ -154,11 +157,56 @@ abstract class OgcService extends Mappr
                 }
             }
             if ($this->service==='WMS' && strtolower($this->parameters['REQUEST'])==='getmap') {
-                try { $this->addDataCredits($this->responseLayers(),(int)$this->parameters['WIDTH'],(int)$this->parameters['HEIGHT']); }
-                catch (\InvalidArgumentException $error) { $this->inputError=$error->getMessage(); }
+                try {
+                    $this->prepareDetailedServiceRelief();
+                    $this->addDataCredits($this->responseLayers(),(int)$this->parameters['WIDTH'],(int)$this->parameters['HEIGHT']);
+                } catch (\InvalidArgumentException $error) { $this->inputError=$error->getMessage(); }
+                catch (\RuntimeException $error) {
+                    if ($error->getCode()!==503) { throw $error; }
+                    $this->inputError=$error->getMessage();$this->errorStatus=503;
+                }
             }
         }
         return $this;
+    }
+
+    private function prepareDetailedServiceRelief(): void
+    {
+        if (str_contains(strtolower($this->parameters['FORMAT'] ?? ''),'svg')) { return; }
+        foreach ($this->responseLayers() as $name) { if (!isset($this->selectedLayers[$name])) { return; } }
+        $modern=version_compare($this->parameters['VERSION'],'1.3.0','>=');
+        $crs=strtoupper($this->parameters[$modern?'CRS':'SRS'] ?? '');
+        if (!in_array($crs,explode(' ',self::SERVICE_SRS),true)) { return; }
+        $values=explode(',',$this->parameters['BBOX'] ?? '');
+        if (count($values)!==4 || count(array_filter($values,'is_numeric'))!==4) { return; }
+        $bounds=array_map('floatval',$values);
+        if (count(array_filter($bounds,static fn($value)=>is_finite($value) && abs($value)<=1e9))!==4) { throw new \InvalidArgumentException('The map extent is outside supported Earth coordinates.'); }
+        if ($crs==='EPSG:4326' && $modern) { $bounds=[$bounds[1],$bounds[0],$bounds[3],$bounds[2]]; }
+        if ($bounds[2]<=$bounds[0] || $bounds[3]<=$bounds[1]) { return; }
+        $viewport=msLoadMapFromString('MAP MAXSIZE 5000 END',ROOT,null);
+        $viewport->setSize((int)$this->parameters['WIDTH'],(int)$this->parameters['HEIGHT']);$viewport->setProjection($crs);
+        $viewport->setExtent(...$bounds);$extent=$viewport->extent;
+        $bounds=[$extent->minx,$extent->miny,$extent->maxx,$extent->maxy];
+        $this->addDetailedRelief($this->responseLayers(),$bounds,$crs,(int)$this->parameters['WIDTH'],(int)$this->parameters['HEIGHT']);
+        if (!$this->detailedReliefUsed) { return; }
+        $this->map_obj->getLayerByName('internal_detailed_relief')->status=MS_ON;
+        foreach (['internal_detailed_relief','internal_detailed_relief_land'] as $name) { $this->map_obj->getLayerByName($name)->metadata->set('ows_enable_request','GetMap'); }
+        $layers=[];$styles=[];$requestedStyles=explode(',',$this->parameters['STYLES']);
+        foreach (explode(',',$this->parameters['LAYERS']) as $index=>$requested) {
+            $requested=trim($requested);$style=$requestedStyles[$index] ?? '';$names=[$requested];
+            if (strcasecmp($requested,$this->map_obj->name)===0) {
+                $names=[];
+                for ($i=0;$i<$this->map_obj->numlayers;$i++) {
+                    $name=$this->map_obj->getLayer($i)->name;
+                    if (isset($this->selectedLayers[$name])) { $names[]=$name; }
+                }
+            }
+            foreach ($names as $name) {
+                $layers[]=$name;$styles[]=$style;
+                if (strcasecmp($name,'reliefgrey')===0) { $layers[]='internal_detailed_relief';$styles[]=''; }
+            }
+        }
+        $this->detailedServiceLayers=implode(',',$layers);$this->detailedServiceStyles=implode(',',$styles);
     }
 
     public function createOutput()
@@ -166,6 +214,7 @@ abstract class OgcService extends Mappr
         if ($this->inputError !== null) { return $this->exception($this->inputError); }
         $request = new \OWSRequest();
         foreach ($this->parameters as $name=>$value) { $request->setParameter($name, $value); }
+        if ($this->detailedServiceLayers!==null) { $request->setParameter('LAYERS',$this->detailedServiceLayers);$request->setParameter('STYLES',$this->detailedServiceStyles); }
         if ($this->postXml !== '') {
             $request->type = MS_POST_REQUEST;
             $request->contenttype = 'text/xml';
@@ -209,7 +258,7 @@ abstract class OgcService extends Mappr
 
     private function exception(string $message): string
     {
-        http_response_code(400); Header::setHeader('xml');
+        http_response_code($this->errorStatus); Header::setHeader('xml');
         $message = htmlspecialchars($message, ENT_XML1 | ENT_QUOTES, 'UTF-8');
         if ($this->service === 'WMS') {
             return '<?xml version="1.0" encoding="UTF-8"?><ServiceExceptionReport version="1.3.0"><ServiceException code="InvalidParameterValue">'.$message.'</ServiceException></ServiceExceptionReport>';

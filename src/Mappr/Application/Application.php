@@ -109,7 +109,8 @@ class Application extends Mappr
           'legend_url'          => $this->legend_url,
           'scalebar_url'        => $this->scalebar_url,
           'bad_points'          => $this->getBadPoints(),
-          'bad_drawings'        => $this->getBadDrawings()
+          'bad_drawings'        => $this->getBadDrawings(),
+          'relief_source'       => $this->detailedReliefUsed ? ['name'=>'NASA/METI ASTER GDEM via NASA GIBS','zoom'=>$this->detailedReliefZoom,'pixel_metres_at_equator'=>2*\SimpleMappr\DetailedRelief::HALF_WORLD/(256*(1<<$this->detailedReliefZoom)),'coverage'=>'Land between 83 degrees south and north; overview fills uncovered areas.'] : null
         ];
 
         return $output;

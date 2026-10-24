@@ -39,9 +39,9 @@ COPY --from=frontend /build/public/build/ /srv/simplemappr/public/build/
 COPY docker/apache.conf /etc/apache2/sites-available/000-default.conf
 COPY docker/php.ini /etc/php/8.4/mods-available/simplemappr.ini
 RUN phpenmod simplemappr \
-    && mkdir -p /var/lib/simplemappr/checks public/tmp public/uploads \
+    && mkdir -p /var/lib/simplemappr/checks /var/cache/simplemappr-relief public/tmp public/uploads \
     && chown -R www-data:www-data public/tmp public/uploads \
-    && chown -R www-data:www-data /var/lib/simplemappr \
+    && chown -R www-data:www-data /var/lib/simplemappr /var/cache/simplemappr-relief \
     && chmod +x scripts/* docker/entrypoint
 
 EXPOSE 80
