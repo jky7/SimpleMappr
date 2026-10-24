@@ -1,0 +1,164 @@
+#!/usr/bin/env bash
+# Deploy the latest commit of the release branch (master) on this host.
+#
+#   scripts/deploy [--force] [--dry-run] [--no-pull] [--branch NAME]
+#
+# Pulls fast-forward only, builds and tags the image with the commit, checks that it starts as www-data,
+# swaps the app container, retires stale compiled Twig templates when views changed, runs HTTP checks
+# inside the container and rolls back to the previous image if they fail. The site stays up during the build.
+set -euo pipefail
+umask 022
+
+self=$(realpath "${BASH_SOURCE[0]}")
+cd "$(dirname "$self")/.."
+
+usage() {
+    cat <<'EOF'
+Usage: scripts/deploy [options]
+
+  --force      redeploy the commit that is already running, and always retire compiled templates
+  --dry-run    pull, build and verify the image, then stop before touching the running site
+  --no-pull    deploy the checkout as it is (the remote wrapper pulls first)
+  --branch B   release branch to pull (default: master, or $SIMPLEMAPPR_DEPLOY_BRANCH)
+
+Previous .env files are kept in $SIMPLEMAPPR_DEPLOY_STATE (default ~/.local/state/simplemappr-deploy).
+EOF
+}
+die() { echo "deploy: $*" >&2; exit 1; }
+step() { echo "==> $*"; }
+
+force=0 dry=0 pull=1 branch=${SIMPLEMAPPR_DEPLOY_BRANCH:-master}
+passthrough=()
+while [ $# -gt 0 ]; do
+    case $1 in
+        --force) force=1; passthrough+=("$1") ;;
+        --dry-run) dry=1; passthrough+=("$1") ;;
+        --no-pull) pull=0 ;;
+        --branch) [ $# -ge 2 ] || { usage >&2; exit 2; }; branch=$2; passthrough+=("$1" "$2"); shift ;;
+        -h|--help) usage; exit 0 ;;
+        *) usage >&2; exit 2 ;;
+    esac
+    shift
+done
+
+for command in docker git flock realpath; do command -v "$command" >/dev/null || die "$command is required"; done
+[ -f .env ] || die ".env is missing; run scripts/configure-local-owner first"
+state=${SIMPLEMAPPR_DEPLOY_STATE:-$HOME/.local/state/simplemappr-deploy}
+mkdir -p -m 700 "$state"
+exec 9>"$state/lock"
+flock -n 9 || die "another deploy is already running"
+
+git diff --quiet && git diff --cached --quiet || die "uncommitted changes in $(pwd); refusing to deploy over them"
+
+if [ "$pull" -eq 1 ]; then
+    script_hash=$(sha256sum "$self" | cut -d' ' -f1)
+    step "Pulling origin/$branch (fast-forward only)"
+    git fetch -q origin "$branch"
+    [ "$(git rev-parse --abbrev-ref HEAD)" = "$branch" ] || git checkout -q "$branch" 2>/dev/null || git checkout -q -B "$branch" "origin/$branch"
+    git merge -q --ff-only "origin/$branch" || die "$branch cannot be fast-forwarded to origin/$branch"
+    # Bash reads a script as it runs, so continue in the freshly pulled copy if this file changed.
+    if [ "$(sha256sum "$self" | cut -d' ' -f1)" != "$script_hash" ]; then
+        step "scripts/deploy changed; restarting with the new version"
+        exec "$self" --no-pull "${passthrough[@]}"
+    fi
+fi
+
+env_image() { sed -n 's/^SIMPLEMAPPR_IMAGE=//p' .env | tail -n 1 | tr -d "'\""; }
+# Rewrite .env through a private temporary file so its mode stays 0600 and no secret is printed.
+set_image() {
+    local tmp
+    tmp=$(umask 077; mktemp .env.deploy.XXXXXX)
+    { grep -v '^SIMPLEMAPPR_IMAGE=' .env || true; printf "SIMPLEMAPPR_IMAGE='%s'\n" "$1"; } > "$tmp"
+    chmod 600 "$tmp"
+    mv -f "$tmp" .env
+}
+
+current=$(env_image)
+repo=${current%%:*}
+[ -n "$repo" ] || repo=simplemappr-runtime
+old_tag=${current#*:}
+new=$(git rev-parse --short=7 HEAD)
+image="$repo:$new"
+old_commit=""
+if [ -n "$current" ] && git cat-file -e "$old_tag^{commit}" 2>/dev/null; then old_commit=$(git rev-parse --short=7 "$old_tag^{commit}"); fi
+
+running=0
+app_id=$(docker compose ps -q app 2>/dev/null || true)
+if [ -n "$app_id" ] && [ "$(docker inspect -f '{{.State.Running}}' "$app_id" 2>/dev/null || true)" = true ]; then running=1; fi
+if [ "$old_tag" = "$new" ] && [ "$running" -eq 1 ] && [ "$force" -eq 0 ]; then
+    echo "Already deployed $new and running. Use --force to redeploy it."
+    exit 0
+fi
+
+retire=0
+if [ "$force" -eq 1 ] || [ -z "$old_commit" ] || ! git diff --quiet "$old_commit" HEAD -- views; then retire=1; fi
+
+step "Building $image (the site stays up)"
+export SIMPLEMAPPR_IMAGE="$image"
+docker compose build app
+
+step "Checking that $image starts as www-data"
+if ! output=$(docker run --rm --entrypoint sh "$image" -c 'su -s /bin/sh www-data -c "test -r /srv/simplemappr/index.php" && apache2ctl -t' 2>&1); then
+    echo "$output" >&2
+    die "the new image failed its startup check; the running site was not touched"
+fi
+
+if [ "$dry" -eq 1 ]; then
+    echo "Dry run complete: $image is built and verified."
+    echo "A real run would $([ "$retire" -eq 1 ] && echo 'stop the app, retire compiled templates, ')set SIMPLEMAPPR_IMAGE and recreate the app."
+    exit 0
+fi
+
+cp -p .env "$state/env.pre-$new-$(date +%Y%m%d%H%M%S)"
+
+retire_templates() {
+    docker compose run --rm --no-deps --no-TTY -e "LABEL=$new" --entrypoint sh app -c '
+        cd /srv/simplemappr/public/tmp || exit 1
+        keep=$(mktemp); skipped=0
+        for d in $(ls -d [0-9a-f][0-9a-f] 2>/dev/null); do
+            files=$(find "$d" -type f | wc -l); other=$(find "$d" -type f ! -name "*.php" | wc -l); twig=$(grep -rl __TwigTemplate "$d" | wc -l)
+            if [ "$other" -eq 0 ] && [ "$files" -eq "$twig" ]; then echo "$d" >> "$keep"; else skipped=$((skipped + 1)); fi
+        done
+        moved=$(wc -l < "$keep")
+        if [ "$moved" -gt 0 ]; then
+            target=".twig-before-deploy-$LABEL-$(date +%Y%m%d%H%M%S)"; mkdir "$target"
+            while read -r d; do mv "$d" "$target/"; done < "$keep"
+            chown -R www-data:www-data "$target"
+        fi
+        rm -f "$keep"
+        echo "retired $moved compiled template directories, left $skipped unverified"
+    '
+}
+
+smoke() {
+    local path code
+    for path in /_runtime / /login; do
+        code=$(docker compose exec -T app curl -s -o /dev/null -w '%{http_code}' "http://127.0.0.1$path") || return 1
+        [ "$code" = 200 ] || { echo "GET $path returned $code" >&2; return 1; }
+    done
+    docker compose exec -T app curl -fsS http://127.0.0.1/ | grep -q 'id="site-title"'
+}
+
+swap_to() {
+    export SIMPLEMAPPR_IMAGE="$1"
+    if [ "$retire" -eq 1 ]; then
+        step "Stopping the app so no request recompiles a stale template, then retiring them"
+        docker compose stop app || return 1
+        retire_templates || return 1
+    fi
+    set_image "$1" || return 1
+    step "Starting $1"
+    docker compose up -d --wait || return 1
+}
+
+if swap_to "$image" && smoke; then
+    step "Deployed $image"
+    if [ -n "$old_commit" ] && [ "$old_commit" != "$new" ]; then git log --oneline --no-decorate "$old_commit..HEAD"; fi
+    exit 0
+fi
+
+echo "deploy: the checks failed on $image" >&2
+if [ -z "$current" ] || ! docker image inspect "$current" >/dev/null 2>&1; then die "there is no previous image to roll back to; fix the problem and deploy again"; fi
+step "Rolling back to $current"
+if swap_to "$current" && smoke; then die "rolled back to $current; $image was not deployed"; fi
+die "rollback to $current also failed its checks; inspect with docker compose logs app"
