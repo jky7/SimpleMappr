@@ -56,6 +56,29 @@ class Application extends Mappr
 {
 
     /**
+     * Run a request, answering a repeated identical preview from the render cache.
+     *
+     * @return string
+     */
+    public static function respond()
+    {
+        $key = \SimpleMappr\RenderCache::enabled() ? \SimpleMappr\RenderCache::key(Request::getRequest()) : null;
+        if ($key !== null && ($entry = \SimpleMappr\RenderCache::fetch($key)) !== null) {
+            Header::setHeader('json');
+            header('X-Render-Cache: hit');
+            return json_encode(\SimpleMappr\RenderCache::materialize($key, $entry));
+        }
+        $application = (new static())->execute();
+        $body = $application->createOutput();
+        // A relief render that fell back to the overview must not be remembered as the answer.
+        if ($key !== null && !$application->detailedReliefDegraded) {
+            \SimpleMappr\RenderCache::store($key, json_decode($body, true));
+            header('X-Render-Cache: miss');
+        }
+        return $body;
+    }
+
+    /**
      * Implement getRequest method
      *
      * @return obj

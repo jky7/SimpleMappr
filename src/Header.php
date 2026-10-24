@@ -52,6 +52,22 @@ use CssMin;
 class Header
 {
     /**
+     * Let a browser reuse a guest page briefly; logged-in users keep no-store.
+     *
+     * @param int $seconds Freshness lifetime
+     *
+     * @return void
+     */
+    public static function cacheable($seconds)
+    {
+        if (Session::currentUser()) { return; }
+        header_remove("Pragma");
+        header("Expires: ".gmdate("D, d M Y H:i:s", time() + $seconds)." GMT");
+        header("Cache-Control: private, max-age={$seconds}");
+        header("Vary: Cookie", false);
+    }
+
+    /**
      * Set the HTTP response headers
      *
      * @param string $mime     Shortcut for the mimetype
