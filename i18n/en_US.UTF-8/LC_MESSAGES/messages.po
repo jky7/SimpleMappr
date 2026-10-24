@@ -1239,11 +1239,21 @@ msgstr ""
 msgid "Improvements: SimpleMappr runs again on current PHP and MapServer. It has private saved maps, share links you can revoke, data imports, downloads (PNG, SVG, TIFF, Word, PowerPoint, KML and GeoJSON) and WMS/WFS map services."
 msgstr ""
 
-msgid "David P. Shorthouse created the original SimpleMappr application. You can cite it as follows."
-msgstr ""
-
 msgid "Read the map data credits and licenses"
 msgstr ""
 
 msgid "Natural Earth layers are public domain. Blue Marble imagery is credited to NASA Visible Earth. Close-view grey relief uses NASA/METI ASTER GDEM through NASA EOSDIS GIBS when enabled. RESOLVE ecoregions and biodiversity hotspots have separate attribution and licensing requirements. %credits_link% before publishing maps that use ecological layers."
+msgstr ""
+
+#: views/about.html
+msgid "If you publish a map made here, please cite:"
+msgstr ""
+
+msgid "Computer software"
+msgstr ""
+
+msgid "Accessed %date%."
+msgstr ""
+
+msgid "This version is based on the original application:"
 msgstr ""
