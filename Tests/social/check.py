@@ -547,6 +547,7 @@ def prefix_checks(fixture):
         require(browser.request('/usermap')[0] == 200, 'Prefixed local owner reaches private maps')
         browser.page('/')
         require(browser.request('/logout', 'POST')[1]['Location'] == '/simplemappr/', 'Prefixed owner sign-out')
+        page, _ = Browser(base).page('/login')
         for provider in ['google', 'github']:
             require('action="/simplemappr/auth/' + provider + '/start"' in page, 'Prefixed provider form')
             browser = Browser(base)
