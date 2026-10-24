@@ -44,6 +44,14 @@ final class ApplicationHttpTest extends TestCase
         self::assertStringContainsString('Aperçu', $body);
     }
 
+    public function testSiteTitleLinksToTheEditorRootOnTheEditorAndErrorPages(): void
+    {
+        foreach (['/', '/no-such-page'] as $path) {
+            [, , $body] = $this->request($path);
+            self::assertStringContainsString('<h1 id="site-title" itemprop="name"><a href="/">SimpleMapp<span>r</span></a></h1>', $body, $path);
+        }
+    }
+
     public function testPreviewReturnsSameOriginMapWithCoordinateMarker(): void
     {
         [$status, $type, $body] = $this->request('/application.json', $this->document());
