@@ -54,6 +54,15 @@ class BundleBoundaryTest(unittest.TestCase):
         with patch.object(bundle, 'command', side_effect=AssertionError('Docker was contacted')):
             self.assertEqual(bundle.load_bundle(self.path)[1], self.manifest)
 
+    def test_full_map_profile_is_preserved_in_protected_bundle(self):
+        deployment = ENV + b"\nSIMPLEMAPPR_ASSET_PROFILE=full-map-v1\n"
+        (self.path / 'deployment.env').write_bytes(deployment)
+        self.manifest['assetProfile'] = 'full-map-v1'
+        self.manifest['members']['deployment.env'] = bundle.fingerprint(self.path / 'deployment.env')
+        self.save_manifest()
+        with patch.object(bundle, 'command', side_effect=AssertionError('Docker was contacted')):
+            self.assertEqual(bundle.load_bundle(self.path)[1]['assetProfile'], 'full-map-v1')
+
     def test_corruption_is_rejected_before_docker(self):
         (self.path / 'database.sql').write_bytes(b'corrupt')
         with patch.object(bundle, 'command', side_effect=AssertionError('Docker was contacted')):

@@ -12,7 +12,7 @@ The Docker runtime uses PHP 8.4, MapServer 8.4 and SWIG MapScript. The old PHP e
 | Remote import DNS/redirect/TLS/decoded-byte/deadline limits | `Tests/smoke/check-import-boundary`; modern RemoteImport tests |
 | PNG/transparent PNG/JPEG/SVG/TIFF/KML/DOCX/PPTX downloads | Both browser engines; signatures, Office ZIP CRC/XML/embedded map dimensions, SVG/KML namespaces, PNG alpha |
 | WMS 1.1.1/1.3.0 and WFS 1.0.0/1.1.0/2.0.0 | Modern HTTP OGC tests, including axis order, XML bounds, zero count and maximum features |
-| Extended Natural Earth layers and Gray Earth relief | Checksummed profiles; `Tests/browser/profiles.mjs` individual/combined/reloaded controls; separate optional release lane |
+| Extended Natural Earth layers, color relief, and Blue Marble | Checksummed profiles; `Tests/browser/profiles.mjs` individual/combined/reloaded controls, selected with `SIMPLEMAPPR_TEST_PROFILE`; separate optional release lane |
 | Citation create/edit/delete, unsafe URL recovery, text display and RSS | Citation modern suite; administrator browser contract; actual owner UI acceptance |
 | Database recovery, original JSON/share/citation bytes, new sessions, owner rotation | `scripts/check-backup-restore`; operator review of the isolated restored instance |
 | Keyboard, 375px layout, WCAG 2 A/AA and 2.1 A/AA | Pinned Chromium/Firefox keyboard and Axe contract; manual UI review |

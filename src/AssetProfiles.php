@@ -11,7 +11,7 @@ final class AssetProfiles
     {
         $name ??= getenv('SIMPLEMAPPR_ASSET_PROFILE') ?: 'minimal-vector-v1';
         $profile=self::registry()['profiles'][$name] ?? null;
-        if (!$profile) { throw new \RuntimeException('Unknown SIMPLEMAPPR_ASSET_PROFILE. Choose minimal-vector-v1, extended-vector-v1 or gray-relief-v1.'); }
+        if (!$profile) { throw new \RuntimeException('Unknown SIMPLEMAPPR_ASSET_PROFILE. Choose minimal-vector-v1, extended-vector-v1, gray-relief-v1 or full-map-v1.'); }
         return ['name'=>$name]+$profile;
     }
     public static function configuration(): string { return dirname(__DIR__).'/'.self::selected()['configuration']; }
@@ -32,9 +32,12 @@ final class AssetProfiles
         }
         $excluded=self::registry()['excluded'];
         if ($profile['name']==='minimal-vector-v1') {
-            foreach (['rivers','oceans','roads','railroads','rivernames','placenames','physicalLabels','marineLabels'] as $key) { $excluded[$key]='Install the extended-vector-v1 or gray-relief-v1 profile.'; }
+            foreach (['rivers','oceans','roads','railroads','rivernames','placenames','physicalLabels','marineLabels'] as $key) { $excluded[$key]='Install the extended-vector-v1, gray-relief-v1 or full-map-v1 profile.'; }
         }
-        if ($profile['name']!=='gray-relief-v1') { $excluded['reliefgrey']='Install the gray-relief-v1 profile. This is medium-resolution Gray Earth, not the archived custom raster.'; }
+        if (!in_array($profile['name'],['gray-relief-v1','full-map-v1'],true)) { $excluded['reliefgrey']='Install the gray-relief-v1 profile. This is medium-resolution Gray Earth, not the archived custom raster.'; }
+        if ($profile['name']!=='full-map-v1') {
+            foreach (['relief','reliefalt','blueMarble','ecoregions','ecoregionLabels','conservation','hotspotLabels','lakenames'] as $key) { $excluded[$key]='Install the full-map-v1 profile.'; }
+        }
         return ['schemaVersion'=>1,'profile'=>$profile['name'],'datasets'=>$datasets,'excluded'=>$excluded];
     }
 }

@@ -30,19 +30,22 @@ After startup, run the [runtime and application checks](development.md#check-the
 | `minimal-vector-v1` | Bundled land, lakes, countries, province polygons and province boundaries; country/province labels. No downloads at startup. |
 | `extended-vector-v1` | Minimal plus rivers, oceans, roads, railroads, river/place/physical/marine labels. Seven pinned Natural Earth archives. |
 | `gray-relief-v1` | Extended plus `reliefgrey`, using Natural Earth Gray Earth medium-resolution shaded relief. Eight optional archives total, approximately 85 MiB compressed. |
+| `full-map-v1` | Gray relief plus color shaded relief, Natural Earth II, NASA Blue Marble, lake names, RESOLVE Ecoregions 2017 and Biodiversity Hotspots 2016.1 with labels. Thirteen optional source files, approximately 829 MiB downloaded and 1.39 GiB installed. |
 
-`config/asset-profiles/index.json` selects the configuration and manifests. Each manifest records source URL, data version, redistribution terms, archive bytes/hash and every extracted member hash. The Gray Earth 2.0.0 raster is a documented replacement for the unavailable archived custom high-resolution raster; it is 16200×8100 in WGS84. It is not the old full-color relief. The railroad archive contains version 4.1.0 metadata; manifest versions reflect archive contents.
+`config/asset-profiles/index.json` selects the configuration and manifests. Each manifest records source URL, data version, redistribution terms, archive bytes/hash and every extracted member hash. The Gray Earth 2.0.0 raster is a documented replacement for the unavailable archived custom high-resolution raster; it is 16200×8100 in WGS84. The railroad archive contains version 4.1.0 metadata; manifest versions reflect archive contents.
+
+Color relief and Natural Earth II use the public-domain Natural Earth 2.0.0 rasters at 16200×8100. Blue Marble uses the original NASA 2002 RGB image at 21600×10800. The pinned TIFF has no georeferencing. `config/blue-marble.vrt` supplies its documented global WGS84 extent without changing the source bytes.
 
 Fetch optional assets on the host, then select the same profile and an absolute cache directory for Compose:
 
 ```sh
-scripts/fetch-assets --profile gray-relief-v1
-SIMPLEMAPPR_ASSET_PROFILE=gray-relief-v1 \
+scripts/fetch-assets --profile full-map-v1
+SIMPLEMAPPR_ASSET_PROFILE=full-map-v1 \
 SIMPLEMAPPR_ASSET_CACHE="$PWD/.asset-cache" \
   docker compose up -d --no-build --wait
 ```
 
-For subsequent starts, exports, and backups, retain these settings in the deployment's private `.env`, or consistently supply the same explicit environment and `--env-file`. Do not regenerate existing database credentials. `fetch-assets` creates its host cache as the current user, verifies already-cached files, downloads only pinned HTTPS Natural Earth CDN archives, and publishes files only after size/hash verification. A corrupt existing file causes a refusal; investigate it before replacing it.
+For subsequent starts, exports, and backups, retain these settings in the deployment's private `.env`, or consistently supply the same explicit environment and `--env-file`. Do not regenerate existing database credentials. `fetch-assets` creates its host cache as the current user, verifies already-cached files, downloads only pinned HTTPS Natural Earth, NASA, RESOLVE and Zenodo sources, and publishes files only after size/hash verification. A corrupt existing file causes a refusal; investigate it before replacing it.
 
 Minimal installations use an empty named cache volume, so Docker does not create a root-owned host `.asset-cache`. Optional profiles use the explicitly selected host cache. Keep this cache outside images and Git. App startup makes no dataset downloads and refuses missing or corrupt selected data. To inspect installed bytes, versions, sources and excluded controls:
 
@@ -51,7 +54,15 @@ docker compose exec app scripts/bootstrap-assets --check
 docker compose exec app scripts/asset-availability
 ```
 
-When an optional profile is selected only through shell variables, supply them on these commands too. Full-color relief, alternate relief, Blue Marble, conservation hotspots, terrestrial ecoregions and marine ecoregions remain unavailable: matching assets, mappings or redistribution terms have not been verified. The availability report states each exclusion. A profile change does not delete another profile's files; it selects only the declared controls and validates its own inventory.
+When an optional profile is selected only through shell variables, supply them on these commands too. Marine ecoregions remain unavailable because source terms restrict redistribution and commercial use. The availability report states each exclusion. A profile change does not delete another profile's files; it selects only the declared controls and validates its own inventory.
+
+RESOLVE ecoregions use CC BY 4.0 and hotspots use CC BY-SA 4.0. Their selected map layers always include readable credits in rendered images, SVG and Office exports, independently of optional legends and watermarks. Credits scale with high-resolution downloads. The public `/data-credits` page lists creators, source links, licenses and display changes. Retain those credits when publishing maps. These background licenses do not automatically license independent user coordinates and drawings. GeoJSON and KML exports contain only user geometry.
+
+Ecological renders need at least 160 logical pixels of width and enough height for the wrapped credits, at 13 pixels per line plus 24 pixels of padding. Publication images reserve another 36 logical pixels below the credits for an embedded scalebar, or 12 for a watermark alone. High-resolution downloads scale both requirements by `download_factor`. A request that cannot fit the credits fails with a useful error rather than clipping the notice. WMS failures remain XML. Both ecological backgrounds fit a 256×256 WMS image.
+
+The hotspot source archive contains 53 records. Both its polygon and label layers select the 36 `hotspot area` records and exclude 17 `outer limit` records. WFS uses `config/hotspots-2016.vrt` for this subset before client filtering, preserves source feature IDs, and adds `mappr_license` and `mappr_source` fields. Service capabilities and HTTP Link headers identify the data credits independently of requested properties. Ecoregion colors are generated from the pinned `ECO_ID` and `COLOR` fields. Run `scripts/generate-ecoregion-style --check` against the retained archive to verify the checked-in style.
+
+When changing profiles, recreate the managed `assets-init` service with the selected profile and cache mount before backing up. A one-off asset install does not update the managed service's cache provenance, and backup refuses that mismatch.
 
 ## Back up a deployment
 

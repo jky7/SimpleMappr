@@ -1,0 +1,7 @@
+<OGRVRTDataSource>
+  <OGRVRTLayer name="hotspots_2016_1">
+    <SrcDataSource relativeToVRT="1" shared="1">../mapserver/maps/hotspots_2016_1/hotspots_2016_1.shp</SrcDataSource>
+    <FID>mappr_original_id</FID>
+    <SrcSQL dialect="OGRSQL">SELECT FID AS mappr_original_id, * FROM "hotspots_2016_1" WHERE "Type" = 'hotspot area'</SrcSQL>
+  </OGRVRTLayer>
+</OGRVRTDataSource>
