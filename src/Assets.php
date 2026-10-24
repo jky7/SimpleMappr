@@ -55,6 +55,18 @@ final class Assets
         $this->administrator = $user !== null && User::isAdministrator((new User)->show($user->uid));
     }
 
+    /** The shared stylesheet for every standalone page, without the administrator lookup the editor needs. */
+    public static function pageStylesheet(): string
+    {
+        $filename = dirname(__DIR__).'/public/build/manifest.json';
+        $manifest = is_file($filename) ? json_decode(file_get_contents($filename), true, 32, JSON_THROW_ON_ERROR) : [];
+        $file = $manifest['assets']['pages-css']['file'] ?? null;
+        if (!is_string($file) || !preg_match('/^[a-z-]+\.[a-f0-9]{12}\.css$/D', $file) || !is_file(dirname(__DIR__).'/public/build/'.$file)) {
+            throw new \RuntimeException('The frontend asset manifest is incomplete. Rebuild the Docker image.');
+        }
+        return '<link rel="stylesheet" href="'.SiteUrl::path().'/public/build/'.$file.'">';
+    }
+
     private function asset(string $name): string
     {
         $asset = $this->manifest[$name] ?? [];

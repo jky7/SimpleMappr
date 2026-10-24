@@ -37,6 +37,8 @@ Apache worker limits live in `docker/apache-tuning.conf` (baked into the image);
 
 Inter is the only text font. The editor bundles the pinned `@fontsource-variable/inter` Latin subsets via `public/stylesheets/raw/fonts.css`, so a new language needs its subset added there. Rendered map text uses `fonts-inter` from the image snapshot through `mapserver/fonts/fonts.list` (alias `inter`); do not add Arial or Verdana, and name new MapServer label fonts through that file. Fonts change map pixels, so rerun the render tests after changing one.
 
+Every standalone HTML page extends `views/base.html`, which loads the small `pages-css` bundle (`public/stylesheets/raw/pages.css`) and the simple header by default; only the editor overrides both. Keep layout in that stylesheet, never inline, and give new pages the `.page`/`.card` structure (a template test enforces both). The About, API, Feedback and Help tab fragments are XHR-only: a direct visit gets a 303 to `/?locale=…#tabs=NAME` and the hash restore accepts tab names because numeric positions shift with the signed-in role.
+
 Production Twig templates are cached in the persistent `public/tmp` volume with automatic reload disabled. Retire only verified compiled Twig cache directories when deploying changed templates; preserve preview images and other temporary files. A fresh-container test does not cover upgrades with an existing template cache. Confirm the new controls appear on the hosted page after deployment.
 
 ## Application port

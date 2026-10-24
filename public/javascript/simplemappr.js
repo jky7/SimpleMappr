@@ -2447,7 +2447,11 @@ var SimpleMappr = (function($, window, document) {
         activate: function(event, ui) { self.accessibleTabs($(this)); self.updateTabHash(ui.newTab.index()); }
       }).show();
       $(window).on('hashchange.simplemappr', function() {
-        var params = new window.URLSearchParams(window.location.hash.slice(1)), index = Number(params.get('tabs') || 0);
+        var params = new window.URLSearchParams(window.location.hash.slice(1)), wanted = params.get('tabs') || '0', index = Number(wanted);
+        // Direct visits to /help, /about, /feedback and /apidoc arrive as a tab name, which stays valid whatever tabs the role adds.
+        if (!Number.isInteger(index)) {
+          index = tab.find('>ul>li>a').toArray().findIndex(function(anchor) { return (anchor.getAttribute('href') || '').split('?')[0].split('/').pop() === wanted; });
+        }
         if (Number.isInteger(index) && index >= 0 && index < tab.find('>ul>li').length) { tab.tabs('option', 'active', index); }
       }).trigger('hashchange.simplemappr');
     },

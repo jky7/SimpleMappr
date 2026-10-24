@@ -1,7 +1,9 @@
 {% extends "base.html" %}
 {% block content %}
-<main style="max-width:48rem;margin:3rem auto;font-family:sans-serif;line-height:1.5">
+<main class="page page-wide">
+<div class="card">
 <h1>Map data credits and licenses</h1>
+<div class="card-body">
 <p>Natural Earth vector data and relief are public domain. Blue Marble imagery is credited to <a href="https://science.nasa.gov/earth/faq/">NASA Visible Earth</a>.</p>
 {% for dataset in datasets %}
 <h2>{{ dataset.name }}</h2>
@@ -14,6 +16,8 @@
 {% endfor %}
 <p>Maps that display detailed ASTER relief or these ecological datasets retain their credits even when the optional legend is disabled. When publishing a map, retain the credits and identify any further changes.</p>
 <p>The hotspot dataset and adaptations of that material use CC BY-SA 4.0. Retain that license when redistributing adapted hotspot material. The license does not automatically apply to your independent coordinates, drawings or other separate data. GeoJSON and KML downloads contain your geometry only; they do not contain these background datasets.</p>
-<p><a href="{{ base }}/">Return to the map editor</a></p>
+</div>
+<p class="card-footer"><a href="{{ base }}/">Return to the map editor</a></p>
+</div>
 </main>
 {% endblock %}

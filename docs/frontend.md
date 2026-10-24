@@ -30,6 +30,10 @@ jQuery 3.7.1 and jQuery UI 1.14.2 are exact npm dependencies with integrity hash
 
 The general importer loads CSV, TSV, WKT, GeoJSON, KML, GeoRSS or settings into the editor through `POST /import`. It checks the extension and five-MiB ceiling without trusting browser MIME. The server validates text encoding and content. Settings remain limited to two MB. Existing input is replaced only after a valid response and document normalization. Loading settings this way does not save a database record. The separate My Maps settings importer explicitly imports into private persistence.
 
+## Standalone pages
+
+Sign in, data credits, shared maps and the error pages share `pages.css` (its own content-hashed bundle with the Inter font-face) and the simple dark header, so they match the editor without loading jQuery UI. `base.html` supplies the stylesheet and header by default and `TemplateTest` fails a page that overrides the stylesheet block without one or styles itself inline. The About, API, Feedback and Help fragments are tab panels loaded over XHR; opened directly they redirect to the editor on that tab (`#tabs=help`), and the hash restore accepts tab names as well as positions.
+
 ## Failure recovery and keyboard use
 
 A preview cancels its predecessor and ignores stale responses. HTTP, JSON and image errors release loading state and keep input. Exports use same-origin fetch with session CSRF and a 90-second deadline. A failed export restores the download controls and leaves the map available to retry.
