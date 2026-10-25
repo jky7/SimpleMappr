@@ -2,8 +2,8 @@ cff-version: 1.2.0
 message: "If you publish a map made with this software, please cite it as below, together with the original SimpleMappr it is based on."
 type: software
 title: SimpleMappr
-version: "4.1.0"
-date-released: 2026-10-24
+version: "4.1.1"
+date-released: 2026-10-25
 doi: 10.5281/zenodo.23626206
 abstract: "SimpleMappr makes publication-quality point maps from pasted or imported coordinates, with regions, drawings, map layers, private saved maps and downloads. Version 4.0 is an updated, independently maintained version of David P. Shorthouse's original SimpleMappr."
 authors:
