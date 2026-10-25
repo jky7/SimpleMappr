@@ -187,7 +187,7 @@ abstract class OgcService extends Mappr
         $viewport->setSize((int)$this->parameters['WIDTH'],(int)$this->parameters['HEIGHT']);$viewport->setProjection($crs);
         $viewport->setExtent(...$bounds);$extent=$viewport->extent;
         $bounds=[$extent->minx,$extent->miny,$extent->maxx,$extent->maxy];
-        $this->wrapRasterLayers($this->responseLayers(),self::getProjection(strtolower($crs)));
+        $this->wrapLambertLayers($this->responseLayers(),self::getProjection(strtolower($crs)));
         $this->addDetailedRelief($this->responseLayers(),$bounds,$crs,(int)$this->parameters['WIDTH'],(int)$this->parameters['HEIGHT']);
         if (!$this->detailedReliefUsed) { return; }
         $internal=array_merge(...array_values($this->detailedReliefLayers));

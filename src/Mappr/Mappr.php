@@ -1482,9 +1482,14 @@ abstract class Mappr
         }
     }
 
-    protected function wrapRasterLayers(array $layers,string $projection): void
+    protected function wrapLambertLayers(array $layers,string $projection): void
     {
         if (!preg_match('/(?:^|\s)\+proj=lcc(?:\s|$)/',$projection) || !preg_match('/(?:^|\s)\+lon_0=([-+0-9.eE]+)(?:\s|$)/',$projection,$origin)) { return; }
+        for ($i=0;$i<$this->map_obj->numlayers;$i++) {
+            $layer=$this->map_obj->getLayer($i);
+            // Labelled layers stay native: OGR recodes text to UTF-8 while their labels declare the source encoding.
+            if (in_array($layer->type,[MS_LAYER_POLYGON,MS_LAYER_LINE],true) && !$layer->labelitem && $layer->connectiontype===MS_SHAPEFILE && $layer->data) { $this->cutAtLambertSeam($layer,(float)$origin[1]); }
+        }
         foreach ($layers as $name) {
             $layer=$this->map_obj->getLayerByName($name);
             if (!$layer || $layer->type!==MS_LAYER_RASTER) { continue; }
@@ -1492,6 +1497,25 @@ abstract class Mappr
             $source=$this->wrappedRasterSource->prepare($layer->data,(float)$origin[1]);
             if ($source!==null) { $layer->data=$source['path'];$layer->setProjection($source['projection']); }
         }
+    }
+
+    // Lambert without +over wraps longitudes at lon_0+180, so features crossing that meridian would streak across the map unless cut there.
+    private function cutAtLambertSeam(\layerObj $layer,float $center): void
+    {
+        $seam=fmod($center+360,360)-180;
+        if (abs($seam)>=180-1e-9) { return; }
+        [$west,$east]=[sprintf('%.9F',$seam-1e-7),sprintf('%.9F',$seam+1e-7)];
+        // OGR only accepts a POLYGON region; the slit is longer than any latitude, so it cuts everything.
+        $region="POLYGON((-181 -91,181 -91,181 91,-181 91,-181 -91),($west -90.5,$east -90.5,$east 90.5,$west 90.5,$west -90.5))";
+        $path=is_file($layer->data)?$layer->data:$layer->data.'.shp';
+        $xml=new \DOMDocument();$vrt=$xml->appendChild($xml->createElement('OGRVRTDataSource'))->appendChild($xml->createElement('OGRVRTLayer'));
+        $vrt->setAttribute('name','cut');
+        $vrt->appendChild($xml->createElement('SrcDataSource'))->appendChild($xml->createTextNode($path));
+        $vrt->appendChild($xml->createElement('SrcLayer'))->appendChild($xml->createTextNode(pathinfo($path,PATHINFO_FILENAME)));
+        $vrt->appendChild($xml->createElement('SrcRegion',$region))->setAttribute('clip','true');
+        $layer->setConnectionType(MS_OGR,'');
+        $layer->connection=$xml->saveXML($xml->documentElement);
+        $layer->data='cut';
     }
 
     protected function addDetailedRelief(array $layers,?array $bounds=null,?string $projection=null,?int $width=null,?int $height=null): void
@@ -1701,7 +1725,7 @@ abstract class Mappr
     {
         if (isset($this->request->projection)) {
             $this->_reproject($this->request->projection);
-            $this->wrapRasterLayers(array_keys($this->request->layers),$this->map_obj->getProjection());
+            $this->wrapLambertLayers(array_keys($this->request->layers),$this->map_obj->getProjection());
             $this->addDetailedRelief(array_keys($this->request->layers));
             $this->addDataCredits(array_keys($this->request->layers));
             $this->_addLegendScalebar();
