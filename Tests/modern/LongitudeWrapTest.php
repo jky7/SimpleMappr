@@ -18,6 +18,27 @@ final class LongitudeWrapTest extends TestCase
         }
     }
 
+    public function testLambertBordersDoNotStreakAcrossTheProjectionSeam(): void
+    {
+        $previous=$_REQUEST;
+        try {
+            foreach (['esri:102015'=>'-90,-60,-30,20','esri:102024'=>'-25,-40,60,40'] as $projection=>$bbox) {
+                $_REQUEST=['width'=>900,'height'=>450,'bbox_map'=>$bbox,'projection'=>$projection,'projection_map'=>'epsg:4326','layers'=>['countries'=>'on','stateprovinces'=>'on','lakes'=>'on'],'download'=>1,'output'=>'png','options'=>['legend'=>0,'scalebar'=>0],'watermark'=>0];
+                $application=new Application();$application->execute();
+                $image=imagecreatefromstring($application->createOutput());
+                for ($y=0;$y<450;$y++) {
+                    $run=$longest=0;
+                    for ($x=0;$x<900;$x++) {
+                        $color=imagecolorsforindex($image,imagecolorat($image,$x,$y));
+                        $run=$color['red']<128 ? $run+1 : 0;$longest=max($longest,$run);
+                    }
+                    self::assertLessThan(300,$longest,$projection.' draws a seam-crossing edge across row '.$y.'.');
+                }
+                imagedestroy($image);
+            }
+        } finally { $_REQUEST=$previous; }
+    }
+
     public function testWmsUsesItsRequestedLambertCrsForRasterWrapping(): void
     {
         if (!isset(Mappr::getShapefileConfig()['reliefgrey'])) { self::markTestSkipped('Requires installed Gray Earth relief.'); }
