@@ -134,7 +134,9 @@ final class ApplicationHttpTest extends TestCase
             self::assertStringContainsString($locale === 'fr_FR' ? 'L&#039;application originale :' : 'The original application:', $body);
             self::assertStringContainsString('Shorthouse, David P. 2010. SimpleMappr, an online tool to produce publication-quality point maps. https://www.simplemappr.net.', $body);
             $months = ['janvier', 'février', 'mars', 'avril', 'mai', 'juin', 'juillet', 'août', 'septembre', 'octobre', 'novembre', 'décembre'];
-            $accessed = $locale === 'fr_FR' ? 'Consulté le '.date('j').' '.$months[date('n') - 1].' '.date('Y').'.' : 'Accessed '.date('F j, Y').'.';
+            // The page is dated in Router's America/Toronto zone, not this process's UTC.
+            $now = new DateTimeImmutable('now', new DateTimeZone('America/Toronto'));
+            $accessed = $locale === 'fr_FR' ? 'Consulté le '.$now->format('j').' '.$months[$now->format('n') - 1].' '.$now->format('Y').'.' : 'Accessed '.$now->format('F j, Y').'.';
             self::assertStringContainsString($accessed, $body, 'the access date is written in the page language');
             self::assertMatchesRegularExpression('#\(2010\)\. https?://[^ ]+\. #', $body, 'the citation names this instance by its own address');
         }
