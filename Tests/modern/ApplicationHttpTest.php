@@ -129,7 +129,11 @@ final class ApplicationHttpTest extends TestCase
             self::assertStringNotContainsString('In the Wild', $body);
             self::assertStringNotContainsString('Trouvés ailleurs', $body);
             self::assertStringContainsString('/data-credits"', $body);
-            self::assertStringContainsString('Kass Youssef, Joseph. 2026. SimpleMappr (version 4.0)', $body);
+            // scripts/set-release-version writes CITATION.cff and this citation together, so read the release from there.
+            $cff = file_get_contents(ROOT.'/CITATION.cff');
+            self::assertSame(1, preg_match('/^version: "([0-9.]+)"$/m', $cff, $version));
+            self::assertSame(1, preg_match('/^date-released: ([0-9]{4})-/m', $cff, $released));
+            self::assertStringContainsString('Kass Youssef, Joseph. '.$released[1].'. SimpleMappr (version '.$version[1].')', $body);
             self::assertStringContainsString($locale === 'fr_FR' ? '[Logiciel], d&#039;après SimpleMappr de David P. Shorthouse (2010). ' : '[Computer software], based on SimpleMappr by David P. Shorthouse (2010). ', $body, 'the original author is named in the same citation');
             self::assertStringContainsString($locale === 'fr_FR' ? 'L&#039;application originale :' : 'The original application:', $body);
             self::assertStringContainsString('Shorthouse, David P. 2010. SimpleMappr, an online tool to produce publication-quality point maps. https://www.simplemappr.net.', $body);
