@@ -1602,8 +1602,8 @@ abstract class Mappr
                 $layer=new \layerObj($this->map_obj);$layer->name='internal_detailed_'.$water;$layer->type=$type;$layer->status=MS_DEFAULT;
                 $layer->data=$this->shapes[$water]['path'];$layer->setProjection('EPSG:4326');$layer->metadata->set('ows_enable_request','!*');
                 $style=new \styleObj(new \classObj($layer));
-                if ($type===MS_LAYER_POLYGON) { $style->color->setRGB(170,207,222);$style->outlinecolor->setRGB(110,160,182);$style->width=0.6; }
-                else { $style->color->setRGB(110,160,182);$style->width=1; }
+                if ($type===MS_LAYER_POLYGON) { $style->color->setRGB(148,210,232);$style->outlinecolor->setRGB(52,142,170);$style->width=0.6; }
+                else { $style->color->setRGB(54,148,176);$style->width=1; }
                 $detail[]=$layer;
             }
             $this->placeDetailLayers('relief',$detail);
