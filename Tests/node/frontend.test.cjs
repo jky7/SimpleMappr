@@ -438,10 +438,34 @@ test('a notch down zooms out 1.4x and asks for a view larger than the old map',a
  wheel(e,100,450,225);await settled(e);
  assert.equal(e.request().get('view_rect'),'-180,-90,1080,540');
 });
+for (const delta of [-120,120,-240,240]) {
+ test(`Chromium wheel delta ${delta} previews the exact settled zoom`,async t=>{
+  const e=wheelEditor(t);
+  wheel(e,delta,300,150);
+  const shown=e.$('#mapOutputImage').data('shownView');
+  assert.ok(Math.abs(shown.s-Math.pow(1.4,-delta/120))<1e-12);
+  const preview=tf(e);await settled(e);
+  assert.equal(tf(e),preview,'settling must not change the displayed scale or anchor');
+ });
+}
+test('three Chromium notches stay three steps and keep the preview stable when a render arrives',async t=>{
+ const e=wheelEditor(t);e.p.vars.wheelSettleMs=1000;
+ wheel(e,-120,300,150);wheel(e,-120,300,150);wheel(e,-120,300,150);
+ assert.ok(Math.abs(e.$('#mapOutputImage').data('shownView').s-Math.pow(1.4,3))<1e-12);
+ const preview=tf(e);e.render('-95,-55,-35,15');assert.equal(tf(e),preview);
+ e.p.settleWheel();assert.equal(tf(e),preview);
+ assert.equal(e.request().get('view_rect'),'190.67,95.34,518.66,259.33');
+});
+test('small pinch events use the same steps in the preview and settled view',async t=>{
+ const e=wheelEditor(t);
+ wheel(e,-30,300,150,{ctrlKey:true});wheel(e,-30,300,150,{ctrlKey:true});
+ assert.equal(tf(e),'translate(-120px,-60px) scale(1.4)');
+ const preview=tf(e);await settled(e);assert.equal(tf(e),preview);
+});
 test('trackpad crumbs below one notch put the image back without a render',async t=>{
  const e=wheelEditor(t),before=e.requests.length;
  wheel(e,-10,300,150,{ctrlKey:true});wheel(e,-15,300,150,{ctrlKey:true});
- assert.notEqual(tf(e),'');await settled(e);
+ assert.equal(e.$('#mapOutputImage').data('shownView').s,1);await settled(e);
  assert.equal(e.requests.length,before);assert.equal(tf(e),'');
 });
 test('a wheel zoom during a pending pan combines with it instead of jumping back',async t=>{
