@@ -55,7 +55,7 @@ final class AssetProfilesTest extends TestCase
         foreach ($profile['manifests'] as $entry) {
             foreach (json_decode(file_get_contents(ROOT.'/'.$entry['path']),true)['assets'] as $asset) { $assets[$asset['basename']]=$asset; }
         }
-        foreach (['HYP_LR_SR_OB_DR','NE2_LR_LC_SR_W_DR','GRAY_LR_SR_OB_DR','land_shallow_topo_21600'] as $basename) {
+        foreach (['HYP_HR_SR_OB_DR','NE2_HR_LC_SR_W_DR','GRAY_HR_SR_OB_DR','land_shallow_topo_21600'] as $basename) {
             self::assertArrayHasKey($basename,$assets);
             self::assertLessThanOrEqual(536870912,$assets[$basename]['archiveBytes']);
             self::assertSame($assets[$basename]['extractedBytes'],array_sum(array_column($assets[$basename]['components'],'bytes')));
