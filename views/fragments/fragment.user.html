@@ -20,7 +20,7 @@
     <td>{{ row.username }}</td>
     <td>{{ row.email }}</td>
     <td class="usermaps-number">{{ row.num }}</td>
-    {% set access = (row.access) ? row.access|date("M d, Y") : '' %}
+    {% set access = (row.access) ? row.access|date("M d, Y H:i") : '' %}
     <td class="usermaps-center">{{ access }}</td>
     <td class="actions">
 
