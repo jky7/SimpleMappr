@@ -112,6 +112,7 @@ abstract class Mappr
     protected ?int $detailedReliefZoom = null;
     /** Internal layers drawn for each relief layer the request selected, keyed by that layer's name. */
     protected array $detailedReliefLayers = [];
+    protected array $renderLayers = [];
 
     /**
      * Default extent when map first loaded
@@ -287,7 +288,7 @@ abstract class Mappr
         $this->_setOutputFormat();
         $this->_setMapExtent();
         $this->_setMapSize();
-        $this->_addLayers();
+        $this->_addLayers(false);
     }
 
     public function execute()
@@ -1285,7 +1286,7 @@ abstract class Mappr
      *
      * @return void
      */
-    private function _addLayers()
+    private function _addLayers(bool $pruneBackgrounds = true)
     {
         $sort = [];
 
@@ -1306,10 +1307,12 @@ abstract class Mappr
             }
         }
         array_multisort($sort, SORT_ASC, $this->request->layers);
+        $this->renderLayers = array_keys($this->request->layers);
+        if ($pruneBackgrounds) { $this->renderLayers = array_values($this->visibleBackgroundLayers($this->renderLayers)); }
 
         $srs_projections = implode(" ", array_keys(AcceptedProjections::$projections));
 
-        foreach ($this->request->layers as $name => $status) {
+        foreach ($this->renderLayers as $name) {
             if (array_key_exists($name, $this->shapes)) {
                 $data = $this->shapes[$name]['path'];
                 if (!is_file($data) && !is_file($data.'.shp')) {
@@ -1503,6 +1506,19 @@ abstract class Mappr
         $layer->setConnectionType(MS_OGR,'');
         $layer->connection=$xml->saveXML($xml->documentElement);
         $layer->data='cut';
+    }
+
+    /** Keep overlays, but omit global backgrounds covered by a later opaque background. */
+    protected function visibleBackgroundLayers(array $layers): array
+    {
+        $covered = false;
+        foreach (array_reverse($layers, true) as $index => $name) {
+            if (!in_array($name, ['relief', 'reliefalt', 'reliefgrey', 'blueMarble'], true)
+                || (int)$this->shapes[$name]['type'] !== MS_LAYER_RASTER) { continue; }
+            if ($covered) { unset($layers[$index]); }
+            elseif (($this->shapes[$name]['opacity'] ?? 100) >= 100) { $covered = true; }
+        }
+        return $layers;
     }
 
     protected function addDetailedRelief(array $layers,?array $bounds=null,?string $projection=null,?int $width=null,?int $height=null): void
@@ -1726,9 +1742,9 @@ abstract class Mappr
     {
         if (isset($this->request->projection)) {
             $this->_reproject($this->request->projection);
-            $this->wrapLambertLayers(array_keys($this->request->layers),$this->map_obj->getProjection());
-            $this->addDetailedRelief(array_keys($this->request->layers));
-            $this->addDataCredits(array_keys($this->request->layers));
+            $this->wrapLambertLayers($this->renderLayers,$this->map_obj->getProjection());
+            $this->addDetailedRelief($this->renderLayers);
+            $this->addDataCredits($this->renderLayers);
             $this->_addLegendScalebar();
             $this->_addBorder();
             $this->image = $this->map_obj->drawQuery();
