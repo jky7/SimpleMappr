@@ -16,8 +16,8 @@ abstract class OgcService extends Mappr
     private string $postXml = '';
     private ?string $inputError = null;
     private int $errorStatus = 400;
-    private ?string $detailedServiceLayers = null;
-    private string $detailedServiceStyles = '';
+    private ?string $renderServiceLayers = null;
+    private string $renderServiceStyles = '';
 
     public function __construct(array $layers = [])
     {
@@ -174,6 +174,22 @@ abstract class OgcService extends Mappr
     {
         if (str_contains(strtolower($this->parameters['FORMAT'] ?? ''),'svg')) { return; }
         foreach ($this->responseLayers() as $name) { if (!isset($this->selectedLayers[$name])) { return; } }
+        $layers=[];$styles=[];$requestedStyles=explode(',',$this->parameters['STYLES']);
+        if ($this->parameters['STYLES']!=='' && count($requestedStyles)!==count(explode(',',$this->parameters['LAYERS'] ?? ''))) { return; }
+        $canonical=array_change_key_case(array_combine(array_keys($this->selectedLayers),array_keys($this->selectedLayers)));
+        foreach (explode(',',$this->parameters['LAYERS'] ?? '') as $index=>$requested) {
+            $style=$requestedStyles[$index] ?? '';
+            // Leave invalid styles to native validation rather than hiding them with a covered layer.
+            if (!in_array($style,['','default'],true)) { return; }
+            $name=preg_replace('/^.*:/','',trim($requested));
+            $names=strcasecmp($name,$this->map_obj->name)===0
+                ? array_values(array_intersect($this->renderLayers,array_keys($this->selectedLayers)))
+                : [$canonical[strtolower($name)] ?? $name];
+            foreach ($names as $name) { $layers[]=$name;$styles[]=$style; }
+        }
+        $layers=$this->visibleBackgroundLayers($layers);
+        $this->renderServiceLayers=implode(',',$layers);
+        $this->renderServiceStyles=implode(',',array_intersect_key($styles,$layers));
         $modern=version_compare($this->parameters['VERSION'],'1.3.0','>=');
         $crs=strtoupper($this->parameters[$modern?'CRS':'SRS'] ?? '');
         if (!in_array($crs,explode(' ',self::SERVICE_SRS),true)) { return; }
@@ -193,22 +209,12 @@ abstract class OgcService extends Mappr
         $internal=array_merge(...array_values($this->detailedReliefLayers));
         foreach ($internal as $name) { $this->map_obj->getLayerByName($name)->status=MS_ON; }
         foreach ([...$internal,'internal_detailed_relief_land'] as $name) { $this->map_obj->getLayerByName($name)->metadata->set('ows_enable_request','GetMap'); }
-        $layers=[];$styles=[];$requestedStyles=explode(',',$this->parameters['STYLES']);
-        foreach (explode(',',$this->parameters['LAYERS']) as $index=>$requested) {
-            $requested=trim($requested);$style=$requestedStyles[$index] ?? '';$names=[$requested];
-            if (strcasecmp($requested,$this->map_obj->name)===0) {
-                $names=[];
-                for ($i=0;$i<$this->map_obj->numlayers;$i++) {
-                    $name=$this->map_obj->getLayer($i)->name;
-                    if (isset($this->selectedLayers[$name])) { $names[]=$name; }
-                }
-            }
-            foreach ($names as $name) {
-                $layers[]=$name;$styles[]=$style;
-                foreach (array_change_key_case($this->detailedReliefLayers)[strtolower($name)] ?? [] as $detail) { $layers[]=$detail;$styles[]=''; }
-            }
+        $layers=[];$styles=[];$requestedStyles=explode(',',$this->renderServiceStyles);
+        foreach (explode(',',$this->renderServiceLayers) as $index=>$name) {
+            $layers[]=$name;$styles[]=$requestedStyles[$index] ?? '';
+            foreach ($this->detailedReliefLayers[$name] ?? [] as $detail) { $layers[]=$detail;$styles[]=''; }
         }
-        $this->detailedServiceLayers=implode(',',$layers);$this->detailedServiceStyles=implode(',',$styles);
+        $this->renderServiceLayers=implode(',',$layers);$this->renderServiceStyles=implode(',',$styles);
     }
 
     public function createOutput()
@@ -216,7 +222,7 @@ abstract class OgcService extends Mappr
         if ($this->inputError !== null) { return $this->exception($this->inputError); }
         $request = new \OWSRequest();
         foreach ($this->parameters as $name=>$value) { $request->setParameter($name, $value); }
-        if ($this->detailedServiceLayers!==null) { $request->setParameter('LAYERS',$this->detailedServiceLayers);$request->setParameter('STYLES',$this->detailedServiceStyles); }
+        if ($this->renderServiceLayers!==null) { $request->setParameter('LAYERS',$this->renderServiceLayers);$request->setParameter('STYLES',$this->renderServiceStyles); }
         if ($this->postXml !== '') {
             $request->type = MS_POST_REQUEST;
             $request->contenttype = 'text/xml';
@@ -241,6 +247,9 @@ abstract class OgcService extends Mappr
 
     private function responseLayers(): array
     {
+        if ($this->renderServiceLayers!==null) {
+            return array_values(array_filter(explode(',',$this->renderServiceLayers),fn($name)=>isset($this->selectedLayers[$name])));
+        }
         if (strtolower($this->parameters['REQUEST'])==='getcapabilities') { return array_keys($this->selectedLayers); }
         $names=$this->parameters['LAYERS'] ?? $this->parameters['TYPENAMES'] ?? $this->parameters['TYPENAME'] ?? '';
         if ($this->postXml!=='') {
