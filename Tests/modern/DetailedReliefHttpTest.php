@@ -44,7 +44,7 @@ final class DetailedReliefHttpTest extends TestCase
 
     public function testPreviewSwitchesOnTheDisplayedScaleBar(): void
     {
-        foreach ([1580000=>false,1570000=>true,220000=>true] as $span=>$detailed) {
+        foreach ([1580000=>false,1570000=>false,1260000=>false,1250000=>true,220000=>true] as $span=>$detailed) {
             $x=1001875;$y=5740000;
             $document=array_replace($this->document(),[
                 'width'=>1000,'height'=>500,'projection'=>'epsg:3395','projection_map'=>'epsg:3395',
@@ -55,6 +55,40 @@ final class DetailedReliefHttpTest extends TestCase
             $map=json_decode($body,true,512,JSON_THROW_ON_ERROR);
             self::assertSame($detailed,$map['relief_source']!==null);
         }
+    }
+
+    public function testGreyToneLightensTerrainWithoutChangingWaterOrSourcePixels(): void
+    {
+        $previous=$_REQUEST;
+        try {
+            $_REQUEST=array_replace($this->document(),['width'=>800,'height'=>450,'bbox_map'=>'-72,46.9,-70.4,47.8','download'=>1]);
+            $application=(new \SimpleMappr\Mappr\Application\Application())->execute();
+            $matched=imagecreatefromstring($application->get_image()->getBytes());
+            $map=$application->get_map_obj();$layer=$map->getLayerByName('internal_detailed_relief');
+            self::assertNotNull($layer);
+            $sourceHash=hash_file('sha256',$layer->data);
+            $layer->clearProcessing();$layer->addProcessing('RESAMPLE=BILINEAR');
+            $raw=imagecreatefromstring($map->drawQuery()->getBytes());
+            self::assertSame($sourceHash,hash_file('sha256',$layer->data),'Colour shading must retain the original mosaic.');
+            $before=$after=0;$levels=[];$minimum=255;$maximum=0;$neutral=true;
+            for ($y=20;$y<300;$y+=4) { for ($x=20;$x<500;$x+=4) {
+                $pixel=imagecolorsforindex($matched,imagecolorat($matched,$x,$y));
+                $neutral=$neutral && $pixel['red']===$pixel['green'] && $pixel['red']===$pixel['blue'];
+                $minimum=min($minimum,$pixel['red']);$maximum=max($maximum,$pixel['red']);
+                $levels[$pixel['red']]=true;$after+=$pixel['red'];
+                $before+=imagecolorsforindex($raw,imagecolorat($raw,$x,$y))['red'];
+            } }
+            self::assertTrue($neutral);self::assertGreaterThanOrEqual(50,$minimum);self::assertLessThanOrEqual(239,$maximum);
+            self::assertGreaterThan(40,count($levels),'Tone matching must preserve terrain contrast.');
+            self::assertGreaterThan(15,($after-$before)/(120*70));
+            $layer->status=MS_OFF;$overview=imagecreatefromstring($map->drawQuery()->getBytes());
+            foreach ([[750,220],[700,300],[650,380]] as [$x,$y]) {
+                $water=imagecolorat($overview,$x,$y);
+                self::assertSame($water,imagecolorat($raw,$x,$y));
+                self::assertSame($water,imagecolorat($matched,$x,$y),'Grey correction must leave the masked water unchanged.');
+            }
+            imagedestroy($matched);imagedestroy($raw);imagedestroy($overview);
+        } finally { $_REQUEST=$previous; }
     }
 
     public function testColourReliefGainsDetailedTerrainAndWater(): void
