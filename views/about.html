@@ -66,21 +66,13 @@
 
 <div class="header"><h2>{{ "Map data"|trans }}</h2></div>
 {% set credits_link = '<a href="' ~ base ~ '/data-credits">' ~ ("Read the map data credits and licenses"|trans) ~ '</a>' %}
-<p>{{ "Natural Earth layers are public domain. Blue Marble imagery is credited to NASA Visible Earth. Close-view grey and colour relief uses NASA/METI ASTER GDEM, and close-view Blue Marble uses NASA/USGS Global WELD Landsat imagery, through NASA EOSDIS GIBS when enabled. RESOLVE ecoregions and biodiversity hotspots have separate attribution and licensing requirements. %credits_link% before publishing maps that use ecological layers."|trans({"%credits_link%": credits_link})|raw }}</p>
+<p>{{ "Natural Earth layers are public domain. Close-view grey and colour relief uses NASA/METI ASTER GDEM through NASA EOSDIS GIBS when enabled. RESOLVE ecoregions and biodiversity hotspots have separate attribution and licensing requirements. %credits_link% before publishing maps that use ecological layers."|trans({"%credits_link%": credits_link})|raw }}</p>
 
 <div class="header"><h2>{{ "Acknowledgments"|trans }}</h2></div>
-<p>Underlying shapefiles and relief are from <a href="https://www.naturalearthdata.com/">Natural Earth</a>. Rendering uses <a href="https://mapserver.org/">MapServer</a> through PHP MapScript. Blue Marble is from <a href="https://science.nasa.gov/earth/faq/">NASA Visible Earth</a>. The optional ecological layers use RESOLVE Ecoregions 2017 and Biodiversity Hotspots 2016.1. Their creators, source links, licenses and display changes are listed in <a href="{{ base }}/data-credits">map data credits</a>.</p>
+<p>Underlying shapefiles and relief are from <a href="https://www.naturalearthdata.com/">Natural Earth</a>. Rendering uses <a href="https://mapserver.org/">MapServer</a> through PHP MapScript. The optional ecological layers use RESOLVE Ecoregions 2017 and Biodiversity Hotspots 2016.1. Their creators, source links, licenses and display changes are listed in <a href="{{ base }}/data-credits">map data credits</a>.</p>
 
 <div class="header"><h2>{{ "History"|trans }}</h2></div>
 <p>{{ "The first version of this application was developed by David P. Shorthouse to help participants in two Planetary Biodiversity Inventory (National Science Foundation) projects create publication-quality maps. Funding for that work was coordinated by Dr. Norman Platnick, American Museum of Natural History."|trans }}</p>
-
-<div class="header"><h2>{{ "Applications"|trans }}</h2></div>
-<h3>Microsoft Excel</h3>
-<p class="citation">Brown, Brian. V. 2013. Automating the "Material examined" section of taxonomic papers to speed up species descriptions. <em>Zootaxa</em> 3683(3): 297. <a href="https://doi.org/10.11646/zootaxa.3683.3.8">https://doi.org/10.11646/zootaxa.3683.3.8</a>, <a href="http://phorid.net/software/">http://phorid.net/software/</a>.</p>
-<h3>Ruby 2+</h3>
-<p class="citation"><a href="https://rubygems.org/gems/simple-mappr">simple-mappr</a> Ruby gem</p>
-<h3>R Script</h3>
-<p class="citation"><a href="https://gist.github.com/dshorthouse/f6ed3029a696b1285f81d2688bdc7b5f">simple_mappr.r</a> Sample R script that uses the dplyr and httr packages to send requests to the SimpleMappr API and download image files to disk.</p>
 
 <div class="header"><h2>{{ "Code"|trans }}</h2></div>
 {% set urls_github = '<a href="https://github.com/jky7/SimpleMappr">https://github.com/jky7/SimpleMappr</a>' %}

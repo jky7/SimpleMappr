@@ -22,7 +22,7 @@ final class CoveredBackgroundTest extends TestCase
 
     private function document(array $layers): array
     {
-        foreach (['relief','reliefalt','reliefgrey','blueMarble'] as $name) {
+        foreach (['relief','reliefalt','reliefgrey'] as $name) {
             if (!isset(Mappr::getShapefileConfig()[$name])) { self::markTestSkipped('Requires the full-map profile.'); }
         }
         return ['width'=>600,'height'=>300,'bbox_map'=>'-100,30,-60,50','projection'=>'epsg:4326','projection_map'=>'epsg:4326','layers'=>array_fill_keys($layers,'on'),'options'=>['legend'=>0,'scalebar'=>0],'watermark'=>0];
@@ -38,13 +38,13 @@ final class CoveredBackgroundTest extends TestCase
     public function testPreviewsAndDownloadsKeepOnlyTheTopBackgroundAndPreserveSelections(): void
     {
         foreach ([0,1] as $download) {
-            foreach (['relief','reliefalt','reliefgrey','blueMarble'] as $top) {
-                $layers=array_values(array_diff(['relief','reliefalt','reliefgrey','blueMarble'],[$top]));$layers[]=$top;$layers[]='countries';
+            foreach (['relief','reliefalt','reliefgrey'] as $top) {
+                $layers=array_values(array_diff(['relief','reliefalt','reliefgrey'],[$top]));$layers[]=$top;$layers[]='countries';
                 $combined=$this->application($layers,['download'=>$download]);$single=$this->application([$top,'countries'],['download'=>$download]);
                 self::assertSame($single->get_image()->getBytes(),$combined->get_image()->getBytes());
                 self::assertSame([$top,'countries','base'],$combined->get_renderLayers());
                 foreach ($layers as $name) { self::assertArrayHasKey($name,$combined->request->layers); }
-                foreach (array_diff(['relief','reliefalt','reliefgrey','blueMarble'],[$top]) as $hidden) {
+                foreach (array_diff(['relief','reliefalt','reliefgrey'],[$top]) as $hidden) {
                     self::assertNull($combined->get_map_obj()->getLayerByName($hidden),'Covered imagery must never enter the native map.');
                 }
             }
@@ -80,13 +80,14 @@ final class CoveredBackgroundTest extends TestCase
         } finally { $_REQUEST=$previous; }
     }
 
-    public function testServiceCapabilitiesStillAdvertiseEveryBackground(): void
+    public function testServiceCapabilitiesAdvertiseActiveBackgroundsWithoutBlueMarble(): void
     {
         $this->document([]);$previous=$_REQUEST;
         try {
             $_REQUEST=['SERVICE'=>'WMS','REQUEST'=>'GetCapabilities'];
             $xml=(new Wms())->makeService()->execute()->createOutput();
-            foreach (['relief','reliefalt','reliefgrey','blueMarble'] as $name) { self::assertStringContainsString('<Name>'.$name.'</Name>',$xml); }
+            self::assertStringNotContainsString('<Name>blueMarble</Name>',$xml);
+            foreach (['relief','reliefalt','reliefgrey'] as $name) { self::assertStringContainsString('<Name>'.$name.'</Name>',$xml); }
         } finally { $_REQUEST=$previous; }
     }
 
@@ -107,7 +108,7 @@ final class CoveredBackgroundTest extends TestCase
         if (!\SimpleMappr\DetailedRelief::enabled()) { self::markTestSkipped('Requires enabled detailed relief.'); }
         $options=['bbox_map'=>'6.5,45.8,6.9,46.0'];
         foreach ([['relief','reliefgrey'],['reliefgrey','relief']] as [$hidden,$top]) {
-            $combined=$this->application(['blueMarble',$hidden,$top],$options);
+            $combined=$this->application(['reliefalt',$hidden,$top],$options);
             self::assertSame([$top],array_keys($combined->get_detailedReliefLayers()));
             self::assertTrue($combined->get_detailedReliefUsed());
             self::assertSame($this->application([$top],$options)->get_image()->getBytes(),$combined->get_image()->getBytes());

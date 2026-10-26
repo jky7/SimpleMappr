@@ -57,6 +57,8 @@ final class SavedMapDocument
             if (!isset($data[$group])) { continue; }
             if (!is_array($data[$group]) || count($data[$group]) > 60) { throw new \InvalidArgumentException('Invalid map options.'); }
             foreach ($data[$group] as $key => $value) {
+                // Retired background selections must not prevent older maps from loading.
+                if ($group === 'layers' && $key === 'blueMarble') { continue; }
                 if (!in_array($key, $group === 'layers' ? $layerKeys : ['border','legend','scalebar','scalelinethickness'], true)) { throw new \InvalidArgumentException('Invalid map option name.'); }
                 $document[$group][$key] = self::scalar($value, 32);
             }

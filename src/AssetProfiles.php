@@ -36,8 +36,9 @@ final class AssetProfiles
         }
         if (!in_array($profile['name'],['gray-relief-v1','full-map-v1'],true)) { $excluded['reliefgrey']='Install the gray-relief-v1 profile. This is medium-resolution Gray Earth, not the archived custom raster.'; }
         if ($profile['name']!=='full-map-v1') {
-            foreach (['relief','reliefalt','blueMarble','ecoregions','ecoregionLabels','conservation','hotspotLabels','lakenames'] as $key) { $excluded[$key]='Install the full-map-v1 profile.'; }
+            foreach (['relief','reliefalt','ecoregions','ecoregionLabels','conservation','hotspotLabels','lakenames'] as $key) { $excluded[$key]='Install the full-map-v1 profile.'; }
         }
+        $excluded['blueMarble']='This layer has been retired.';
         return ['schemaVersion'=>1,'profile'=>$profile['name'],'datasets'=>$datasets,'excluded'=>$excluded];
     }
 }

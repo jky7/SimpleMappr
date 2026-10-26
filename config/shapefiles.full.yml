@@ -97,22 +97,17 @@ environments:
                     sld: '%%ROOT%%/config/ecoregions-2017.sld'
                     item: ECO_ID
             relief:
-                name: 'Color shaded relief'
+                name: 'relief'
                 path: '%%ROOT%%/mapserver/maps/HYP_HR_SR_OB_DR/HYP_HR_SR_OB_DR.tif'
                 type: '%%MS_LAYER_RASTER%%'
                 sort: 1
             reliefalt:
-                name: 'Natural Earth II relief'
+                name: 'relief (Natural Earth)'
                 path: '%%ROOT%%/mapserver/maps/NE2_HR_LC_SR_W_DR/NE2_HR_LC_SR_W_DR.tif'
                 type: '%%MS_LAYER_RASTER%%'
                 sort: 1
-            blueMarble:
-                name: 'Blue Marble'
-                path: '%%ROOT%%/config/blue-marble.vrt'
-                type: '%%MS_LAYER_RASTER%%'
-                sort: 1
             reliefgrey:
-                name: 'Gray Earth relief'
+                name: 'relief (greyscale)'
                 path: '%%ROOT%%/mapserver/maps/GRAY_HR_SR_OB_DR/GRAY_HR_SR_OB_DR.tif'
                 type: '%%MS_LAYER_RASTER%%'
                 sort: 1
@@ -329,22 +324,17 @@ environments:
                     sld: '%%ROOT%%/config/ecoregions-2017.sld'
                     item: ECO_ID
             relief:
-                name: 'Color shaded relief'
+                name: 'relief'
                 path: '%%ROOT%%/mapserver/maps/HYP_HR_SR_OB_DR/HYP_HR_SR_OB_DR.tif'
                 type: '%%MS_LAYER_RASTER%%'
                 sort: 1
             reliefalt:
-                name: 'Natural Earth II relief'
+                name: 'relief (Natural Earth)'
                 path: '%%ROOT%%/mapserver/maps/NE2_HR_LC_SR_W_DR/NE2_HR_LC_SR_W_DR.tif'
                 type: '%%MS_LAYER_RASTER%%'
                 sort: 1
-            blueMarble:
-                name: 'Blue Marble'
-                path: '%%ROOT%%/config/blue-marble.vrt'
-                type: '%%MS_LAYER_RASTER%%'
-                sort: 1
             reliefgrey:
-                name: 'Gray Earth relief'
+                name: 'relief (greyscale)'
                 path: '%%ROOT%%/mapserver/maps/GRAY_HR_SR_OB_DR/GRAY_HR_SR_OB_DR.tif'
                 type: '%%MS_LAYER_RASTER%%'
                 sort: 1
@@ -561,22 +551,17 @@ environments:
                     sld: '%%ROOT%%/config/ecoregions-2017.sld'
                     item: ECO_ID
             relief:
-                name: 'Color shaded relief'
+                name: 'relief'
                 path: '%%ROOT%%/mapserver/maps/HYP_HR_SR_OB_DR/HYP_HR_SR_OB_DR.tif'
                 type: '%%MS_LAYER_RASTER%%'
                 sort: 1
             reliefalt:
-                name: 'Natural Earth II relief'
+                name: 'relief (Natural Earth)'
                 path: '%%ROOT%%/mapserver/maps/NE2_HR_LC_SR_W_DR/NE2_HR_LC_SR_W_DR.tif'
                 type: '%%MS_LAYER_RASTER%%'
                 sort: 1
-            blueMarble:
-                name: 'Blue Marble'
-                path: '%%ROOT%%/config/blue-marble.vrt'
-                type: '%%MS_LAYER_RASTER%%'
-                sort: 1
             reliefgrey:
-                name: 'Gray Earth relief'
+                name: 'relief (greyscale)'
                 path: '%%ROOT%%/mapserver/maps/GRAY_HR_SR_OB_DR/GRAY_HR_SR_OB_DR.tif'
                 type: '%%MS_LAYER_RASTER%%'
                 sort: 1
