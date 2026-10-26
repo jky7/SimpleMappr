@@ -89,19 +89,19 @@ final class DetailedReliefHttpTest extends TestCase
         } finally { $_REQUEST=$previous; }
     }
 
-    public function testGreyFlatMidtonesMatchTheOverviewAtA177KmScaleBar(): void
+    public function testAlternateGreyFlatMidtonesMatchTheOverviewAtA177KmScaleBar(): void
     {
         $previous=$_REQUEST;
         try {
             $x=1001875;$y=5740000;$span=1110000;
             $_REQUEST=array_replace($this->document(),[
-                'width'=>1000,'height'=>500,'projection'=>'epsg:3395','projection_map'=>'epsg:3395','download'=>1,
+                'layers'=>['reliefgreyalt'=>'on'],'width'=>1000,'height'=>500,'projection'=>'epsg:3395','projection_map'=>'epsg:3395','download'=>1,
                 'bbox_map'=>implode(',',[$x-$span/2,$y-$span/4,$x+$span/2,$y+$span/4])
             ]);
             $application=(new \SimpleMappr\Mappr\Application\Application())->execute();
             $detail=imagecreatefromstring($application->get_image()->getBytes());$map=$application->get_map_obj();
             self::assertSame(177.0,\SimpleMappr\PreviewScale::kilometres($map));
-            $layer=$map->getLayerByName('internal_detailed_relief');self::assertNotNull($layer);$layer->status=MS_OFF;
+            $layer=$map->getLayerByName('internal_detailed_relief_alt');self::assertNotNull($layer);$layer->status=MS_OFF;
             $overview=imagecreatefromstring($map->drawQuery()->getBytes());$medians=[];
             // The Po plain compares the sources' flat midtones without their different mountain shadows.
             foreach ([$overview,$detail] as $image) {
@@ -151,6 +151,16 @@ final class DetailedReliefHttpTest extends TestCase
             self::assertGreaterThan(25,$lakePixels,'Detailed lakes must retain the approved blue fill.');
             imagedestroy($detail);imagedestroy($overview);
         } finally { $_REQUEST=$previous; }
+    }
+
+    public function testAlternateGreyscalePreviewAndWmsKeepDetailedRelief(): void
+    {
+        [$status,$body]=$this->request('/application.json',array_replace($this->document(),['layers'=>['reliefgreyalt'=>'on']]));
+        self::assertSame(200,$status,$body);$map=json_decode($body,true,512,JSON_THROW_ON_ERROR);
+        self::assertSame('NASA/METI ASTER GDEM via NASA GIBS',$map['relief_source']['name']);
+        [$status,$bytes]=$this->request($map['mapOutputImage']);self::assertSame(200,$status);$this->assertDetailedPixels($bytes,600,300);
+        [$status,$bytes]=$this->request('/wms?SERVICE=WMS&REQUEST=GetMap&VERSION=1.1.1&LAYERS=reliefgreyalt&SRS=EPSG:4326&BBOX=6.5,45.8,6.9,46&WIDTH=600&HEIGHT=300&FORMAT=image/png');
+        self::assertSame(200,$status);$this->assertDetailedPixels($bytes,600,300);
     }
 
     public function testColourReliefGainsDetailedTerrainAndWater(): void

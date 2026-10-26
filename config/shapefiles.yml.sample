@@ -72,10 +72,14 @@ environments:
                 encoding: UTF-8
                 sort: 1
             reliefgrey:
-                name: relief (greyscale)
-                path: %%ROOT%%/mapserver/maps/GRAY_HR_SR_OB_DR/GRAY_HR_SR_OB_DR.tif
-                type: %%MS_LAYER_RASTER%%
-                encoding: UTF-8
+                name: 'relief (greyscale)'
+                path: '%%ROOT%%/config/hyp-greyscale.vrt'
+                type: '%%MS_LAYER_RASTER%%'
+                sort: 1
+            reliefgreyalt:
+                name: 'relief (greyscale alt)'
+                path: '%%ROOT%%/mapserver/maps/GRAY_HR_SR_OB_DR/GRAY_HR_SR_OB_DR.tif'
+                type: '%%MS_LAYER_RASTER%%'
                 sort: 1
             conservation:
                 name: biodiv. hotspots
@@ -320,10 +324,14 @@ environments:
                 encoding: UTF-8
                 sort: 1
             reliefgrey:
-                name: relief (greyscale)
-                path: %%ROOT%%/mapserver/maps/GRAY_HR_SR_OB_DR/GRAY_HR_SR_OB_DR.tif
-                type: %%MS_LAYER_RASTER%%
-                encoding: UTF-8
+                name: 'relief (greyscale)'
+                path: '%%ROOT%%/config/hyp-greyscale.vrt'
+                type: '%%MS_LAYER_RASTER%%'
+                sort: 1
+            reliefgreyalt:
+                name: 'relief (greyscale alt)'
+                path: '%%ROOT%%/mapserver/maps/GRAY_HR_SR_OB_DR/GRAY_HR_SR_OB_DR.tif'
+                type: '%%MS_LAYER_RASTER%%'
                 sort: 1
             conservation:
                 name: biodiv. hotspots

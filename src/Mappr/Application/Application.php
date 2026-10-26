@@ -143,7 +143,7 @@ class Application extends Mappr
     private function detailSources(int $field): array
     {
         $sources=[];
-        if (array_intersect(['reliefgrey','relief'],array_keys($this->detailedReliefLayers))) { $sources[]=['NASA/METI ASTER GDEM via NASA GIBS','Relief covers land between 83 degrees south and north.']; }
+        if (array_intersect(['reliefgrey','reliefgreyalt','relief'],array_keys($this->detailedReliefLayers))) { $sources[]=['NASA/METI ASTER GDEM via NASA GIBS','Relief covers land between 83 degrees south and north.']; }
         if (isset($this->detailedReliefLayers['blueMarble'])) { $sources[]=['NASA/USGS Global WELD Landsat via NASA GIBS','Imagery covers land, circa 2000.']; }
         return array_column($sources,$field);
     }

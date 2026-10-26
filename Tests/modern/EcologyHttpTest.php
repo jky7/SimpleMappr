@@ -91,7 +91,7 @@ final class EcologyHttpTest extends TestCase
             self::assertSame(200,$status);self::assertStringContainsString('CC BY-SA 4.0',$body);self::assertStringContainsString('CC BY 4.0',$body);self::assertStringContainsString('/data-credits',$body);
             if ($service==='wfs') {
                 $document=simplexml_load_string($body);
-                foreach ($document->xpath('//*[local-name()="FeatureType"]/*[local-name()="Name"]') as $name) { self::assertNotContains(preg_replace('/^.*:/','',(string)$name),['relief','reliefalt','reliefgrey','blueMarble']); }
+                foreach ($document->xpath('//*[local-name()="FeatureType"]/*[local-name()="Name"]') as $name) { self::assertNotContains(preg_replace('/^.*:/','',(string)$name),['relief','reliefalt','reliefgrey','reliefgreyalt','blueMarble']); }
             }
         }
         [$status,$body]=$this->request('/data-credits');self::assertSame(200,$status);self::assertStringContainsString('17 outer-limit records omitted',$body);self::assertStringContainsString('independent coordinates',$body);

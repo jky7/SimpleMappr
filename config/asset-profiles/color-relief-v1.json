@@ -3,48 +3,6 @@
   "profile": "color-relief-v1",
   "assets": [
     {
-      "basename": "HYP_HR_SR_OB_DR",
-      "kind": "raster",
-      "format": "zip",
-      "url": "https://naciscdn.org/naturalearth/10m/raster/HYP_HR_SR_OB_DR.zip",
-      "archive": "HYP_HR_SR_OB_DR.zip",
-      "archiveBytes": 404291730,
-      "archiveSha256": "ee2cbbf5b682e8514374c0c318bbf49aa640ecfe60d0a2e09a90e0c575d30a78",
-      "version": "2.0.0",
-      "extractedBytes": 700002196,
-      "components": [
-        {
-          "name": "HYP_HR_SR_OB_DR.README.html",
-          "bytes": 31189,
-          "sha256": "3a635575039e08b4f41526fd79f347fe9029ff53e767ca6c876b600bc6728c79"
-        },
-        {
-          "name": "HYP_HR_SR_OB_DR.VERSION.txt",
-          "bytes": 5,
-          "sha256": "f22abd6773ab232869321ad4b1e47ac0c908febf4f3a2bd10c8066140f741261"
-        },
-        {
-          "name": "HYP_HR_SR_OB_DR.prj",
-          "bytes": 147,
-          "sha256": "3259f0e55290a82b1350646f604e8a7ee1e2136c0320a40fad838ab40819fff8"
-        },
-        {
-          "name": "HYP_HR_SR_OB_DR.tfw",
-          "bytes": 173,
-          "sha256": "3f69f09374ddd5eb9a8ce94c4b08f4ff5fae947a20720684a2215ab0fae03cb2"
-        },
-        {
-          "name": "HYP_HR_SR_OB_DR.tif",
-          "bytes": 699970682,
-          "sha256": "7bb9316a8c52bfb2859125a6c4539e192786b48d3217c4735133e70f5b88194a"
-        }
-      ],
-      "destination": "HYP_HR_SR_OB_DR",
-      "license": "Public domain",
-      "licenseUrl": "https://www.naturalearthdata.com/about/terms-of-use/",
-      "verifiedOn": "2026-10-25"
-    },
-    {
       "basename": "NE2_HR_LC_SR_W_DR",
       "kind": "raster",
       "format": "zip",

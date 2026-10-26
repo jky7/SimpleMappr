@@ -35,6 +35,10 @@
           "cache": true
         },
         {
+          "path": "config/asset-profiles/hypsometric-relief-v1.json",
+          "cache": true
+        },
+        {
           "path": "config/asset-profiles/gray-earth-relief-v1.json",
           "cache": true
         }
@@ -49,6 +53,10 @@
         },
         {
           "path": "config/asset-profiles/natural-earth-extra-vector-v1.json",
+          "cache": true
+        },
+        {
+          "path": "config/asset-profiles/hypsometric-relief-v1.json",
           "cache": true
         },
         {

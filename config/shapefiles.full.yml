@@ -108,6 +108,11 @@ environments:
                 sort: 1
             reliefgrey:
                 name: 'relief (greyscale)'
+                path: '%%ROOT%%/config/hyp-greyscale.vrt'
+                type: '%%MS_LAYER_RASTER%%'
+                sort: 1
+            reliefgreyalt:
+                name: 'relief (greyscale alt)'
                 path: '%%ROOT%%/mapserver/maps/GRAY_HR_SR_OB_DR/GRAY_HR_SR_OB_DR.tif'
                 type: '%%MS_LAYER_RASTER%%'
                 sort: 1
@@ -335,6 +340,11 @@ environments:
                 sort: 1
             reliefgrey:
                 name: 'relief (greyscale)'
+                path: '%%ROOT%%/config/hyp-greyscale.vrt'
+                type: '%%MS_LAYER_RASTER%%'
+                sort: 1
+            reliefgreyalt:
+                name: 'relief (greyscale alt)'
                 path: '%%ROOT%%/mapserver/maps/GRAY_HR_SR_OB_DR/GRAY_HR_SR_OB_DR.tif'
                 type: '%%MS_LAYER_RASTER%%'
                 sort: 1
@@ -562,6 +572,11 @@ environments:
                 sort: 1
             reliefgrey:
                 name: 'relief (greyscale)'
+                path: '%%ROOT%%/config/hyp-greyscale.vrt'
+                type: '%%MS_LAYER_RASTER%%'
+                sort: 1
+            reliefgreyalt:
+                name: 'relief (greyscale alt)'
                 path: '%%ROOT%%/mapserver/maps/GRAY_HR_SR_OB_DR/GRAY_HR_SR_OB_DR.tif'
                 type: '%%MS_LAYER_RASTER%%'
                 sort: 1

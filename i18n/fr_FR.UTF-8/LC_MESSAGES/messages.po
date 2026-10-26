@@ -1568,3 +1568,9 @@ msgstr "d'après SimpleMappr de David P. Shorthouse (2010)"
 
 msgid "The original application:"
 msgstr "L'application originale :"
+
+msgid "relief (greyscale alt)"
+msgstr "relief (gris alt)"
+
+msgid "Natural Earth greyscale relief with darker water."
+msgstr "Relief en niveaux de gris Natural Earth avec des eaux plus sombres."

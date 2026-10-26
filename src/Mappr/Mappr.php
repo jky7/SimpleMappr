@@ -1513,7 +1513,7 @@ abstract class Mappr
     {
         $covered = false;
         foreach (array_reverse($layers, true) as $index => $name) {
-            if (!in_array($name, ['relief', 'reliefalt', 'reliefgrey', 'blueMarble'], true)
+            if (!in_array($name, ['relief', 'reliefalt', 'reliefgrey', 'reliefgreyalt', 'blueMarble'], true)
                 || (int)$this->shapes[$name]['type'] !== MS_LAYER_RASTER) { continue; }
             if ($covered) { unset($layers[$index]); }
             elseif (($this->shapes[$name]['opacity'] ?? 100) >= 100) { $covered = true; }
@@ -1523,7 +1523,7 @@ abstract class Mappr
 
     protected function addDetailedRelief(array $layers,?array $bounds=null,?string $projection=null,?int $width=null,?int $height=null): void
     {
-        $bases=array_values(array_intersect(['reliefgrey','relief','blueMarble'],$layers));
+        $bases=array_values(array_intersect(['reliefgrey','reliefgreyalt','relief','blueMarble'],$layers));
         if (!$bases || $this->request->output==='svg' || !\SimpleMappr\DetailedRelief::enabled()) { return; }
         $extent=$this->map_obj->extent;
         $bounds ??= [$extent->minx,$extent->miny,$extent->maxx,$extent->maxy];
@@ -1567,7 +1567,7 @@ abstract class Mappr
         $plan=\SimpleMappr\DetailedRelief::plan([min($xs),min($ys),max($xs),max($ys)],$width ?? $this->map_obj->width,$height ?? $this->map_obj->height);
         if ($plan===null) { return; }
         $colour=in_array('relief',$bases,true);$imagery=in_array('blueMarble',$bases,true);
-        $sources=array_merge(array_intersect(['reliefgrey','relief'],$bases)?['grey']:[],$colour?['index']:[],$imagery?['landsat']:[]);
+        $sources=array_merge(array_intersect(['reliefgrey','reliefgreyalt','relief'],$bases)?['grey']:[],$colour?['index']:[],$imagery?['landsat']:[]);
         $this->detailedRelief=new \SimpleMappr\DetailedRelief();
         $paths=$this->detailedRelief->prepare($plan,$sources);
         if (in_array(null,$paths,true)) { $this->detailedReliefDegraded=true; }
@@ -1584,11 +1584,12 @@ abstract class Mappr
             }
             if ($water!==null && $water->numlines>0) { $waters[]=$water; }
         }
-        if (in_array('reliefgrey',$bases,true) && $paths['grey']!==null) {
-            $grey=$this->detailRaster('internal_detailed_relief',$paths['grey'],'');
+        foreach (array_intersect(['reliefgrey','reliefgreyalt'],$bases) as $base) {
+            if ($paths['grey']===null) { continue; }
+            $grey=$this->detailRaster($base==='reliefgrey'?'internal_detailed_relief':'internal_detailed_relief_alt',$paths['grey'],'');
             // Match Natural Earth's grey range without changing alpha or the colour relief's shading source.
             for ($band=1;$band<=3;$band++) { $grey->addProcessing('LUT_'.$band.'=0:50,32:50,128:132,144:150,192:225,255:239'); }
-            $this->placeDetailLayers('reliefgrey',[$grey]);
+            $this->placeDetailLayers($base,[$grey]);
         }
         if ($colour && $paths['grey']!==null && $paths['index']!==null) {
             // Elevation tints shaded by the detailed terrain (soft light, then a light multiply), with crisp water on top.
@@ -1651,7 +1652,7 @@ abstract class Mappr
     protected function addDataCredits(array $layers,?int $width=null,?int $height=null): void
     {
         $datasets=DatasetCredits::selected($layers);
-        if (array_intersect(['reliefgrey','relief'],array_keys($this->detailedReliefLayers))) { $datasets['detailedRelief']=DatasetCredits::DETAILED_RELIEF; }
+        if (array_intersect(['reliefgrey','reliefgreyalt','relief'],array_keys($this->detailedReliefLayers))) { $datasets['detailedRelief']=DatasetCredits::DETAILED_RELIEF; }
         if (isset($this->detailedReliefLayers['blueMarble'])) { $datasets['detailedImagery']=DatasetCredits::DETAILED_IMAGERY; }
         if (!$datasets) { return; }
         $scale=$width===null && $this->_isResize()?max(1,(int)$this->request->download_factor):1;
