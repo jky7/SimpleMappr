@@ -1522,7 +1522,7 @@ abstract class Mappr
             $scaleView=$this->map_obj->cloneMap();
             $scaleView->setSize($this->image_size[0],$this->image_size[1]);$scaleView->setExtent(...$bounds);
         }
-        if (\SimpleMappr\PreviewScale::kilometres($scaleView)>250) { return; }
+        if (\SimpleMappr\PreviewScale::kilometres($scaleView)>200) { return; }
         $source=new \projectionObj($projection ?? $this->map_obj->getProjection());
         $destination=new \projectionObj('EPSG:3857');
         $center=new \pointObj(($bounds[0]+$bounds[2])/2,($bounds[1]+$bounds[3])/2);
@@ -1569,7 +1569,10 @@ abstract class Mappr
             if ($water!==null && $water->numlines>0) { $waters[]=$water; }
         }
         if (in_array('reliefgrey',$bases,true) && $paths['grey']!==null) {
-            $this->placeDetailLayers('reliefgrey',[$this->detailRaster('internal_detailed_relief',$paths['grey'],'')]);
+            $grey=$this->detailRaster('internal_detailed_relief',$paths['grey'],'');
+            // Match Natural Earth's grey range without changing alpha or the colour relief's shading source.
+            for ($band=1;$band<=3;$band++) { $grey->addProcessing('LUT_'.$band.'=0:50,32:50,200:235,255:239'); }
+            $this->placeDetailLayers('reliefgrey',[$grey]);
         }
         if ($colour && $paths['grey']!==null && $paths['index']!==null) {
             // Elevation tints shaded by the detailed terrain (soft light, then a light multiply), with crisp water on top.
