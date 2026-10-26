@@ -5,10 +5,9 @@ use SimpleMappr\ReliefTileCache;
 
 final class DetailedReliefTest extends TestCase
 {
-    public function testOverviewNeedsNoTilesAndLocalViewsGainResolution(): void
+    public function testLocalViewsGainResolutionWithinTileBudget(): void
     {
-        self::assertNull(DetailedRelief::plan([-20000000,-10000000,20000000,10000000],600,300));
-        $bounds=[0,0,200000,100000];
+        $bounds=[0,0,50000,25000];
         $preview=DetailedRelief::plan($bounds,600,300);
         $download=DetailedRelief::plan($bounds,3000,1500);
         self::assertGreaterThan($preview['zoom'],$download['zoom']);

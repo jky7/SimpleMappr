@@ -793,25 +793,12 @@ abstract class Mappr
      */
     public function addScalebar()
     {
-        $height = 8;
-        $width = 200;
-        $size = 8;
+        \SimpleMappr\PreviewScale::configure($this->map_obj);
         if ($this->_isResize() && $this->request->download_factor > 1) {
-            $height = $this->request->download_factor*4;
-            $width = $this->request->download_factor*100;
-            $size = $this->request->download_factor*5;
+            $this->map_obj->scalebar->height=$this->request->download_factor*4;
+            $this->map_obj->scalebar->width=$this->request->download_factor*100;
+            $this->map_obj->scalebar->label->size=$this->request->download_factor*5;
         }
-        $this->map_obj->scalebar->style = 0;
-        $this->map_obj->scalebar->intervals = 3;
-        $this->map_obj->scalebar->height = $height;
-        $this->map_obj->scalebar->width = $width;
-        $this->map_obj->scalebar->color->setRGB(30, 30, 30);
-        $this->map_obj->scalebar->outlinecolor->setRGB(0, 0, 0);
-        $this->map_obj->scalebar->units = MS_KILOMETERS;
-        $this->map_obj->scalebar->label->font = "inter";
-        $this->map_obj->scalebar->label->encoding = "UTF-8";
-        $this->map_obj->scalebar->label->size = $size;
-        $this->map_obj->scalebar->label->color->setRGB(0, 0, 0);
 
         //svg format cannot do scalebar in MapServer
         if ($this->request->download
@@ -1525,6 +1512,17 @@ abstract class Mappr
         $extent=$this->map_obj->extent;
         $bounds ??= [$extent->minx,$extent->miny,$extent->maxx,$extent->maxy];
         if (count(array_filter($bounds,static fn($value)=>is_finite((float)$value) && abs((float)$value)<=1e9))!==4) { throw new \InvalidArgumentException('The map extent is outside supported Earth coordinates.'); }
+        $scaleView=$this->map_obj;
+        if ($projection!==null) {
+            $scaleView=$this->map_obj->cloneMap();$scaleView->setProjection($projection);
+            $scaleView->units=str_contains(strtolower($projection),'4326')?MS_DD:MS_METERS;
+            $scaleView->setSize($width ?? $scaleView->width,$height ?? $scaleView->height);
+            $scaleView->setExtent(...$bounds);
+        } elseif ($this->request->download && $this->request->download_factor>1) {
+            $scaleView=$this->map_obj->cloneMap();
+            $scaleView->setSize($this->image_size[0],$this->image_size[1]);$scaleView->setExtent(...$bounds);
+        }
+        if (\SimpleMappr\PreviewScale::kilometres($scaleView)>250) { return; }
         $source=new \projectionObj($projection ?? $this->map_obj->getProjection());
         $destination=new \projectionObj('EPSG:3857');
         $center=new \pointObj(($bounds[0]+$bounds[2])/2,($bounds[1]+$bounds[3])/2);

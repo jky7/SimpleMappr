@@ -75,7 +75,7 @@ environments:
                 color: '100,100,100'
             reliefgrey:
                 name: 'Gray Earth relief'
-                path: '%%ROOT%%/mapserver/maps/GRAY_LR_SR_OB_DR/GRAY_LR_SR_OB_DR.tif'
+                path: '%%ROOT%%/mapserver/maps/GRAY_HR_SR_OB_DR/GRAY_HR_SR_OB_DR.tif'
                 type: '%%MS_LAYER_RASTER%%'
                 sort: 1
         labels:
@@ -229,7 +229,7 @@ environments:
                 color: '100,100,100'
             reliefgrey:
                 name: 'Gray Earth relief'
-                path: '%%ROOT%%/mapserver/maps/GRAY_LR_SR_OB_DR/GRAY_LR_SR_OB_DR.tif'
+                path: '%%ROOT%%/mapserver/maps/GRAY_HR_SR_OB_DR/GRAY_HR_SR_OB_DR.tif'
                 type: '%%MS_LAYER_RASTER%%'
                 sort: 1
         labels:
@@ -383,7 +383,7 @@ environments:
                 color: '100,100,100'
             reliefgrey:
                 name: 'Gray Earth relief'
-                path: '%%ROOT%%/mapserver/maps/GRAY_LR_SR_OB_DR/GRAY_LR_SR_OB_DR.tif'
+                path: '%%ROOT%%/mapserver/maps/GRAY_HR_SR_OB_DR/GRAY_HR_SR_OB_DR.tif'
                 type: '%%MS_LAYER_RASTER%%'
                 sort: 1
         labels:
