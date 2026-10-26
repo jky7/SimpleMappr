@@ -31,7 +31,6 @@ final class DetailedRelief
         if (count($bounds)!==4 || count(array_filter($bounds,static fn($v)=>is_numeric($v) && is_finite((float)$v)))!==4) { throw new \InvalidArgumentException('Invalid detailed relief extent.'); }
         [$left,$bottom,$right,$top]=array_map('floatval',$bounds);
         if ($right<=$left || $top<=$bottom || $width<2 || $height<2) { throw new \InvalidArgumentException('Invalid detailed relief extent.'); }
-        if (max($right-$left,$top-$bottom)>50000) { return null; }
         $bottom=max(-self::MAX_NORTHING,$bottom);$top=min(self::MAX_NORTHING,$top);
         if ($top<=$bottom) { return null; }
         $resolution=max(($right-$left)/$width,($top-$bottom)/$height);

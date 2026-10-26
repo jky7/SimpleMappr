@@ -42,12 +42,12 @@ final class DetailedReliefHttpTest extends TestCase
         self::assertSame(200,$status,$body);self::assertNull(json_decode($body,true)['relief_source']);
     }
 
-    public function testPreviewSwitchesToDetailedReliefBelowFiftyKilometres(): void
+    public function testPreviewSwitchesOnTheDisplayedScaleBar(): void
     {
-        foreach ([50100=>false,49900=>true] as $span=>$detailed) {
+        foreach ([310000=>false,300000=>true,220000=>true] as $span=>$detailed) {
             $x=1001875;$y=5740000;
             $document=array_replace($this->document(),[
-                'width'=>800,'height'=>400,'projection'=>'epsg:3395','projection_map'=>'epsg:3395',
+                'width'=>1000,'height'=>500,'projection'=>'epsg:3395','projection_map'=>'epsg:3395',
                 'bbox_map'=>implode(',',[$x-$span/2,$y-$span/4,$x+$span/2,$y+$span/4])
             ]);
             [$status,$body]=$this->request('/application.json',$document);
