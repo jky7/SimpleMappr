@@ -1522,7 +1522,7 @@ abstract class Mappr
             $scaleView=$this->map_obj->cloneMap();
             $scaleView->setSize($this->image_size[0],$this->image_size[1]);$scaleView->setExtent(...$bounds);
         }
-        if (\SimpleMappr\PreviewScale::kilometres($scaleView)>50) { return; }
+        if (\SimpleMappr\PreviewScale::kilometres($scaleView)>250) { return; }
         $source=new \projectionObj($projection ?? $this->map_obj->getProjection());
         $destination=new \projectionObj('EPSG:3857');
         $center=new \pointObj(($bounds[0]+$bounds[2])/2,($bounds[1]+$bounds[3])/2);

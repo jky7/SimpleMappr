@@ -44,7 +44,7 @@ final class DetailedReliefHttpTest extends TestCase
 
     public function testPreviewSwitchesOnTheDisplayedScaleBar(): void
     {
-        foreach ([310000=>false,300000=>true,220000=>true] as $span=>$detailed) {
+        foreach ([1580000=>false,1570000=>true,220000=>true] as $span=>$detailed) {
             $x=1001875;$y=5740000;
             $document=array_replace($this->document(),[
                 'width'=>1000,'height'=>500,'projection'=>'epsg:3395','projection_map'=>'epsg:3395',

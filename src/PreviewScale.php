@@ -29,7 +29,7 @@ final class PreviewScale
             if (count($pixels)<2) { throw new \RuntimeException('Cannot measure the preview scale bar.'); }
             $inches=$view->units===MS_DD?4374754:39.3701;
             $interval=(max($pixels)-min($pixels))/3*$view->cellsize*$inches/39370.1;
-            // At the 50 km boundary the native three intervals have whole-kilometre labels.
+            // At the 250 km boundary the native three intervals have whole-kilometre labels.
             return $interval<1?3*$interval:3*round($interval);
         } finally { imagedestroy($image); }
     }
