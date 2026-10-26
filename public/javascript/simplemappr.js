@@ -518,7 +518,7 @@ var SimpleMappr = (function($, window, document) {
         if (drag && event.key === 'Escape') { finish({pointerId: drag.id, clientX: drag.x, clientY: drag.y}, false); }
       });
 
-      // Scrolling over the map zooms 2x per notch around the pointer. The image scales at once and one render is
+      // Scrolling over the map zooms 1.4x per notch around the pointer. The image scales at once and one render is
       // sent when the wheel settles; trackpad pinches arrive as small Ctrl+wheel steps and add up the same way.
       map[0].addEventListener('wheel', function(event) {
         if (event.target !== image[0] || self.vars.pointerDrag || map.find('div.jcrop-holder').length) { return; }
@@ -532,7 +532,7 @@ var SimpleMappr = (function($, window, document) {
         wheel.delta = Math.max(-600, Math.min(600, wheel.delta + event.deltaY * unit));
         var origin = self.frameOrigin();
         wheel.anchor = {x: event.clientX - origin.x, y: event.clientY - origin.y};
-        self.showView(self.zoomedView(wheel.base, wheel.anchor, Math.pow(2, -wheel.delta / 100)));
+        self.showView(self.zoomedView(wheel.base, wheel.anchor, Math.pow(1.4, -wheel.delta / 100)));
         window.clearTimeout(wheel.timer);
         wheel.timer = window.setTimeout(function() { self.settleWheel(); }, self.vars.wheelSettleMs);
       }, {passive: false});
@@ -545,7 +545,7 @@ var SimpleMappr = (function($, window, document) {
       this.vars.wheelZoom = null;
       var levels = Math.round(-wheel.delta / 100);
       if (!levels) { this.restoreView(wheel.base); return; }
-      var view = this.zoomedView(wheel.base, wheel.anchor, Math.pow(2, levels));
+      var view = this.zoomedView(wheel.base, wheel.anchor, Math.pow(1.4, levels));
       this.showView(view);
       this.commitView(view, wheel.frame);
     },
@@ -597,7 +597,7 @@ var SimpleMappr = (function($, window, document) {
       this.vars.pendingView = {x: 0, y: 0, s: 1};
       if ((drag && drag.active) || wheel) {
         if (drag && drag.active) { drag.base = {x: 0, y: 0, s: 1}; this.showView({x: drag.last.x, y: drag.last.y, s: 1}); }
-        if (wheel) { wheel.base = {x: 0, y: 0, s: 1}; this.showView(this.zoomedView(wheel.base, wheel.anchor, Math.pow(2, -wheel.delta / 100))); }
+        if (wheel) { wheel.base = {x: 0, y: 0, s: 1}; this.showView(this.zoomedView(wheel.base, wheel.anchor, Math.pow(1.4, -wheel.delta / 100))); }
         this.vars.mapOutput.css({width: image.width() + 'px', height: image.height() + 'px'});
         return;
       }
