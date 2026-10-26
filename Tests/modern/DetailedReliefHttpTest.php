@@ -57,7 +57,7 @@ final class DetailedReliefHttpTest extends TestCase
         }
     }
 
-    public function testGreyToneLightensTerrainWithoutChangingWaterOrSourcePixels(): void
+    public function testGreyTonePreservesNeutralTerrainContrastWaterAndSourcePixels(): void
     {
         $previous=$_REQUEST;
         try {
@@ -70,17 +70,15 @@ final class DetailedReliefHttpTest extends TestCase
             $layer->clearProcessing();$layer->addProcessing('RESAMPLE=BILINEAR');
             $raw=imagecreatefromstring($map->drawQuery()->getBytes());
             self::assertSame($sourceHash,hash_file('sha256',$layer->data),'Colour shading must retain the original mosaic.');
-            $before=$after=0;$levels=[];$minimum=255;$maximum=0;$neutral=true;
+            $levels=[];$minimum=255;$maximum=0;$neutral=true;
             for ($y=20;$y<300;$y+=4) { for ($x=20;$x<500;$x+=4) {
                 $pixel=imagecolorsforindex($matched,imagecolorat($matched,$x,$y));
                 $neutral=$neutral && $pixel['red']===$pixel['green'] && $pixel['red']===$pixel['blue'];
                 $minimum=min($minimum,$pixel['red']);$maximum=max($maximum,$pixel['red']);
-                $levels[$pixel['red']]=true;$after+=$pixel['red'];
-                $before+=imagecolorsforindex($raw,imagecolorat($raw,$x,$y))['red'];
+                $levels[$pixel['red']]=true;
             } }
             self::assertTrue($neutral);self::assertGreaterThanOrEqual(50,$minimum);self::assertLessThanOrEqual(239,$maximum);
             self::assertGreaterThan(40,count($levels),'Tone matching must preserve terrain contrast.');
-            self::assertGreaterThan(15,($after-$before)/(120*70));
             $layer->status=MS_OFF;$overview=imagecreatefromstring($map->drawQuery()->getBytes());
             foreach ([[750,220],[700,300],[650,380]] as [$x,$y]) {
                 $water=imagecolorat($overview,$x,$y);
@@ -88,6 +86,33 @@ final class DetailedReliefHttpTest extends TestCase
                 self::assertSame($water,imagecolorat($matched,$x,$y),'Grey correction must leave the masked water unchanged.');
             }
             imagedestroy($matched);imagedestroy($raw);imagedestroy($overview);
+        } finally { $_REQUEST=$previous; }
+    }
+
+    public function testGreyFlatMidtonesMatchTheOverviewAtA177KmScaleBar(): void
+    {
+        $previous=$_REQUEST;
+        try {
+            $x=1001875;$y=5740000;$span=1110000;
+            $_REQUEST=array_replace($this->document(),[
+                'width'=>1000,'height'=>500,'projection'=>'epsg:3395','projection_map'=>'epsg:3395','download'=>1,
+                'bbox_map'=>implode(',',[$x-$span/2,$y-$span/4,$x+$span/2,$y+$span/4])
+            ]);
+            $application=(new \SimpleMappr\Mappr\Application\Application())->execute();
+            $detail=imagecreatefromstring($application->get_image()->getBytes());$map=$application->get_map_obj();
+            self::assertSame(177.0,\SimpleMappr\PreviewScale::kilometres($map));
+            $layer=$map->getLayerByName('internal_detailed_relief');self::assertNotNull($layer);$layer->status=MS_OFF;
+            $overview=imagecreatefromstring($map->drawQuery()->getBytes());$medians=[];
+            // The Po plain compares the sources' flat midtones without their different mountain shadows.
+            foreach ([$overview,$detail] as $image) {
+                $values=[];
+                for ($y=315;$y<345;$y++) { for ($x=550;$x<630;$x++) {
+                    $values[]=imagecolorsforindex($image,imagecolorat($image,$x,$y))['red'];
+                } }
+                sort($values);$medians[]=$values[intdiv(count($values),2)];
+            }
+            self::assertEqualsWithDelta($medians[0],$medians[1],3,'Super hi-res flat land must not jump to a lighter grey.');
+            imagedestroy($detail);imagedestroy($overview);
         } finally { $_REQUEST=$previous; }
     }
 
