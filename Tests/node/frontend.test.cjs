@@ -465,6 +465,29 @@ for (const direction of [-1,1]) {
   const preview=tf(e);await settled(e);assert.equal(tf(e),preview);
  });
 }
+for (const loggedFirst of [false,true]) {
+ test(`Firefox wheel units stay one notch with early logger ${loggedFirst}`,async t=>{
+  const e=wheelEditor(t);let checked,mode;
+  const event=new e.w.WheelEvent('wheel',{clientX:300,clientY:150,bubbles:true,cancelable:true});
+  // Firefox locks line/pixel exposure according to which getter is read first.
+  Object.defineProperties(event,{
+   deltaMode:{get(){if(checked===undefined)checked=true;return checked?1:0;}},
+   deltaY:{get(){if(checked===undefined)checked=false;return checked?-6:-108;}}
+  });
+  if(loggedFirst){void event.deltaY;mode=event.deltaMode;assert.equal(mode,0);}
+  e.$('#mapOutputImage')[0].dispatchEvent(event);
+  assert.equal(tf(e),'translate(-120px,-60px) scale(1.4)');
+  const preview=tf(e);await settled(e);assert.equal(tf(e),preview);
+  assert.equal(e.request().get('view_rect'),'85.71,42.86,728.57,364.29');
+ });
+}
+for(const delta of [-3,3,-6,6]){
+ test(`line-mode wheel delta ${delta} is one pointer-anchored notch`,async t=>{
+  const e=wheelEditor(t);wheel(e,delta,300,150,{deltaMode:1});
+  assert.ok(Math.abs(e.$('#mapOutputImage').data('shownView').s-Math.pow(1.4,-Math.sign(delta)))<1e-12);
+  const preview=tf(e);await settled(e);assert.equal(tf(e),preview);
+ });
+}
 test('small pinch events use the same steps in the preview and settled view',async t=>{
  const e=wheelEditor(t);
  wheel(e,-30,300,150,{ctrlKey:true});wheel(e,-30,300,150,{ctrlKey:true});

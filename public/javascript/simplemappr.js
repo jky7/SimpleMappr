@@ -523,7 +523,8 @@ var SimpleMappr = (function($, window, document) {
       map[0].addEventListener('wheel', function(event) {
         if (event.target !== image[0] || self.vars.pointerDrag || map.find('div.jcrop-holder').length) { return; }
         event.preventDefault();
-        var wheel = self.vars.wheelZoom, unit = event.deltaMode === 1 ? 33 : (event.deltaMode === 2 ? 450 : 1);
+        // Read the unit before the value: Firefox otherwise exposes compatibility pixel deltas.
+        var mode = event.deltaMode, wheel = self.vars.wheelZoom, unit = mode === 1 ? 33 : (mode === 2 ? 450 : 1);
         if (!wheel) {
           var view = self.vars.pendingView;
           wheel = self.vars.wheelZoom = {delta: 0, base: {x: view.x, y: view.y, s: view.s}, frame: self.viewFrame(), anchor: {x: 0, y: 0}, timer: null};
@@ -531,7 +532,8 @@ var SimpleMappr = (function($, window, document) {
         }
         var delta = event.deltaY * unit;
         // Mouse notches vary by browser (100, 108 or 120 pixels); normalize each before accumulating.
-        if (!event.ctrlKey && event.deltaMode === 0 && Math.abs(delta) >= 100) { delta = Math.sign(delta) * Math.round(Math.abs(delta) / 100) * 100; }
+        if (!event.ctrlKey && mode === 1 && delta !== 0) { delta = Math.sign(delta) * 100; }
+        if (!event.ctrlKey && mode === 0 && Math.abs(delta) >= 100) { delta = Math.sign(delta) * Math.round(Math.abs(delta) / 100) * 100; }
         wheel.delta = Math.max(-600, Math.min(600, wheel.delta + delta));
         var origin = self.frameOrigin();
         wheel.anchor = {x: event.clientX - origin.x, y: event.clientY - origin.y};
