@@ -15,7 +15,7 @@ final class DetailedRelief
     // Blue Marble's flat ocean colour, used for all water under the detailed imagery.
     public const WATER = [10,10,51];
     // Elevation tints (metres => RGB) for the colour relief, close to Natural Earth's cross-blended hypsometric tints.
-    public const TINTS = [[0,[166,196,152]],[300,[190,209,164]],[700,[214,216,178]],[1200,[226,214,184]],[1800,[218,198,170]],[2400,[205,190,176]],[3000,[226,222,220]],[4000,[246,246,246]]];
+    public const TINTS = [[0,[132,174,163]],[300,[154,194,179]],[700,[177,207,196]],[1200,[229,225,213]],[1800,[214,200,184]],[2400,[198,178,159]],[3000,[226,222,215]],[4000,[246,246,246]]];
     private ?string $directory = null;
     private static ?array $colorIndex = null;
 

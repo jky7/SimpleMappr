@@ -116,6 +116,43 @@ final class DetailedReliefHttpTest extends TestCase
         } finally { $_REQUEST=$previous; }
     }
 
+    public function testColourFlatMidtonesMatchTheOverviewAtA177KmScaleBar(): void
+    {
+        if (!isset(Mappr::getShapefileConfig()['relief'])) { self::markTestSkipped('Requires the installed colour relief overview.'); }
+        $previous=$_REQUEST;
+        try {
+            $x=1001875;$y=5740000;$span=1110000;
+            $_REQUEST=array_replace($this->document(),[
+                'width'=>1000,'height'=>500,'projection'=>'epsg:3395','projection_map'=>'epsg:3395','download'=>1,
+                'layers'=>['relief'=>'on'],'bbox_map'=>implode(',',[$x-$span/2,$y-$span/4,$x+$span/2,$y+$span/4])
+            ]);
+            $application=(new \SimpleMappr\Mappr\Application\Application())->execute();
+            $detail=imagecreatefromstring($application->get_image()->getBytes());$map=$application->get_map_obj();
+            self::assertSame(177.0,\SimpleMappr\PreviewScale::kilometres($map));
+            foreach ($application->get_detailedReliefLayers()['relief'] as $name) { $map->getLayerByName($name)->status=MS_OFF; }
+            $overview=imagecreatefromstring($map->drawQuery()->getBytes());$medians=[];
+            foreach ([$overview,$detail] as $image) {
+                $values=['red'=>[],'green'=>[],'blue'=>[]];
+                for ($y=315;$y<345;$y++) { for ($x=550;$x<630;$x++) {
+                    $colour=imagecolorsforindex($image,imagecolorat($image,$x,$y));
+                    foreach (['red','green','blue'] as $channel) { $values[$channel][]=$colour[$channel]; }
+                } }
+                $median=[];
+                foreach ($values as $channel=>$levels) { sort($levels);$median[$channel]=$levels[intdiv(count($levels),2)]; }
+                $medians[]=$median;
+            }
+            foreach ($medians[0] as $channel=>$value) {
+                self::assertEqualsWithDelta($value,$medians[1][$channel],3,'Detailed lowland '.$channel.' must match the overview.');
+            }
+            $lakePixels=0;
+            for ($y=20;$y<450;$y+=4) { for ($x=20;$x<980;$x+=4) {
+                if ((imagecolorat($detail,$x,$y)&0xffffff)===0x94d2e8) { $lakePixels++; }
+            } }
+            self::assertGreaterThan(25,$lakePixels,'Detailed lakes must retain the approved blue fill.');
+            imagedestroy($detail);imagedestroy($overview);
+        } finally { $_REQUEST=$previous; }
+    }
+
     public function testColourReliefGainsDetailedTerrainAndWater(): void
     {
         if (!isset(Mappr::getShapefileConfig()['relief'])) { self::markTestSkipped('Requires the installed colour relief overview.'); }

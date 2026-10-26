@@ -129,7 +129,7 @@ final class DetailedReliefTest extends TestCase
         foreach ($land as $index) { self::assertSame(255,$table[$index][3]); }
         usort($land,fn($a,$b)=>$key[$a]['low']<=>$key[$b]['low']);
         self::assertSame(DetailedRelief::TINTS[count(DetailedRelief::TINTS)-1][1],array_slice($table[end($land)],0,3));
-        self::assertSame(DetailedRelief::tint(1500),[222,206,177]);
+        self::assertSame([222,213,199],DetailedRelief::tint(1500));
     }
 
     public function testTintMosaicPaintsLandFromThePaletteAndSkipsBlankTiles(): void
