@@ -1571,7 +1571,7 @@ abstract class Mappr
         if (in_array('reliefgrey',$bases,true) && $paths['grey']!==null) {
             $grey=$this->detailRaster('internal_detailed_relief',$paths['grey'],'');
             // Match Natural Earth's grey range without changing alpha or the colour relief's shading source.
-            for ($band=1;$band<=3;$band++) { $grey->addProcessing('LUT_'.$band.'=0:50,32:50,200:235,255:239'); }
+            for ($band=1;$band<=3;$band++) { $grey->addProcessing('LUT_'.$band.'=0:50,32:50,128:132,144:150,192:225,255:239'); }
             $this->placeDetailLayers('reliefgrey',[$grey]);
         }
         if ($colour && $paths['grey']!==null && $paths['index']!==null) {
