@@ -42,6 +42,21 @@ final class DetailedReliefHttpTest extends TestCase
         self::assertSame(200,$status,$body);self::assertNull(json_decode($body,true)['relief_source']);
     }
 
+    public function testPreviewSwitchesToDetailedReliefBelowFiftyKilometres(): void
+    {
+        foreach ([50100=>false,49900=>true] as $span=>$detailed) {
+            $x=1001875;$y=5740000;
+            $document=array_replace($this->document(),[
+                'width'=>800,'height'=>400,'projection'=>'epsg:3395','projection_map'=>'epsg:3395',
+                'bbox_map'=>implode(',',[$x-$span/2,$y-$span/4,$x+$span/2,$y+$span/4])
+            ]);
+            [$status,$body]=$this->request('/application.json',$document);
+            self::assertSame(200,$status,$body);
+            $map=json_decode($body,true,512,JSON_THROW_ON_ERROR);
+            self::assertSame($detailed,$map['relief_source']!==null);
+        }
+    }
+
     public function testColourReliefGainsDetailedTerrainAndWater(): void
     {
         if (!isset(Mappr::getShapefileConfig()['relief'])) { self::markTestSkipped('Requires the installed colour relief overview.'); }
@@ -99,7 +114,7 @@ final class DetailedReliefHttpTest extends TestCase
     public function testProjectedAndRotatedViewsKeepDetailedLandPixels(): void
     {
         foreach ([['projection'=>'esri:102014'],['projection'=>'epsg:3395'],['projection'=>'esri:102014','rotation'=>30]] as $settings) {
-            [$status,$body]=$this->request('/application.json',array_replace($this->document(),$settings));
+            [$status,$body]=$this->request('/application.json',array_replace($this->document(),['bbox_map'=>'6.6,45.85,6.8,45.95'],$settings));
             self::assertSame(200,$status,$body);$map=json_decode($body,true,512,JSON_THROW_ON_ERROR);
             self::assertNotNull($map['relief_source']);
             [$status,$bytes]=$this->request($map['mapOutputImage']);self::assertSame(200,$status);

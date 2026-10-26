@@ -8,13 +8,23 @@ final class DetailedReliefTest extends TestCase
     public function testOverviewNeedsNoTilesAndLocalViewsGainResolution(): void
     {
         self::assertNull(DetailedRelief::plan([-20000000,-10000000,20000000,10000000],600,300));
-        $bounds=[0,0,200000,100000];
+        $bounds=[0,0,50000,25000];
         $preview=DetailedRelief::plan($bounds,600,300);
         $download=DetailedRelief::plan($bounds,3000,1500);
         self::assertGreaterThan($preview['zoom'],$download['zoom']);
         self::assertLessThanOrEqual(12,$download['zoom']);
         self::assertLessThanOrEqual(256,count(DetailedRelief::tileNames($download)));
         self::assertNull(DetailedRelief::plan([0,18500000,21000,18521000],600,300));
+    }
+
+    public function testDetailedReliefStartsAtFiftyKilometresOnEitherAxis(): void
+    {
+        foreach ([[0,0,50000,25000],[0,0,25000,50000]] as $bounds) {
+            self::assertNotNull(DetailedRelief::plan($bounds,800,400));
+        }
+        foreach ([[0,0,50001,25000],[0,0,25000,50001]] as $bounds) {
+            self::assertNull(DetailedRelief::plan($bounds,800,400));
+        }
     }
 
     public function testAntimeridianTilesWrapWithoutChangingMosaicPlacement(): void
