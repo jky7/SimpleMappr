@@ -34,7 +34,7 @@ final class AssetProfiles
         if ($profile['name']==='minimal-vector-v1') {
             foreach (['rivers','oceans','roads','railroads','rivernames','placenames','physicalLabels','marineLabels'] as $key) { $excluded[$key]='Install the extended-vector-v1, gray-relief-v1 or full-map-v1 profile.'; }
         }
-        if (!in_array($profile['name'],['gray-relief-v1','full-map-v1'],true)) { $excluded['reliefgrey']='Install the gray-relief-v1 profile. This is medium-resolution Gray Earth, not the archived custom raster.'; }
+        if (!in_array($profile['name'],['gray-relief-v1','full-map-v1'],true)) { foreach (['reliefgrey','reliefgreyalt'] as $key) { $excluded[$key]='Install the gray-relief-v1 or full-map-v1 profile.'; } }
         if ($profile['name']!=='full-map-v1') {
             foreach (['relief','reliefalt','ecoregions','ecoregionLabels','conservation','hotspotLabels','lakenames'] as $key) { $excluded[$key]='Install the full-map-v1 profile.'; }
         }

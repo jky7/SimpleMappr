@@ -22,7 +22,7 @@ final class CoveredBackgroundTest extends TestCase
 
     private function document(array $layers): array
     {
-        foreach (['relief','reliefalt','reliefgrey'] as $name) {
+        foreach (['relief','reliefalt','reliefgrey','reliefgreyalt'] as $name) {
             if (!isset(Mappr::getShapefileConfig()[$name])) { self::markTestSkipped('Requires the full-map profile.'); }
         }
         return ['width'=>600,'height'=>300,'bbox_map'=>'-100,30,-60,50','projection'=>'epsg:4326','projection_map'=>'epsg:4326','layers'=>array_fill_keys($layers,'on'),'options'=>['legend'=>0,'scalebar'=>0],'watermark'=>0];
@@ -38,13 +38,13 @@ final class CoveredBackgroundTest extends TestCase
     public function testPreviewsAndDownloadsKeepOnlyTheTopBackgroundAndPreserveSelections(): void
     {
         foreach ([0,1] as $download) {
-            foreach (['relief','reliefalt','reliefgrey'] as $top) {
-                $layers=array_values(array_diff(['relief','reliefalt','reliefgrey'],[$top]));$layers[]=$top;$layers[]='countries';
+            foreach (['relief','reliefalt','reliefgrey','reliefgreyalt'] as $top) {
+                $layers=array_values(array_diff(['relief','reliefalt','reliefgrey','reliefgreyalt'],[$top]));$layers[]=$top;$layers[]='countries';
                 $combined=$this->application($layers,['download'=>$download]);$single=$this->application([$top,'countries'],['download'=>$download]);
                 self::assertSame($single->get_image()->getBytes(),$combined->get_image()->getBytes());
                 self::assertSame([$top,'countries','base'],$combined->get_renderLayers());
                 foreach ($layers as $name) { self::assertArrayHasKey($name,$combined->request->layers); }
-                foreach (array_diff(['relief','reliefalt','reliefgrey'],[$top]) as $hidden) {
+                foreach (array_diff(['relief','reliefalt','reliefgrey','reliefgreyalt'],[$top]) as $hidden) {
                     self::assertNull($combined->get_map_obj()->getLayerByName($hidden),'Covered imagery must never enter the native map.');
                 }
             }
@@ -87,7 +87,7 @@ final class CoveredBackgroundTest extends TestCase
             $_REQUEST=['SERVICE'=>'WMS','REQUEST'=>'GetCapabilities'];
             $xml=(new Wms())->makeService()->execute()->createOutput();
             self::assertStringNotContainsString('<Name>blueMarble</Name>',$xml);
-            foreach (['relief','reliefalt','reliefgrey'] as $name) { self::assertStringContainsString('<Name>'.$name.'</Name>',$xml); }
+            foreach (['relief','reliefalt','reliefgrey','reliefgreyalt'] as $name) { self::assertStringContainsString('<Name>'.$name.'</Name>',$xml); }
         } finally { $_REQUEST=$previous; }
     }
 

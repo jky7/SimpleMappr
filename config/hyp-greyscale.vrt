@@ -1,0 +1,13 @@
+<VRTDataset rasterXSize="21600" rasterYSize="10800">
+  <SRS>EPSG:4326</SRS>
+  <GeoTransform>-180, 0.01666666666667, 0, 90.00000000000001, 0, -0.01666666666667</GeoTransform>
+  <VRTRasterBand dataType="Byte" band="1">
+    <ColorInterp>Gray</ColorInterp>
+    <SimpleSource>
+      <SourceFilename relativeToVRT="1">../mapserver/maps/HYP_HR_SR_OB_DR/HYP_HR_SR_OB_DR.tif</SourceFilename>
+      <SourceBand>1</SourceBand>
+      <SrcRect xOff="0" yOff="0" xSize="21600" ySize="10800" />
+      <DstRect xOff="0" yOff="0" xSize="21600" ySize="10800" />
+    </SimpleSource>
+  </VRTRasterBand>
+</VRTDataset>

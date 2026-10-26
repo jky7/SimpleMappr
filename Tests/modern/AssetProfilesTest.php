@@ -10,6 +10,9 @@ final class AssetProfilesTest extends TestCase
         $registry=AssetProfiles::registry();self::assertSame(1,$registry['schemaVersion']);
         foreach ($registry['profiles'] as $name=>$profile) {
             self::assertFileExists(ROOT.'/'.$profile['configuration']);
+            foreach (Symfony\Component\Yaml\Yaml::parseFile(ROOT.'/'.$profile['configuration'])['environments'] as $environment) {
+                self::assertIsArray($environment['layers']);self::assertIsArray($environment['labels']);
+            }
             foreach ($profile['manifests'] as $entry) { self::assertSame(1,json_decode(file_get_contents(ROOT.'/'.$entry['path']),true)['schemaVersion']); }
             self::assertSame($name,AssetProfiles::selected($name)['name']);
         }

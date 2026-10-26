@@ -1274,3 +1274,9 @@ msgstr ""
 
 msgid "The original application:"
 msgstr ""
+
+msgid "relief (greyscale alt)"
+msgstr ""
+
+msgid "Natural Earth greyscale relief with darker water."
+msgstr ""
