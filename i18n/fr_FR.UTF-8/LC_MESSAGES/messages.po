@@ -330,8 +330,8 @@ msgstr "relief (gris)"
 
 #: .index.php:134
 #: .tabs/help.php:86
-msgid "relief (alternate)"
-msgstr "relief (suppléant)"
+msgid "relief (Natural Earth)"
+msgstr "relief (Natural Earth)"
 
 #: .index.php:134
 #: .tabs/help.php:86
@@ -1536,8 +1536,8 @@ msgstr "Améliorations: SimpleMappr fonctionne de nouveau avec les versions actu
 msgid "Read the map data credits and licenses"
 msgstr "Consultez les crédits et licences des données cartographiques"
 
-msgid "Natural Earth layers are public domain. Blue Marble imagery is credited to NASA Visible Earth. Close-view grey and colour relief uses NASA/METI ASTER GDEM, and close-view Blue Marble uses NASA/USGS Global WELD Landsat imagery, through NASA EOSDIS GIBS when enabled. RESOLVE ecoregions and biodiversity hotspots have separate attribution and licensing requirements. %credits_link% before publishing maps that use ecological layers."
-msgstr "Les couches Natural Earth sont dans le domaine public. Les images Blue Marble sont attribuées à NASA Visible Earth. Le relief gris et en couleur détaillé utilise NASA/METI ASTER GDEM, et Blue Marble détaillé utilise les images Landsat Global WELD de NASA/USGS, par NASA EOSDIS GIBS lorsqu'ils sont activés. Les écorégions RESOLVE et les points chauds de biodiversité ont leurs propres exigences d'attribution et de licence. %credits_link% avant de publier des cartes qui utilisent les couches écologiques."
+msgid "Natural Earth layers are public domain. Close-view grey and colour relief uses NASA/METI ASTER GDEM through NASA EOSDIS GIBS when enabled. RESOLVE ecoregions and biodiversity hotspots have separate attribution and licensing requirements. %credits_link% before publishing maps that use ecological layers."
+msgstr "Les couches Natural Earth sont dans le domaine public. Le relief gris et en couleur détaillé utilise NASA/METI ASTER GDEM par NASA EOSDIS GIBS lorsqu'il est activé. Les écorégions RESOLVE et les points chauds de biodiversité ont leurs propres exigences d'attribution et de licence. %credits_link% avant de publier des cartes qui utilisent les couches écologiques."
 
 #: views/about.html
 msgid "If you publish a map made here, please cite:"

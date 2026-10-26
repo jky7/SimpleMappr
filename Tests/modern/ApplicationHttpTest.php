@@ -128,6 +128,10 @@ final class ApplicationHttpTest extends TestCase
             self::assertGreaterThan(strpos($body, '<details class="update-history">'), strpos($body, $locale === 'fr_FR' ? '8 mai, 2018' : 'May 8, 2018'), 'the 2018 entries are inside the toggle');
             self::assertStringNotContainsString('In the Wild', $body);
             self::assertStringNotContainsString('Trouvés ailleurs', $body);
+            self::assertStringNotContainsString('<h2>Applications</h2>', $body);
+            foreach (['phorid.net/software', 'rubygems.org/gems/simple-mappr', 'simple_mappr.r'] as $application) {
+                self::assertStringNotContainsString($application, $body);
+            }
             self::assertStringContainsString('/data-credits"', $body);
             // scripts/set-release-version writes CITATION.cff and this citation together, so read the release from there.
             $cff = file_get_contents(ROOT.'/CITATION.cff');

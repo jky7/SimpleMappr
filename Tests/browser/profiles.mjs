@@ -13,7 +13,13 @@ try{
  await page.goto(base,{waitUntil:'networkidle'});await page.waitForFunction(()=>window.SimpleMappr&&window.jQuery);
  const profile=await(await page.request.get(base+'/_runtime')).json();
  expect(profile.assetProfile).toBe(expectedProfile);
- const keys=['rivers','oceans','roads','railroads','rivernames','placenames','physicalLabels','marineLabels','reliefgrey',...(expectedProfile==='full-map-v1'?['relief','reliefalt','blueMarble','ecoregions','ecoregionLabels','conservation','hotspotLabels','lakenames']:[])];
+ await expect(page.locator('[name="layers[blueMarble]"]')).toHaveCount(0);
+ const reliefNames={reliefgrey:'relief (greyscale)',...(expectedProfile==='full-map-v1'?{relief:'relief',reliefalt:'relief (Natural Earth)'}:{})};
+ for(const [key,label] of Object.entries(reliefNames)){
+  const id=await page.locator(`[name="layers[${key}]"]`).getAttribute('id');
+  await expect(page.locator(`label[for="${id}"]`)).toHaveText(label);
+ }
+ const keys=['rivers','oceans','roads','railroads','rivernames','placenames','physicalLabels','marineLabels','reliefgrey',...(expectedProfile==='full-map-v1'?['relief','reliefalt','ecoregions','ecoregionLabels','conservation','hotspotLabels','lakenames']:[])];
  async function render(label){
   const old=await page.locator('#mapOutputImage').getAttribute('src');
   const response=page.waitForResponse(response=>new URL(response.url()).pathname===basePath+'/application.json');

@@ -4,6 +4,15 @@ use SimpleMappr\SavedMapDocument;
 
 final class SavedMapDocumentTest extends TestCase
 {
+    public function testRetiredBlueMarbleSelectionDoesNotPreventLoadingOlderMaps(): void
+    {
+        $source=['coords'=>[['title'=>'Montréal','data'=>'45.5,-73.5']], 'layers'=>['countries'=>'on','blueMarble'=>'on']];
+        $document=SavedMapDocument::decode(json_encode($source));
+        self::assertSame(['countries'=>'on'],$document['layers']);
+        self::assertSame($source['coords'],$document['coords']);
+        SavedMapDocument::validateForWrite($document);
+    }
+
     public function testSettingsRoundtripPreservesUnicodeDataAndSourceViewport(): void
     {
         $source = ['save'=>['title'=>'Montréal 😀'], 'coords'=>[['title'=>'Café','data'=>"43.6,-79.3\n45.5,-73.5",'color'=>'210 30 35']], 'projection'=>'epsg:4326', 'projection_map'=>'epsg:4326', 'origin_map'=>'-100', 'bbox_map'=>'-180,-90,180,90', 'bbox_rubberband'=>[], 'layers'=>['countries'=>'on','lakesOutline'=>'on','lakes'=>'on','stateprovinces'=>'on','countrynames'=>'on','stateprovnames'=>'on','grid'=>'on']];
