@@ -530,8 +530,8 @@ var SimpleMappr = (function($, window, document) {
           self.holdFrame(wheel.frame);
         }
         var delta = event.deltaY * unit;
-        // Chromium reports discrete mouse notches in 120-pixel units; leave pinch deltas continuous.
-        if (!event.ctrlKey && event.deltaMode === 0 && delta !== 0 && delta % 120 === 0) { delta = delta / 120 * 100; }
+        // Mouse notches vary by browser (100, 108 or 120 pixels); normalize each before accumulating.
+        if (!event.ctrlKey && event.deltaMode === 0 && Math.abs(delta) >= 100) { delta = Math.sign(delta) * Math.round(Math.abs(delta) / 100) * 100; }
         wheel.delta = Math.max(-600, Math.min(600, wheel.delta + delta));
         var origin = self.frameOrigin();
         wheel.anchor = {x: event.clientX - origin.x, y: event.clientY - origin.y};

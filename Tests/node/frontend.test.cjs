@@ -456,6 +456,15 @@ test('three Chromium notches stay three steps and keep the preview stable when a
  e.p.settleWheel();assert.equal(tf(e),preview);
  assert.equal(e.request().get('view_rect'),'190.67,95.34,518.66,259.33');
 });
+for (const direction of [-1,1]) {
+ test(`Zen 108-unit notches keep their count in direction ${direction}`,async t=>{
+  const e=wheelEditor(t);
+  for(let i=0;i<5;i++) wheel(e,direction*108,300,150);
+  const scale=e.$('#mapOutputImage').data('shownView').s;
+  assert.ok(Math.abs(scale-Math.pow(1.4,-direction*5))<1e-12);
+  const preview=tf(e);await settled(e);assert.equal(tf(e),preview);
+ });
+}
 test('small pinch events use the same steps in the preview and settled view',async t=>{
  const e=wheelEditor(t);
  wheel(e,-30,300,150,{ctrlKey:true});wheel(e,-30,300,150,{ctrlKey:true});
