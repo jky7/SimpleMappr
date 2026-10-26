@@ -523,19 +523,28 @@ var SimpleMappr = (function($, window, document) {
       map[0].addEventListener('wheel', function(event) {
         if (event.target !== image[0] || self.vars.pointerDrag || map.find('div.jcrop-holder').length) { return; }
         event.preventDefault();
-        var wheel = self.vars.wheelZoom, unit = event.deltaMode === 1 ? 33 : (event.deltaMode === 2 ? 450 : 1);
+        // Read the unit before the value: Firefox otherwise exposes compatibility pixel deltas.
+        var mode = event.deltaMode, wheel = self.vars.wheelZoom, unit = mode === 1 ? 33 : (mode === 2 ? 450 : 1);
         if (!wheel) {
           var view = self.vars.pendingView;
           wheel = self.vars.wheelZoom = {delta: 0, base: {x: view.x, y: view.y, s: view.s}, frame: self.viewFrame(), anchor: {x: 0, y: 0}, timer: null};
           self.holdFrame(wheel.frame);
         }
-        wheel.delta = Math.max(-600, Math.min(600, wheel.delta + event.deltaY * unit));
+        var delta = event.deltaY * unit;
+        // Mouse notches vary by browser (100, 108 or 120 pixels); normalize each before accumulating.
+        if (!event.ctrlKey && mode === 1 && delta !== 0) { delta = Math.sign(delta) * 100; }
+        if (!event.ctrlKey && mode === 0 && Math.abs(delta) >= 100) { delta = Math.sign(delta) * Math.round(Math.abs(delta) / 100) * 100; }
+        wheel.delta = Math.max(-600, Math.min(600, wheel.delta + delta));
         var origin = self.frameOrigin();
         wheel.anchor = {x: event.clientX - origin.x, y: event.clientY - origin.y};
-        self.showView(self.zoomedView(wheel.base, wheel.anchor, Math.pow(1.4, -wheel.delta / 100)));
+        self.showView(self.zoomedView(wheel.base, wheel.anchor, self.wheelScale(wheel)));
         window.clearTimeout(wheel.timer);
         wheel.timer = window.setTimeout(function() { self.settleWheel(); }, self.vars.wheelSettleMs);
       }, {passive: false});
+    },
+
+    wheelScale: function(wheel) {
+      return Math.pow(1.4, Math.round(-wheel.delta / 100));
     },
 
     settleWheel: function() {
@@ -543,9 +552,9 @@ var SimpleMappr = (function($, window, document) {
       if (!wheel) { return; }
       window.clearTimeout(wheel.timer);
       this.vars.wheelZoom = null;
-      var levels = Math.round(-wheel.delta / 100);
-      if (!levels) { this.restoreView(wheel.base); return; }
-      var view = this.zoomedView(wheel.base, wheel.anchor, Math.pow(1.4, levels));
+      var scale = this.wheelScale(wheel);
+      if (scale === 1) { this.restoreView(wheel.base); return; }
+      var view = this.zoomedView(wheel.base, wheel.anchor, scale);
       this.showView(view);
       this.commitView(view, wheel.frame);
     },
@@ -597,7 +606,7 @@ var SimpleMappr = (function($, window, document) {
       this.vars.pendingView = {x: 0, y: 0, s: 1};
       if ((drag && drag.active) || wheel) {
         if (drag && drag.active) { drag.base = {x: 0, y: 0, s: 1}; this.showView({x: drag.last.x, y: drag.last.y, s: 1}); }
-        if (wheel) { wheel.base = {x: 0, y: 0, s: 1}; this.showView(this.zoomedView(wheel.base, wheel.anchor, Math.pow(1.4, -wheel.delta / 100))); }
+        if (wheel) { wheel.base = {x: 0, y: 0, s: 1}; this.showView(this.zoomedView(wheel.base, wheel.anchor, this.wheelScale(wheel))); }
         this.vars.mapOutput.css({width: image.width() + 'px', height: image.height() + 'px'});
         return;
       }
