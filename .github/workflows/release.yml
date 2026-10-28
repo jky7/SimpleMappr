@@ -2,7 +2,7 @@ name: Private release checks
 on:
   pull_request:
   push:
-    branches: [master, 'codex/**']
+    branches: [master]
   workflow_dispatch:
     inputs:
       optional_assets:
