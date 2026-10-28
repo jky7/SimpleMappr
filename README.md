@@ -9,7 +9,7 @@ Optional Google and GitHub sign-in lets people keep their own private maps.
 
 ## Status
 
-This fork is still a work in progress and requires additional testing
+This fork is a work in progress and still needs more testing.
 
 ## Requirements
 
@@ -39,7 +39,7 @@ The setup asks you to choose an owner username and password. Use a password of a
 Keep these credentials to sign in and save maps. The first build downloads the required software and can take several minutes.
 
 Once startup finishes, SimpleMappr will be available at [http://127.0.0.1:8080](http://127.0.0.1:8080/).
-For an existing installation, keep its `.env` file and follow the [maintenance guide](docs/private-deployment.md).
+For an existing installation, keep its `.env` file and follow [Install and run](docs/private-deployment.md).
 
 ## Open SimpleMappr
 
@@ -75,10 +75,11 @@ Sharing a map on your own computer does not make your computer accessible over t
 
 ## More guides
 
-See [Install and manage SimpleMappr](docs/private-deployment.md) for setup, map datasets, backups, and updates.
-To enable account registration through Google or GitHub, follow [Set up social sign-in](docs/social-login.md).
-Developers can use the [development guide](docs/development.md) and [feature verification guide](docs/feature-verification.md).
-The [original installation instructions](docs/legacy-readme.md) are archived for historical reference.
+- [Install and run](docs/private-deployment.md): map datasets, owner login, updates and tuning
+- [Back up and restore](docs/backup-restore.md)
+- [Google and GitHub sign-in](docs/social-login.md)
+- For developers: [development](docs/development.md), [editor](docs/frontend.md), [import/export and services](docs/import-export.md), [feature verification](docs/feature-verification.md)
+- [Original installation instructions](docs/legacy-readme.md) (archived)
 
 ## Credits and license
 

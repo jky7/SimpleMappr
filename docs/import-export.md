@@ -33,7 +33,11 @@ The editor export endpoints accept the map form:
 
 SimpleMappr settings JSON preserves editor settings and group styles. GeoJSON exports geometry and selected feature properties. Importing GeoJSON does not restore a settings document.
 
-Invalid ordinary requests return HTTP 400 JSON with an `error` field. The image and Office responses must contain only their declared format. Download filenames are cleaned before use in headers.
+Invalid ordinary requests return HTTP 400 JSON with an `error` field. Image and Office responses contain only their declared format. Download filenames are sanitized before they go in headers.
+
+### Dataset credits
+
+Maps showing ecoregions or hotspots always include wrapped credit lines. These need at least 160 px of width and 13 px per line plus 24 px of padding, plus another 36 px for an embedded scale bar (or 12 px for a watermark alone). The requirements scale with `download_factor`. A request too small for the credits fails with an error rather than clipping them. Both layers fit a 256×256 WMS image.
 
 ## WMS
 
@@ -45,8 +49,10 @@ WMS 1.1.1 `SRS=EPSG:4326` uses longitude,latitude BBOX order. WMS 1.3.0 `CRS=EPS
 
 ## WFS
 
-`/wfs` supports `GetCapabilities`, `DescribeFeatureType`, and `GetFeature` for WFS 1.0.0, 1.1.0, and 2.0.0. Raster layers are excluded. Feature IDs are stable within the checksummed dataset and do not require modifying the data files.
+`/wfs` supports `GetCapabilities`, `DescribeFeatureType`, and `GetFeature` for WFS 1.0.0, 1.1.0, and 2.0.0. Raster layers are excluded. Feature IDs (`mappr_id`) come from an OGR view of the source FID, so they're stable without changing the checksummed files.
+
+Hotspots are served through `config/hotspots-2016.vrt`. It selects the 36 `hotspot area` records from the 53 in the source (dropping 17 `outer limit` records) before any client filter, and adds `mappr_license` and `mappr_source` fields. Capabilities and HTTP `Link` headers point to the data credits.
 
 `MAXFEATURES` limits older WFS versions. `COUNT` limits WFS 2.0. The maximum response is 1000 features. A zero count returns no features. The same bounds apply to XML POST requests. Errors return XML with HTTP 400.
 
-These endpoints expose the bundled basemap datasets. They do not expose another user's private saved maps.
+These endpoints expose only the basemap datasets, never users' saved maps.
