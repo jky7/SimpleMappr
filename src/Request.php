@@ -203,6 +203,11 @@ class Request
                 throw new \InvalidArgumentException('Invalid map control value.');
             }
         }
+        // 0 or empty means the 1.25 default.
+        $thickness = $document->border_thickness;
+        if ($thickness !== null && $thickness !== '' && (float)$thickness != 0 && (!is_numeric($thickness) || $thickness < 0.5 || $thickness > 2)) {
+            throw new \InvalidArgumentException('Line thickness must be between 0.5 and 2.');
+        }
         foreach ($document->options as $option) {
             if (!is_scalar($option)) { throw new \InvalidArgumentException('Invalid export option.'); }
         }

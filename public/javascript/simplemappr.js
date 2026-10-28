@@ -849,7 +849,7 @@ var SimpleMappr = (function($, window, document) {
 
       $("#border-slider").slider({
         value : 1.25,
-        min   : 1,
+        min   : 0.5,
         max   : 2,
         step  : 0.25,
         slide: function(e, ui) {
