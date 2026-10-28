@@ -63,6 +63,15 @@ final class ApplicationHttpTest extends TestCase
         return [['/login', 200], ['/data-credits', 200], ['/no-such-page', 404]];
     }
 
+    public function testDataCreditsOmitRetiredBlueMarbleImagery(): void
+    {
+        [$status, , $body] = $this->request('/data-credits');
+        self::assertSame(200, $status);
+        self::assertStringContainsString('ASTER GDEM relief', $body);
+        self::assertStringNotContainsString('Blue Marble', $body);
+        self::assertStringNotContainsString('Landsat', $body);
+    }
+
     public function testTabFragmentsStayBareForTheEditorAndSendDirectVisitsToTheEditorTab(): void
     {
         $base = rtrim(getenv('SIMPLEMAPPR_TEST_URL') ?: 'http://127.0.0.1', '/');
