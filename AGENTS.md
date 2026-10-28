@@ -108,6 +108,8 @@ curl --fail http://127.0.0.1:8080/_runtime
 
 ## Private release operations
 
+- Push and open PRs for this repo as the `jky7` GitHub account. If `gh auth status` shows another active account, run `gh auth switch -u jky7` first.
+
 - Publish with the manual `Publish release` workflow (enter a version such as `4.1`). It refuses unless `Private release checks` passed on master, then `scripts/set-release-version` updates `CITATION.cff` and the About citation, commits, tags `vVERSION` and creates the release; Zenodo archives it. The all-versions DOI `10.5281/zenodo.23626206` never changes. Deploy afterwards.
 - Optional-dataset gates need the `optional_assets` workflow input.
 - `scripts/backup` retains the running image under a `simplemappr-backup:` tag. `scripts/restore` only creates new projects and verifies the bundle before touching Docker.
