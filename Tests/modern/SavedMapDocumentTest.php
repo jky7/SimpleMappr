@@ -49,6 +49,20 @@ final class SavedMapDocumentTest extends TestCase
         $this->expectException(InvalidArgumentException::class);
         SavedMapDocument::validateForWrite($document);
     }
+    public function testLineThicknessAcceptsTheSliderRangeAndTheDefault(): void
+    {
+        foreach (['', '0', '0.5', '1.25', '2'] as $value) {
+            SavedMapDocument::validateForWrite(SavedMapDocument::fromForm(['projection'=>'epsg:4326','border_thickness'=>$value]));
+        }
+        foreach (['0.25', '2.5', '-1'] as $value) {
+            try {
+                SavedMapDocument::validateForWrite(SavedMapDocument::fromForm(['projection'=>'epsg:4326','border_thickness'=>$value]));
+                self::fail('Accepted line thickness '.$value);
+            } catch (InvalidArgumentException $e) {
+                self::assertStringContainsString('Line thickness', $e->getMessage());
+            }
+        }
+    }
     public function testNewWritesRejectUnsupportedProjections(): void
     {
         $document=SavedMapDocument::fromForm(['projection'=>'invalid']);
