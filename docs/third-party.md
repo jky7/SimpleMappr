@@ -1,21 +1,31 @@
 # Software and map-data inventory
 
-SimpleMappr retains its upstream MIT license and copyright notices. The release inventory has three sources of truth:
+SimpleMappr keeps its upstream MIT license and copyright notices. Three sources list exactly what ships:
 
 - `composer.lock` and `composer licenses --format=json` describe exact PHP package revisions and declared licenses.
 - The frontend manifest includes dependency licenses, retained-plugin notices and hashes. The application and browser `package-lock.json` files pin npm versions and integrity hashes.
 - `/usr/local/share/simplemappr-packages.tsv` inside the image lists the exact Debian package versions. Installed `/usr/share/doc/PACKAGE/copyright` files retain their distribution copyright and license notices.
 
-The GitHub release workflow saves Composer license output, npm security audits and the installed package inventory with its sanitized receipts. License declarations do not replace reviewing a dependency's actual license when updating or redistributing it. Node and Playwright are build/test dependencies; the deployed Apache/PHP image does not install a host Node runtime.
+The release workflow saves the Composer license output, npm audits and package inventory with its receipts. Declared licenses are a starting point; check the actual license when you update or redistribute a dependency. Node and Playwright are build and test tools only and aren't in the deployed image.
 
-The PHP stack includes Firebase PHP-JWT for social sign-in token verification, GeoPHP, Twig, Phroute, GD/image support, PHPWord, PHPPresentation and PHPUnit for verification. PHPPresentation remains pinned to the reviewed upstream revision recorded in `composer.lock`; a compatible maintained stable release should replace that pin when available. The software inventory includes test dependencies because the current runtime image also supports the documented verification commands.
+The PHP stack includes Firebase PHP-JWT (sign-in tokens), GeoPHP, Twig, Phroute, GD, PHPWord, PHPPresentation and PHPUnit. PHPPresentation is pinned to a reviewed upstream commit in `composer.lock` until a compatible stable release ships. Test dependencies are listed because the runtime image also runs the verification commands.
 
-Inter (SIL OFL 1.1) is the only text font. The browser gets the Latin and Latin Extended variable subsets of the exact-pinned `@fontsource-variable/inter` npm package, bundled and content-hashed with the frontend, with its licence in the notices file. Rendered map images use the static Regular and Bold fonts from the Debian `fonts-inter` package in the image snapshot (`mapserver/fonts/fonts.list`, licence in `/usr/share/doc/fonts-inter/copyright`). The previously bundled Arial TrueType files were removed.
+Inter (SIL OFL 1.1) is the only font. The editor bundles the Latin and Latin Extended subsets of `@fontsource-variable/inter`, with its license in the notices file. Rendered maps use Debian's `fonts-inter` Regular and Bold through `mapserver/fonts/fonts.list` (license in `/usr/share/doc/fonts-inter/copyright`).
 
-The editor uses pinned jQuery and jQueryUI. Jcrop, ColorPicker and Tiny Circleslider are retained vendored plugins with preserved notices and build-input hashes. They are outside npm audit's package coverage. Do not remove their notices when regenerating the frontend.
+The editor uses pinned jQuery and jQuery UI. Jcrop, ColorPicker and Tiny Circleslider are vendored with their notices and hashes. npm audit doesn't cover them, and their notices must survive frontend rebuilds.
 
-Natural Earth datasets are public domain. Each installed profile manifest records the original archive URL, version, archive/member hashes and the Natural Earth terms URL. The bundled minimum inventory is `Tests/fixtures/manifest.json`; optional inventories are under `config/asset-profiles/`. The greyscale choices use the original high-resolution HYP red channel and Gray Earth rasters. The HYP band-1 VRT preserves the source pixels and leaves the installed TIFF unchanged. Color shaded relief and Natural Earth II use version 2.0.0. NASA Blue Marble uses the original 2002 image, credited to NASA Visible Earth under its [image-use policy](https://science.nasa.gov/earth/faq/). Its source TIFF stays unchanged; a checked-in VRT provides global WGS84 georeferencing.
+Natural Earth datasets are public domain. Each profile manifest records the archive URL, version, archive and member hashes, and the Natural Earth terms URL. The minimal inventory is `Tests/fixtures/manifest.json`; optional ones are under `config/asset-profiles/`. Versions come from the archive contents, which can differ from the download site's label (the railroad archive, for example, contains 4.1.0 metadata).
 
-Optional archives are deliberately excluded from the Docker build context and Git. Fetching them requires an explicit host command. Installing from a retained verified cache performs no network request. Source provenance and version metadata come from the pinned archive contents, which may differ from a current download site's display label.
+Raster sources, all left byte-for-byte unchanged:
 
-The available RESOLVE 2017 terrestrial ecoregions require CC BY 4.0 attribution. The 2016.1 biodiversity hotspots require CC BY-SA 4.0 attribution and share-alike treatment. The full-map profile installs both with mandatory rendered credits, a public data-credit page, and service license metadata. The hotspot source retains its supplied © 2012 Conservation International Foundation credit and disclaimer. Its XML contains older restrictive terms; the installed 2016.1 README and author deposit explicitly declare CC BY-SA 4.0. Both metadata files remain unchanged. Marine ecoregions have redistribution and noncommercial restrictions and are excluded.
+| Layer | Source |
+| --- | --- |
+| `relief (greyscale)` | Natural Earth HYP 2.0.0, 21600×10800. `config/hyp-greyscale.vrt` reads band 1 as Byte/Gray, the same pixels `gdal_translate -ot Byte -b 1` produces. |
+| `relief (greyscale alt)` | Natural Earth Gray Earth 2.0.0, 21600×10800 |
+| `relief`, Natural Earth II | Natural Earth 2.0.0, 16200×8100 |
+| Blue Marble (retired) | NASA 2002 image, credited to NASA Visible Earth under its [image-use policy](https://science.nasa.gov/earth/faq/). It is still downloaded by `full-map-v1` for provenance, with `config/blue-marble.vrt` supplying WGS84 georeferencing, but it is no longer offered as a layer. |
+| Detailed relief (optional) | NASA/METI ASTER GDEM via NASA GIBS, fetched at render time |
+
+Optional archives stay out of Git and the Docker build context. They are fetched only by an explicit host command, and installing from a verified cache makes no network request.
+
+RESOLVE 2017 terrestrial ecoregions are CC BY 4.0. Biodiversity hotspots 2016.1 are CC BY-SA 4.0 and keep their © 2012 Conservation International Foundation credit and disclaimer. The hotspot XML metadata carries older, more restrictive terms, but the 2016.1 README and author deposit declare CC BY-SA 4.0; both files are kept unchanged. `full-map-v1` installs both datasets with credits on every map, the `/data-credits` page, and license metadata in the map services. Ecoregion colours are generated from the source `ECO_ID` and `COLOR` fields. Marine ecoregions are excluded because their terms restrict redistribution and commercial use.

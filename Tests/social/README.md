@@ -7,7 +7,7 @@ docker build -t simplemappr-runtime:local .
 Tests/smoke/check-social-login --image simplemappr-runtime:local
 ```
 
-The check creates its own internal Docker network, database, map assets, sessions, signing keys and certificate authority. It uses the fixed Google and GitHub HTTPS hostnames through private Docker aliases. A temporary localhost forwarder gives the HTTP cookie client access to the application. The operator's deployment and `.env` are untouched. Created containers, volumes, keys and credentials are removed on exit. The HTTP checks also run both providers through a prefix-stripping proxy at `/simplemappr` and verify exact callback addresses, private sessions, and success and error redirects. GitHub fixture requests require a bearer header, the pinned API version, and the static User-Agent.
+The check builds a throwaway network, database, keys and certificate authority, aliases the real Google and GitHub hostnames to local fixtures, and removes everything on exit. Your deployment and `.env` aren't touched. It runs both providers at the root and behind a `/simplemappr` prefix-stripping proxy, checking callbacks, sessions and redirects.
 
 To also click both sign-in buttons, follow the actual provider redirects, open My Maps and sign out in Chromium, supply an image built from `Tests/browser`.
 
@@ -16,6 +16,6 @@ docker build -t simplemappr-browser-contract:local Tests/browser
 Tests/smoke/check-social-login --image simplemappr-runtime:local --browser-image simplemappr-browser-contract:local
 ```
 
-The browser accepts the disposable fixture certificate and maps provider hostnames to the fixture. The application verifies TLS normally and separately rejects a certificate with an incorrect hostname. Authentication traces, screenshots, tokens and profiles are not saved in receipts. Real Google and GitHub app registration still needs a deployment check with the operator's credentials.
+The browser trusts the fixture certificate; the app still verifies TLS and rejects a wrong hostname. No tokens, traces or screenshots of sign-in are saved. This doesn't test your real provider registration (see [docs/social-login.md](../../docs/social-login.md#5-test-it-for-real)).
 
-Browser failures report only the provider, check stage and error category. For diagnosis, `--diagnostics-dir /absolute/new-private-directory` retains raw browser failure details in that new mode 0700 directory. Those files can contain disposable authentication values. Keep them outside receipts and delete them after diagnosis.
+Failures report only the provider, stage and error category. Add `--diagnostics-dir /absolute/new-private-directory` to keep raw details (mode 0700). They can contain test credentials, so delete them afterwards.

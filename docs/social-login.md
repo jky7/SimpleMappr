@@ -1,120 +1,112 @@
 # Enable Google and GitHub sign-in
 
-This guide is for the person who runs a SimpleMappr installation. Each enabled provider allows people with a supported account to create their own private SimpleMappr account. Your local owner login remains available.
+Each provider you enable lets anyone with that kind of account register their own private SimpleMappr account. The local owner login keeps working and is your recovery login.
 
-Start with a working [Docker installation](private-deployment.md#start-and-verify). Keep the existing `.env` and owner credentials. Do not run initial owner setup again.
+Start from a working [installation](private-deployment.md#install) and keep its `.env`.
 
-## Choose the address
+## 1. Choose the address
 
-Choose one address that people use to reach your installation. Set `SIMPLEMAPPR_URL` to its absolute base URL, without a query or fragment. For this hosted installation, use `https://jky.io/simplemappr`. A path prefix is supported behind a proxy that strips the prefix before forwarding to Apache. Use plain path segments and omit `.` or `..` segments, percent escapes, and repeated slashes.
+Pick the one base URL people will use, for example `https://example.org/simplemappr`. A path prefix works behind a proxy that strips it. Use plain path segments: no `.`/`..`, percent escapes or double slashes.
 
-For a public installation, terminate HTTPS at your reverse proxy and forward requests to the app's localhost port. Keep that port bound to `127.0.0.1` and expose only the proxy. The configured HTTPS origin enables Secure session cookies even when the proxy connects to Apache over HTTP. The application does not trust forwarded headers to choose its sign-in address.
+For a public site, terminate HTTPS at the reverse proxy and keep the app's port on `127.0.0.1`. The app trusts the configured HTTPS URL for Secure cookies, not forwarded headers.
 
-Register these exact callback addresses, replacing the example base URL with yours:
+Your callback addresses are the base URL plus:
 
-| Provider | Callback address |
+| Provider | Callback |
 | --- | --- |
-| Google | `https://jky.io/simplemappr/auth/google/callback` |
-| GitHub | `https://jky.io/simplemappr/auth/github/callback` |
+| Google | `/auth/google/callback` |
+| GitHub | `/auth/github/callback` |
 
-Use the same hostname in your browser throughout sign-in. A different hostname has a different session cookie and cannot complete the pending sign-in.
+Use the same hostname throughout sign-in, because a different hostname has a different cookie and the sign-in can't complete.
 
-## Register Google
+## 2. Register with Google
 
-Follow Google's [OpenID Connect setup](https://developers.google.com/identity/openid-connect/openid-connect) and [web application credential instructions](https://developers.google.com/identity/protocols/oauth2/web-server).
+See Google's [OpenID Connect](https://developers.google.com/identity/openid-connect/openid-connect) and [web server credential](https://developers.google.com/identity/protocols/oauth2/web-server) guides.
 
-1. Create or select your project in Google Cloud Console.
-2. Configure the Google Auth Platform branding and audience. Choose an external audience to allow accounts outside your organization. Add test users while the app is in testing.
-3. Create an OAuth client with the **Web application** type.
-4. Add your Google callback under **Authorized redirect URIs**. This is a server callback, so a JavaScript origin entry alone is insufficient.
-5. Save the client ID and client secret in your password manager. Use them in the configuration below.
-6. Before opening the installation to other people, complete Google's publishing and consent requirements for your chosen audience.
+1. In Google Cloud Console, create or pick a project.
+2. Set up Google Auth Platform branding and audience. Choose *External* to allow outside accounts, and add test users while testing.
+3. Create an OAuth client of type **Web application**.
+4. Add the Google callback under **Authorized redirect URIs** (a JavaScript origin alone isn't enough).
+5. Save the client ID and secret in your password manager.
+6. Before opening the site to others, complete Google's publishing requirements.
 
-SimpleMappr requests `openid profile`. It does not request Google Drive access, offline access, or email access.
+SimpleMappr asks only for `openid profile`: no email, Drive or offline access.
 
-## Register GitHub
+## 3. Register with GitHub
 
-Create a GitHub **OAuth App** in **Settings**, **Developer settings**, **OAuth Apps**, then **New OAuth App**.
+In **Settings → Developer settings → OAuth Apps → New OAuth App**:
 
-1. Set **Application name** to `SimpleMappr`.
-2. Set **Homepage URL** to `https://jky.io/simplemappr` or your deployment's base URL.
-3. Set **Authorization callback URL** to `https://jky.io/simplemappr/auth/github/callback` or the matching callback for your deployment.
-4. Leave **Enable Device Flow** off. SimpleMappr uses the browser authorization code flow with PKCE S256.
-5. Register the application. Copy its **Client ID**, then generate a **Client secret** and save it in your password manager.
+1. **Application name**: `SimpleMappr`.
+2. **Homepage URL**: your base URL.
+3. **Authorization callback URL**: your GitHub callback.
+4. Leave **Enable Device Flow** off.
+5. Register, copy the **Client ID**, generate a **Client secret**, and save both.
 
-SimpleMappr sends an explicit empty scope. The exchanged token must also have an empty scope. The app calls only the authenticated `https://api.github.com/user` endpoint for the public profile and numeric account ID. It requests no repository, organization, private profile, or email permissions. Google retains `openid profile`.
+Keep **Expire user access tokens** on. SimpleMappr requests an empty scope, uses the token once to read the public profile from `https://api.github.com/user`, and stores no token. A token that comes back with any scope is rejected.
 
-GitHub documents [OAuth App registration](https://docs.github.com/en/apps/oauth-apps/building-oauth-apps/creating-an-oauth-app), [the authorization code flow and PKCE](https://docs.github.com/en/apps/oauth-apps/building-oauth-apps/authorizing-oauth-apps), and [the authenticated public profile](https://docs.github.com/en/rest/users/users#get-the-authenticated-user). Keep **Expire user access tokens** enabled. SimpleMappr uses the token only during that callback and stores no access or refresh token.
+## 4. Configure and restart
 
-## Configure and start the providers
-
-Edit the existing private `.env`. Add the origin and the complete credential pair for each provider you want to enable. These are placeholders, not working credentials:
+Add to `.env` only the providers you want (placeholders shown):
 
 ```dotenv
-SIMPLEMAPPR_URL='https://jky.io/simplemappr'
+SIMPLEMAPPR_URL='https://example.org/simplemappr'
 SIMPLEMAPPR_GOOGLE_CLIENT_ID='replace-with-google-client-id'
 SIMPLEMAPPR_GOOGLE_CLIENT_SECRET='replace-with-google-secret'
 SIMPLEMAPPR_GITHUB_CLIENT_ID='replace-with-github-client-id'
 SIMPLEMAPPR_GITHUB_CLIENT_SECRET='replace-with-github-secret'
 ```
 
-Omit both lines for a provider you do not use, or set both values to empty. A partial pair prevents startup. Keep `.env` mode `0600`, outside Git, screenshots, support messages, and browser recordings. Do not put secrets in a shell command, image, or public configuration file.
-
-Recreate the application with the new environment:
+A provider needs both values or neither; half a pair stops startup. Keep `.env` mode 0600, and keep the secrets out of Git, shell history, screenshots and support messages.
 
 ```sh
 docker compose up -d --no-build --wait --force-recreate app
 docker compose exec app scripts/check-config
 ```
 
-Use the normal build command first if you have not built the image that includes social sign-in. Open **Sign in** at the configured base URL. You should see buttons only for the providers you enabled.
+(Build the image first if yours predates social sign-in.)
 
-Complete a real sign-in with each provider and confirm that **My Maps** can save and reopen a map. Also confirm that the local owner login (see [Sign in as the local owner](private-deployment.md#sign-in-as-the-local-owner)) still opens the owner's existing maps. Automated tests against a local fake provider verify the application flow and token checks. They do not prove that your real provider registration, credentials, consent, or callback settings work.
+The app needs outbound HTTPS to Google, `github.com` and `api.github.com`.
 
-The app container needs outbound HTTPS access to Google for token exchange and signing keys, and to `github.com` and `api.github.com` for the GitHub exchange and authenticated profile. It does not call repository APIs or Google data APIs.
+## 5. Test it for real
 
-## Test on localhost
+Open **Sign in**. You should see only the providers you enabled. With each one, sign in, save a map in **My Maps** and reopen it. Then check that the [owner login](private-deployment.md#sign-in-as-the-owner) still opens the owner's maps.
 
-For development, you can use `SIMPLEMAPPR_URL='http://localhost:8080'` with these registered callbacks:
+The automated tests use fake providers, so only this manual check proves your real registration and credentials work.
 
-```text
-http://localhost:8080/auth/google/callback
-http://localhost:8080/auth/github/callback
-```
+## Testing on localhost
 
-Open `http://localhost:8080/` in the browser. Do not switch to `127.0.0.1` during the same flow. Plain HTTP is allowed only for the literal loopback hosts `localhost`, `127.0.0.1`, and `[::1]`. Use HTTPS for every other hostname. A network hostname that resolves to your own machine still requires HTTPS.
+Use `SIMPLEMAPPR_URL='http://localhost:8080'` and register `http://localhost:8080/auth/google/callback` and `http://localhost:8080/auth/github/callback`. Stay on `localhost` and don't switch to `127.0.0.1` mid-flow. Plain HTTP works only for `localhost`, `127.0.0.1` and `[::1]`; every other hostname needs HTTPS.
 
-## Keep accounts separate
+## How accounts work
 
-People can register by signing in with any enabled provider. Their maps remain private until they explicitly create a sharing link. Social accounts have the ordinary user role and cannot administer citations or access another person's maps.
-
-Google, GitHub, and the local owner login create separate accounts. Matching email addresses do not link accounts or transfer maps. Use the same provider and account to return to your saved maps. SimpleMappr stores the verified provider identity and display name. GitHub ownership follows the stable numeric account ID, so renaming an account does not transfer or lose maps. It does not store the provider email, access token, or refresh token.
-
-Signing out ends the SimpleMappr session. It does not sign you out of Google or GitHub in other tabs.
+- Each provider and the owner login create **separate** accounts. Matching emails never link them. People must return with the same provider and account to see their maps.
+- GitHub accounts are keyed by numeric ID, so renaming the GitHub account keeps the maps.
+- SimpleMappr stores the verified identity and display name only: no email and no tokens.
+- Social accounts are ordinary users. They can't administer citations or see other people's maps, and maps stay private until shared.
+- Signing out of SimpleMappr doesn't sign you out of Google or GitHub.
 
 ## Rotate or disable a provider
 
-Create a replacement secret in the provider console before the old secret expires. Update its value in `.env`, then recreate the app with the command above. Test a real sign-in before revoking the old secret in the provider console. Rotation ends existing SimpleMappr sessions for that provider without changing map ownership or the local owner password.
+**Rotate**: create a new secret in the provider console, put it in `.env`, recreate the app, test a sign-in, then revoke the old secret. That provider's sessions end, but maps are unaffected.
 
-To disable a provider, remove or empty both its client ID and client secret, then recreate the app. Its button disappears and its existing sessions expire. Its saved maps remain in the database. Re-enabling the same client and provider identity restores access after a new sign-in. Rotate the existing app secret and return with the same provider account to reopen your maps.
+**Disable**: remove or empty both values and recreate the app. The button disappears and sessions end. The maps remain and come back when the same client is re-enabled.
 
 ## Restore and re-enable sign-in
 
-[Deployment backups](private-deployment.md#back-up-a-deployment) contain provider credentials in the protected `deployment.env`. Backup refuses credentials or a canonical URL that differ from the running app. Protect and transfer the whole bundle as sensitive data.
+Backups include provider credentials, so protect the whole bundle. If a [restore](backup-restore.md#restore-to-a-new-project) changes the base URL, it clears every provider's credentials in the restored copy (the bundle keeps them) and prints a notice. The owner login still works.
 
-Restore rewrites an absolute base URL, including any path prefix, to its new localhost target. If the base URL changes, restore clears both values for every enabled provider in the restored active configuration and prints a non-secret notice. The original protected bundle retains its credentials and checksums. The restored local owner login remains available for recovery.
+To turn sign-in back on:
 
-To re-enable social sign-in after restore:
+1. Register the restored site's callbacks with each provider.
+2. In `PROJECT-deployment/deployment.env`, set the final `SIMPLEMAPPR_URL` and the credential pairs.
+3. Recreate the app with the project name, `--env-file` and both Compose files from the [restore guide](backup-restore.md#restore-to-a-new-project).
+4. Test each provider.
 
-1. Choose the restored installation's final base URL and register its callback addresses with each provider.
-2. Edit the generated deployment directory's `deployment.env`. Set the final `SIMPLEMAPPR_URL` and the intended provider credential pairs.
-3. Recreate the app using the same project name, `--env-file`, and both Compose files shown in the [restore instructions](private-deployment.md#restore-to-an-empty-clone).
-4. Test each provider and confirm the expected account can reopen its maps.
+## Troubleshooting
 
-## Diagnose a failed sign-in
+- **Button missing**: both values aren't in the app's environment. Run `scripts/check-config`.
+- **Redirect mismatch**: compare the registered callback with your base URL character for character.
+- **Rejected or expired flow**: start again in the same browser on the same hostname.
+- **GitHub token rejected**: an older grant has scopes. Revoke it on GitHub and try again.
 
-If a button is missing, check that both provider values are present in the app's recreated environment. `scripts/check-config` reports configuration errors without printing credentials. The native `/_runtime` endpoint does not expose provider credentials or prove that sign-in works.
-
-For a redirect mismatch, compare the complete registered callback with the configured base URL and callback path. For a rejected or expired flow, restart sign-in from the same browser and hostname. For GitHub, also check the OAuth App's callback and current client secret. A token with repository or other scopes is rejected; revoke an older broader grant before trying again.
-
-Keep callback query strings and authorization codes out of proxy access logs. Application errors must not include tokens, secrets, or raw provider responses. Share only a sanitized error description when asking for help.
+Keep callback query strings out of proxy logs, and share only sanitized errors when asking for help.

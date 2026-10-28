@@ -1,6 +1,6 @@
 # Feature and verification map
 
-The Docker runtime uses PHP 8.4, MapServer 8.4 and SWIG MapScript. The old PHP extension is replaced by that binding; application requests, owner persistence and the editor use the modern runtime.
+Which check covers each feature. Commands are in [development.md](development.md#check-the-runtime-and-application) and [release checks](development.md#release-checks).
 
 | Workflow | Repeatable evidence |
 | --- | --- |
@@ -12,7 +12,7 @@ The Docker runtime uses PHP 8.4, MapServer 8.4 and SWIG MapScript. The old PHP e
 | Remote import DNS/redirect/TLS/decoded-byte/deadline limits | `Tests/smoke/check-import-boundary`; modern RemoteImport tests |
 | PNG/transparent PNG/JPEG/SVG/TIFF/KML/DOCX/PPTX downloads | Both browser engines; signatures, Office ZIP CRC/XML/embedded map dimensions, SVG/KML namespaces, PNG alpha |
 | WMS 1.1.1/1.3.0 and WFS 1.0.0/1.1.0/2.0.0 | Modern HTTP OGC tests, including axis order, XML bounds, zero count and maximum features |
-| Extended Natural Earth layers, color relief, and Blue Marble | Checksummed profiles; `Tests/browser/profiles.mjs` individual/combined/reloaded controls, selected with `SIMPLEMAPPR_TEST_PROFILE`; separate optional release lane |
+| Extended Natural Earth layers, colour relief, Blue Marble retirement | Checksummed profiles; `Tests/browser/profiles.mjs` individual/combined/reloaded controls, selected with `SIMPLEMAPPR_TEST_PROFILE`; separate optional release lane |
 | Covered global backgrounds skipped without changing selections or visible pixels | `Tests/modern/CoveredBackgroundTest.php`; full-map previews/downloads, detailed terrain, WMS client/group order and capabilities; transparent overlays retained |
 | Citation create/edit/delete, unsafe URL recovery, text display and RSS | Citation modern suite; administrator browser contract; actual owner UI acceptance |
 | Database recovery, original JSON/share/citation bytes, new sessions, owner rotation | `scripts/check-backup-restore`; operator review of the isolated restored instance |
@@ -21,14 +21,15 @@ The Docker runtime uses PHP 8.4, MapServer 8.4 and SWIG MapScript. The old PHP e
 | Temporary preview expiration and eligible cleanup | Actual isolated image-creation cleanup fixture; immutable saved-map byte comparison |
 | Dependency reproducibility, platform requirements and security audits | Pinned image/package snapshots, Composer/npm locks and release CI |
 
-The [2026-10-22 control audit](ui-audit.md) records actual clicks, drags, dialogs and downloaded files. Document/Node tests prove state and failure contracts; they do not replace an interaction check. Its limitations include live Ctrl+X input delivery and optional datasets.
+## Known gaps
 
-Settings JSON is a versioned editor document, distinct from exported GeoJSON geometry. Importing settings in the editor creates editable transient state; the My Maps importer writes private persistence. Administrator status never grants access to another owner's private maps.
+- **Live Ctrl+X** is untested because browser automation can't deliver it. Its handler passes the Node event test.
+- The archived Selenium, database and router suites under `Tests/` don't run yet.
+- Optional dataset profiles run only in the manually requested release lane, separately from PR checks.
+- Real Google and GitHub sign-in needs operator credentials. Fixtures prove the app flow, not your provider registration; follow [social sign-in](social-login.md#5-test-it-for-real) before going public.
+- Safari and real touch devices aren't tested.
+- Records from the retired hosted service can't be recovered without an actual database backup.
 
-General legacy Selenium/database/bootstrap tests remain archived under `Tests/`; a modern-suite pass does not claim that their original infrastructure runs. Specialist ecological data and unverified raster products remain explicitly excluded by the profile registry. No legacy public hosted records can be recovered without an actual database backup.
+## Evidence
 
-The private release record includes real fresh-install, empty-target restore, minimal/relief, recreation, earlier-image rollback, private-port, expiry, administrator and offline lanes. Browser screenshots/traces are acceptance evidence; sanitization removes credentials and live capability URLs. Internal Office media basenames are inert ZIP members, not reusable private preview URLs. Real output files stay valid for format verification.
-
-Remote CI is authoritative only after an actual successful run linked from the release PR. Optional dataset downloads are a manually requested release lane. Keep its evidence separate from minimal-only PR checks.
-
-Social sign-in uses generated Google signed tokens and isolated GitHub token/profile HTTPS fixtures for repeatable checks. Real Google and GitHub consent requires operator-created app registrations and credentials; complete the acceptance steps in [social sign-in setup](social-login.md) before enabling a public installation.
+CI results count only from a successful run linked in the release PR. Browser traces and screenshots are kept as acceptance evidence after credentials and live share URLs are scrubbed. The private release record covers fresh install, restore to an empty target, minimal and relief profiles, recreation, rollback to an earlier image, a private port, expiry, administration and offline use.
