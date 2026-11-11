@@ -90,17 +90,78 @@ final class Map implements RestMethods
         return ['status'=>'ok'] + $record;
     }
 
+    /**
+     * Save editor settings. Without `save[mid]` this always creates a map.
+     * With an owned `save[mid]` and a title equal to that map's title under
+     * the column collation, it updates that map in place (ordinary re-save,
+     * keeping its share link); a different title is a Save As and creates a
+     * new map. A title held by another of the user's maps is a 409, never an
+     * overwrite.
+     */
     public function create($content)
     {
         $document = SavedMapDocument::fromForm($content);
         SavedMapDocument::validateForWrite($document);
         $title = $document['save']['title'];
         if ($title === '') { throw new HttpException(422, 'Enter a map title.'); }
-        $this->db->prepare('INSERT INTO maps(uid,title,map,created,updated) VALUES(:uid,:title,:map,:created,:updated) ON DUPLICATE KEY UPDATE mid=LAST_INSERT_ID(mid),map=VALUES(map),updated=VALUES(updated)');
-        foreach (['uid'=>$this->uid,'title'=>$title,'map'=>SavedMapDocument::encode($document),'created'=>time(),'updated'=>time()] as $key=>$value) { $this->db->bindParam(':'.$key, $value); }
-        $this->db->execute();
+        $mid = self::requestedMid($content['save']['mid'] ?? null);
+        $map = SavedMapDocument::encode($document);
+        $now = time();
+        if ($mid !== null && $this->updateLoaded($mid, $title, $map, $now)) {
+            return ['status'=>'ok','mid'=>$mid,'share_url'=>self::loadOwned($mid, $this->uid)['share_url']];
+        }
+        $this->db->prepare('INSERT INTO maps(uid,title,map,created,updated) VALUES(:uid,:title,:map,:created,:updated)');
+        foreach (['uid'=>$this->uid,'title'=>$title,'map'=>$map,'created'=>$now,'updated'=>$now] as $key=>$value) { $this->db->bindParam(':'.$key, $value); }
+        try {
+            $this->db->execute();
+        } catch (\PDOException $e) {
+            if (self::isDuplicateKey($e)) { throw new HttpException(409, self::DUPLICATE_TITLE); }
+            throw $e;
+        }
         $mid = (int)$this->db->connection()->lastInsertId();
         return ['status'=>'ok','mid'=>$mid,'share_url'=>self::loadOwned($mid, $this->uid)['share_url']];
+    }
+
+    public const DUPLICATE_TITLE = 'You already have a map with this title. Open it from My Maps to update it, or choose another title.';
+
+    /**
+     * Update the loaded map when the title still names it. Returns false for
+     * a Save As (different title); throws 404 for a map the user doesn't own.
+     */
+    private function updateLoaded(int $mid, string $title, string $map, int $now): bool
+    {
+        $pdo = $this->db->connection();
+        $pdo->beginTransaction();
+        try {
+            // The comparison uses the column's collation, so it matches the owner_title key exactly.
+            $this->db->prepare('SELECT title=:title AS same FROM maps WHERE mid=:mid AND uid=:uid FOR UPDATE');
+            $this->db->bindParam(':title', $title); $this->db->bindParam(':mid', $mid); $this->db->bindParam(':uid', $this->uid);
+            $row = $this->db->fetchFirstArray();
+            if (!$row) { throw new HttpException(404, 'Map not found.'); }
+            if (!(int)$row['same']) { $pdo->rollBack(); return false; }
+            $this->db->prepare('UPDATE maps SET title=:title,map=:map,updated=:updated WHERE mid=:mid AND uid=:uid');
+            foreach (['title'=>$title,'map'=>$map,'updated'=>$now,'mid'=>$mid,'uid'=>$this->uid] as $key=>$value) { $this->db->bindParam(':'.$key, $value); }
+            $this->db->execute();
+            $pdo->commit();
+            return true;
+        } catch (\Throwable $e) {
+            if ($pdo->inTransaction()) { $pdo->rollBack(); }
+            throw $e;
+        }
+    }
+
+    private static function requestedMid(mixed $value): ?int
+    {
+        if ($value === null || $value === '') { return null; }
+        if (!is_string($value) && !is_int($value)) { throw new \InvalidArgumentException('Invalid map identifier.'); }
+        $value = (string)$value;
+        if (!preg_match('/^[1-9][0-9]{0,17}$/', $value)) { throw new \InvalidArgumentException('Invalid map identifier.'); }
+        return (int)$value;
+    }
+
+    private static function isDuplicateKey(\PDOException $e): bool
+    {
+        return ($e->errorInfo[1] ?? null) === 1062;
     }
 
     public function update($content, $where) { throw new HttpException(405, 'Use the saved-map form.'); }

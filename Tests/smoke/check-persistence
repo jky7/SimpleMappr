@@ -24,6 +24,20 @@ form={'save[title]':'Montréal 😀 HTTP fixture','coords[0][title]':'Café','co
 status,body,_=owner.request('/usermap',form);assert status==403,(status,body)
 status,body,_=owner.request('/usermap',form,csrf=True);assert status==200,(status,body);mid=json.loads(body)['mid']
 status,body,_=owner.request(f'/usermap/{mid}.json');assert status==200,(status,body);document=json.loads(body)['map'];assert document['save']['title']==form['save[title]'];assert document['layers']['lakesOutline']=='on';assert document['origin_map']=='0';assert document['coords'][0]['data']==form['coords[0][data]']
+def saved(identifier):
+ status,body,_=owner.request(f'/usermap/{identifier}.json');assert status==200,(status,body);return json.loads(body)['map']
+collision=dict(form,**{'save[title]':'MONTREAL 😀 http FIXTURE','coords[0][data]':'10,10'})
+status,body,_=owner.request('/usermap',collision,csrf=True);assert status==409,(status,body)
+assert saved(mid)==document,'A new map with a case/accent-equal title replaced another map'
+status,body,_=owner.request('/usermap',dict(collision,**{'save[mid]':str(mid+1000000)}),csrf=True);assert status==404,(status,body)
+status,body,_=owner.request('/usermap',dict(collision,**{'save[mid]':str(mid)}),csrf=True);assert status==200 and json.loads(body)['mid']==mid,(status,body)
+resaved=saved(mid);assert resaved['coords'][0]['data']=='10,10' and resaved['save']['title']==collision['save[title]'],resaved
+status,body,_=owner.request('/usermap',dict(form,**{'save[mid]':str(mid),'save[title]':form['save[title]']+' copy'}),csrf=True);assert status==200,(status,body);copy_mid=json.loads(body)['mid'];assert copy_mid!=mid
+assert saved(mid)==resaved,'Save As changed the loaded map'
+status,body,_=owner.request('/usermap',dict(form,**{'save[mid]':str(copy_mid),'save[title]':form['save[title]']}),csrf=True);assert status==409,(status,body)
+assert owner.request(f'/usermap/{copy_mid}',method='DELETE',csrf=True)[0]==200
+status,body,_=owner.request('/usermap',dict(form,**{'save[mid]':str(mid)}),csrf=True);assert status==200 and json.loads(body)['mid']==mid,(status,body)
+assert saved(mid)==document,'Re-save did not update the loaded map in place'
 for path in [f'/usermap/{mid}.json',f'/map/{mid}.png',f'/map/{mid}.json',f'/usermap/{mid}/settings.json']:
  assert guest.request(path)[0] in [403,404],path
 status,body,_=owner.request(f'/map/{mid}.png');assert status==200 and body.startswith(b'\x89PNG'),(status,body[:200])
@@ -31,19 +45,26 @@ status,body,_=owner.request('/application.json',form);assert status==200,(status
 assert owner.request(preview)[0]==200
 assert guest.request(preview)[0]==404
 status,body,_=owner.request('/share',{'mid':str(mid)},csrf=True);assert status==200,(status,body);share=json.loads(body)
+status,body,_=owner.request('/usermap',dict(form,**{'save[mid]':str(mid)}),csrf=True);assert status==200 and json.loads(body)['share_url']==share['url'],(status,body)
 assert guest.request(share['url'])[0]==200
 assert guest.request(share['url']+'.png')[1].startswith(b'\x89PNG')
 status,body,_=owner.request('/share/'+str(share['sid']),method='DELETE',csrf=True);assert status==200,(status,body)
 assert guest.request(share['url'])[0]==404
 assert guest.request(share['url']+'.png')[0]==404
 status,body,_=owner.request(f'/usermap/{mid}/settings.json');assert status==200;assert json.loads(body)==document
-status,body,_=owner.request('/usermap/import',{'settings':body.decode()},csrf=True);assert status==200,(status,body);assert json.loads(body)['mid']==mid
+settings=body
+status,body,_=owner.request('/usermap/import',{'settings':settings.decode()},csrf=True);assert status==409,(status,body)
+assert saved(mid)==document,'Importing a colliding title replaced a map'
+renamed=json.loads(settings);renamed['save']['title']+=' imported'
+status,body,_=owner.request('/usermap/import',{'settings':json.dumps(renamed)},csrf=True);assert status==200,(status,body);imported=json.loads(body)['mid'];assert imported!=mid
+status,body,_=owner.request(f'/usermap/{imported}/settings.json');assert status==200 and json.loads(body)==renamed,(status,body)
+assert owner.request(f'/usermap/{imported}',method='DELETE',csrf=True)[0]==200
 status,body,_=owner.request('/usermap/import',{'settings':'{"type":"FeatureCollection","features":[]}'},csrf=True);assert status in [400,422]
 for invalid in [{'projection':'invalid'},{'width':'999999'}]:
  bad=dict(document);bad.update(invalid);bad['save']={'title':form['save[title]']}
  status,body,_=owner.request('/usermap/import',{'settings':json.dumps(bad)},csrf=True);assert status in [400,422],(status,body)
  status,body,_=owner.request(f'/usermap/{mid}.json');assert json.loads(body)['map']==document, 'Invalid import changed saved bytes'
 status,body,_=guest.request('/application.json',form);assert status==200,(status,body);assert re.match(r'^/public/tmp/preview-[a-f0-9]{32}\.png$',json.loads(body)['mapOutputImage'])
-print('PASS: owner login; CSRF; Unicode/title/multiline/layers/origin save-load; guest isolation; owner-only previews; private PNG; settings import/export; token sharing and revocation; random guest cache.')
+print('PASS: owner login; CSRF; Unicode/title/multiline/layers/origin save-load; title collisions refused, re-save in place and Save As; guest isolation; owner-only previews; private PNG; settings import/export; token sharing and revocation; random guest cache.')
 if os.environ.get('SIMPLEMAPPR_TEST_RECEIPT'):
  json.dump({'mid':mid,'preview':preview,'status':'PASS'},open(os.environ['SIMPLEMAPPR_TEST_RECEIPT'],'w'))

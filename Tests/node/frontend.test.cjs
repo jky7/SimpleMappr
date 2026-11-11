@@ -141,6 +141,25 @@ test('empty save title can be corrected without reopening the dialog',t=>{
  e.p.setFormOptions=()=>{};e.$.ajax=()=>{requests++;};e.p.mapSave();buttons[0].click.call(e.$('#mapSave')[0]);
  e.$('#m-mapSaveTitle').val('Corrected');buttons[0].click.call(e.$('#mapSave')[0]);assert.equal(requests,1);
 });
+test('saving a loaded map sends its id so only the same title updates it, and New clears the id',t=>{
+ const e=finish(t,editor());let buttons;const requests=[];
+ e.$('#form-mapper').append('<input type="hidden" id="save[mid]" name="save[mid]">');
+ e.$.fn.dialog=function(options){if(typeof options==='object')buttons=options.buttons;return this;};
+ e.$.fn.slider=function(){return this;};
+ for(const name of ['setFormOptions','showSpinner','hideSpinner','loadMapList','activateEmbed','showMap','bindStorage','tabSelector','toggleUndo','toggleRedo','loadInputs','resetJbbox','mapRebuild','clearZone'])e.p[name]=()=>{};
+ e.$.ajax=options=>{requests.push(options);return {abort(){}};};
+ e.p.loadMap(e.$('<a data-id="1038">')[0]);requests.at(-1).success({status:'ok',mid:1038,map:{save:{title:'Ontario sites'}},share_url:null});
+ assert.equal(e.$('#save\\[mid\\]').val(),'1038');
+ e.$('#m-mapSaveTitle').val('Ontario sites');e.p.mapSave();buttons[0].click.call(e.$('#mapSave')[0]);
+ let body=new URLSearchParams(requests.at(-1).data);assert.equal(body.get('save[mid]'),'1038');assert.equal(body.get('save[title]'),'Ontario sites');
+ assert.equal('mid' in e.p.readDocument().save,false,'map identity stays out of the persisted document');
+ requests.at(-1).success({status:'ok',mid:2001,share_url:null});assert.equal(e.$('#save\\[mid\\]').val(),'2001');
+ e.p.mapNew();assert.equal(e.$('#save\\[mid\\]').val(),'');
+ e.$('#m-mapSaveTitle').val('ontario sites');e.p.mapSave();buttons[0].click.call(e.$('#mapSave')[0]);
+ body=new URLSearchParams(requests.at(-1).data);assert.equal(body.get('save[mid]'),'');
+ let shown;e.p.showErrorMessage=message=>{shown=message;};
+ requests.at(-1).error({responseJSON:{error:'You already have a map with this title.'}});assert.equal(shown,'You already have a map with this title.');
+});
 test('Tab and Enter remain available to inputs and form submit previews',t=>{
  const e=finish(t,editor());let rendered=0;e.p.missingFieldSetTitle=()=>false;e.p.destroyRedo=()=>{};e.p.showMap=()=>{rendered++;};e.p.tabSelector=()=>{};
  e.p.disableDefaultButtons();const event=e.$.Event('keypress',{which:9,keyCode:9});e.$('#m-mapSaveTitle').trigger(event);assert.equal(event.isDefaultPrevented(),false);
