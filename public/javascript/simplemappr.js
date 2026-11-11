@@ -430,6 +430,7 @@ var SimpleMappr = (function($, window, document) {
       $('#gridspace').prop("checked", true);
       $('#mapTitle').html('');
       $('#m-mapSaveTitle').val('');
+      this.setLoadedMap('');
       $('#file-name').val('');
       $('#actionsBar').find('a.toolsEmbed').css({display:'none'});
       $('#border_thickness').val(1.25);
@@ -1565,6 +1566,7 @@ var SimpleMappr = (function($, window, document) {
           self.hideSpinner();
           if(data.status === 'ok') {
             self.loadInputs(data);
+            self.setLoadedMap(data.mid || id);
             self.showMap(data);
             self.bindStorage();
             self.activateEmbed(id, data.share_url);
@@ -1843,6 +1845,7 @@ var SimpleMappr = (function($, window, document) {
                 type    : 'DELETE',
                 url     :  self.settings.baseUrl + "/usermap/" + id,
                 success : function() {
+                  if (String($('#save\\[mid\\]').val()) === String(id)) { self.setLoadedMap(''); }
                   self.loadMapList();
 
                 }
@@ -1867,6 +1870,12 @@ var SimpleMappr = (function($, window, document) {
         param = "?locale=" + locale;
       }
       return param;
+    },
+
+    // The saved map the editor is showing. Saving with the same title updates it;
+    // another title saves a new map. Not part of the map document or browser storage.
+    setLoadedMap: function(mid) {
+      $('#save\\[mid\\]').val(mid === undefined || mid === null ? '' : String(mid));
     },
 
     mapSave: function() {
@@ -1917,6 +1926,7 @@ var SimpleMappr = (function($, window, document) {
                   success     : function(data) {
                     $('#mapTitle').text(map_title.val());
                     $('#file-name').val(map_title.val().replace(pattern, "_"));
+                    self.setLoadedMap(data.mid);
                     self.activateEmbed(data.mid, data.share_url);
                     self.loadMapList();
                     self.hideSpinner();

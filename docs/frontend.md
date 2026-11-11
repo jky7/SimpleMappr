@@ -41,6 +41,15 @@ The build writes `public/build/manifest.json` with content-hashed JS, CSS, image
 - Only a signed-in owner can migrate old unscoped `do-*`/`undo-*` history. Guests never adopt it.
 - When storage is full, the oldest undo entries are dropped first. If storage is unavailable, state is kept in memory.
 
+## Saving to My Maps
+
+The editor tracks which saved map it shows in the hidden `save[mid]` field. Opening a map or saving sets it; New and deleting that map clear it. It is a transport field: the map document and browser storage never contain it, so a reloaded editor saves as a new map.
+
+- Without `save[mid]`, `POST /usermap` always creates a map.
+- With your own `save[mid]` and the same title, the save updates that map in place, so its share link shows the new settings. Titles compare like the database key: case and accents are ignored, so this is also how you change a title's capitalization.
+- With `save[mid]` and a different title, the save is a Save As: a new map, and the opened one is left unchanged.
+- A title that already belongs to another of your maps (ignoring case and accents) returns 409 and changes nothing. The same applies to the My Maps settings importer, which always creates. A `save[mid]` you don't own returns 404.
+
 ## Importing
 
 The editor's importer (`POST /import`) loads CSV, TSV, WKT, GeoJSON, KML, GeoRSS or a settings file into the editor without saving anything. Files are limited to 5 MiB (2 MB for settings) and the browser's MIME type is ignored. Current input is replaced only after a valid response. The My Maps importer is separate and saves the map privately. Server-side rules are in [import-export.md](import-export.md).

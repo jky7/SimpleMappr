@@ -89,24 +89,6 @@ class Router
         $router = new RouteCollector();
 
         $router->filter(
-            'logAPI',
-            function () {
-                $this->_log("API");
-            }
-        );
-        $router->filter(
-            'logWMS',
-            function () {
-                $this->_log("WMS");
-            }
-        );
-        $router->filter(
-            'logWFS',
-            function () {
-                $this->_log("WFS");
-            }
-        );
-        $router->filter(
             'check_role_user',
             function () {
                 if (!User::checkPermission('user')) {
@@ -151,7 +133,7 @@ class Router
             //headers are set in Mappr\WebServices\Api class
             $klass = $this->_klass("Mappr\WebServices\Api");
             return $klass->execute()->createOutput();
-        }, ['after' => 'logAPI']);
+        });
 
         $router->get('/apidoc', function () {
             $this->_tabRequestOnly('apidoc');
@@ -160,11 +142,6 @@ class Router
             $config = ['openapi' => $this->_klass("Controller\OpenApi")->index()];
             return $this->_twig()->render("apidoc.html", $config);
         });
-
-        $router->get('/apilog', function () {
-            Header::setHeader('html');
-            return $this->_tailLog();
-        }, ['before' => 'check_role_administrator']);
 
         $router->post('/application', function () {
             //headers are set in Mappr\Application class
@@ -448,13 +425,13 @@ class Router
             Header::setHeader("xml");
             $klass = $this->_klass("Mappr\WebServices\Wfs");
             return $klass->makeService()->execute()->createOutput();
-        }, ['after' => 'logWFS']);
+        });
 
         $router->any('/wms', function () {
             //headers are set in Mappr\Wms class
             $klass = $this->_klass("Mappr\WebServices\Wms");
             return $klass->makeService()->execute()->createOutput();
-        }, ['after' => 'logWMS']);
+        });
 
         try {
             $dispatcher = new Dispatcher($router->getData());
@@ -513,38 +490,6 @@ class Router
     {
         $class = __NAMESPACE__ . '\\' . $klass;
         return new $class(...$params);
-    }
-
-    /**
-     * Write a timestamp and URI to the logger.
-     *
-     * @param string $type Type of log, defaults to "API"
-     *
-     * @return void
-     */
-    private function _log($type)
-    {
-        $ip = $_SERVER["REMOTE_ADDR"];
-        $message = implode(" - ", [date('Y-m-d H:i:s'), $ip, $type, $_SERVER['REQUEST_METHOD'], $_SERVER["REQUEST_URI"]]);
-        error_log($message);
-    }
-
-    /**
-     * Instantiate the Logger class and execute its tail & parse methods
-     *
-     * @return string
-     */
-    private function _tailLog()
-    {
-        $logger = new Logger(ROOT.'/log/logger.log');
-        $entries = $logger->tail(20)->parse(Logger::$capture)->entries;
-        $lines = [];
-        foreach ($entries as $entry) {
-            if (isset($entry['time'],$entry['ip'],$entry['url'],$entry['method'])) {
-                $lines[] = htmlspecialchars(implode(' - ',[$entry['time'],$entry['ip'],$entry['method'],mb_substr($entry['url'],0,250)]),ENT_QUOTES|ENT_SUBSTITUTE,'UTF-8');
-            }
-        }
-        return $lines ? implode("<br>\n",$lines) : 'Current request events are available through docker compose logs app. No archived log entries.';
     }
 
     /**

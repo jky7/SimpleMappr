@@ -100,7 +100,6 @@ var SimpleMapprAdmin = (function($, window, sm) {
       event.preventDefault(); users($(this).attr('data-sort') ? {sort: $(this).attr('data-sort'), dir: $(this).hasClass('asc') ? 'desc' : 'asc'} : {});
     });
     users(); citations();
-    request({url: sm.settings.baseUrl + '/apilog', dataType: 'html'}).done(function(html) { $('#admin-api-list').html(html); });
   }
   return {init: init};
 }(jQuery, window, SimpleMappr));

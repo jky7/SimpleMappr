@@ -81,6 +81,7 @@ curl --fail http://127.0.0.1:8080/_runtime
 - `scripts/migrate-database` creates or verifies `20261020000000` and refuses implicit adoption. Never run `db/legacy-migrations`. Adopted shares stay private until the owner creates a token.
 - Every saved-map operation uses the server-side uid. No role bypasses map ownership. Mutations require session CSRF.
 - `SavedMapDocument` owns the versioned settings allowlist (case-sensitive layer names, viewport tuple). Settings JSON is not GeoJSON.
+- `Map::create` never overwrites by title. It updates only the owned `save[mid]` when the title is equal under the `owner_title` collation; otherwise it inserts and turns a duplicate key into 409. Imports never send `save[mid]`. Keep `save[mid]` out of map documents and browser storage. `Tests/smoke/check-persistence` covers collision, re-save, Save As and share retention ([frontend.md](docs/frontend.md#saving-to-my-maps)).
 - Private previews use `TemporaryImage` outside public assets behind an expiring owner-checked route. Guest names carry 128 random bits.
 
 ### Social sign-in
@@ -90,7 +91,7 @@ curl --fail http://127.0.0.1:8080/_runtime
 - Never select ownership by name or email, never link accounts by email, and never assign the owner's UID. Store no provider email or tokens. New accounts are ordinary users.
 - The owner login is at `OwnerLogin::path()` (`SIMPLEMAPPR_OWNER_LOGIN_PATH`, default `/owner`). It is unlinked, `noindex`, and a 404 without an owner. Never list it in `robots.txt`. `check-config` rejects bad values, and backups keep the value.
 - Local and provider sessions use separate credential fingerprints. Database and session state use separate volumes.
-- Keep SameSite=Lax because providers return query callbacks. Callbacks keep the `SIMPLEMAPPR_URL` prefix. Secure cookies come from the configured HTTPS origin, never from forwarded headers. Apache logs omit query strings and referrers.
+- Keep SameSite=Lax because providers return query callbacks. Callbacks keep the `SIMPLEMAPPR_URL` prefix. Secure cookies come from the configured HTTPS origin, never from forwarded headers. Apache logs omit query strings and referrers, and the application never logs request URIs (API, WMS and WFS requests appear only in the Apache access log).
 
 ## Imports and services
 
